@@ -38,12 +38,10 @@ Plotly.d3.csv('https://raw.githubusercontent.com/hmooreo/downtownrecovery/main/d
             hovertemplate:
 
             "<b>City: </b>%{text}<br>" +
-
             "<b>Recovery %{yaxis.title.text}: </b> %{y}<br>" +
-
             "<b>%{xaxis.title.text}: </b>%{x}<br>" +
-
             "<extra></extra>",
+            
             transforms: [{
                 type: 'groupby',
                 groups: regions,

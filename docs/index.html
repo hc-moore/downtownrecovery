@@ -1,213 +1,77 @@
-<!doctype html>
+<!DOCTYPE html> 
 <html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>maintenance page</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@5.1.3/dist/darkly/bootstrap.min.css">
 
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="">
-  <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
-  <meta name="generator" content="Hugo 0.88.1">
-  <title>Downtown Recovery</title>
-
-  <!-- Begin Bootstrap things -->
-  <!-- Canonical link -->
-  <link rel="canonical" href="https://getbootstrap.com/docs/5.1/examples/album/">
-
-  <!-- Core CSS -->
-  <link href="assets/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-  <style>
-    .bd-placeholder-img {
-      font-size: 1.125rem;
-      text-anchor: middle;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      user-select: none;
-    }
-
-    @media (min-width: 768px) {
-      .bd-placeholder-img-lg {
-        font-size: 3.5rem;
-      }
-    }
-
-    
-  </style>
-  <!-- End Bootstrap things
-  this was inside of <style>#content {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      top: 0px;
-    }
-
-    body,
-    html {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      overflow: hidden;
-    } -->
-
-</head>
-
-<body>
   
-  <header>
+    </head>
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">Home(Beta launch version)</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMenu" aria-controls="navbarMenu" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+          
+                <div class="collapse navbar-collapse" id="navbarMenu">
+                    <ul class="navbar-nav me-auto">
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-      <div class="container-fluid">
-          <a class="navbar-brand" href="#">Home</a>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMenu" aria-controls="navbarMenu" aria-expanded="false" aria-label="Toggle navigation">
-              <span class="navbar-toggler-icon"></span>
-          </button>
-    
-          <div class="collapse navbar-collapse" id="navbarMenu">
-              <ul class="navbar-nav me-auto">
-
-                  <li class="nav-item dropdown">
-                      <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Recovery</a>
-                      <div class="dropdown-menu">
-                          <a class="dropdown-item" href="dashboards/recovery_ranking.html">Rankings</a>
-                          <a class="dropdown-item" href="dashboards/recovery_pattern_raw.html">Patterns</a>
-                          <a class="dropdown-item" href="dashboards/explanatory_variables.html">Explanatory Variables</a>
-                      </div>
-                  </li>
-                  
-                  <li class="nav-item">
-                      <a class="nav-link" href="dashboards/maps_2d.html">Comparative Map</a>
-                  </li>
-                  <li class="nav-item">
-                    <a class="nav-link" href="dashboards/text_pages.html">Methodology</a>
-                  </li>
-                  
-              </ul>
-        </div>
-      </div>
-  </nav>
-
-  </header>
-
-  <main>
-
-    <section class="py-5 text-center container-fluid">
-      <div class="row py-sm-3">
-        <div class="col-sm-6 col-sm-8 mx-auto">
-          <h1 class="fw-dark">Death of Downtown?</h1>
-          <p class="lead text-muted"><i>Pandemic Recovery Trajectories across 62 North American Cities</i></p>
-          <p>
-            <a href="death_of_downtown_policy_brief.pdf" class="btn btn-primary my-2">Read policy brief</a>
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <div class="album py-5 bg-dark">
-      <div class="container">
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
-          <div class="col">
-            <div class="card shadow-sm">
-              <img class="card-img-top bg-img" width="100%" height="225" src="images/recovery_rankings.png"
-                   role="img" aria-label="Recovery ranking: Thumbnail" preserveAspectRatio="xMidYMid slice" focusable="false"/>
-              <div class="card-body">
-                <h5 class="card-title">Recovery rankings</h5>
-                <p class="card-text">Comparison of overall recovery in activity levels in our downtown and urban areas.<br></p>
-                <div class="d-flex justify-content-between align-items-center">
-                  <a href="dashboards/recovery_ranking.html" class="btn btn-primary data-page-btn">View</a>
-                </div>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Recovery</a>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item" href="#">Rankings</a>
+                                <a class="dropdown-item" href="#">Patterns</a>
+                                <a class="dropdown-item" href="#">Explanatory Variables</a>
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">Prediction</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">Comparative Map</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Methodology</a>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item" href="#">Glossary</a>
+                                <a class="dropdown-item" href="#">Raw Device Counts</a>
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">About</a>
+                        </li>
+                    </ul>
               </div>
             </div>
-          </div>
-
-          <div class="col">
-            <div class="card shadow-sm">
-              <img class="card-img-top bg-img" width="100%" height="225" src="images/raw_recovery_pattern.png"
-                   role="img" aria-label="Raw recovery pattern: Thumbnail" preserveAspectRatio="xMidYMid slice" focusable="false"/>
-              <div class="card-body">
-                <h5 class="card-title">Recovery patterns</h5>
-                <p class="card-text">Explore weekly activity levels during different phases of the pandemic.</p>
-                <div class="d-flex align-items-start">
-                  <a href="dashboards/recovery_pattern_raw.html"  class="btn btn-primary data-page-btn">View</a>
+        </nav>
+        <section class="bg-dark text-light p-5 text-center text-sm-start">
+            <div class="container">
+                <div class="d-sm-flex p-2 align-items-start justify-content-between">
+                    <div>
+                        <h2>Death of Downtown?</h2>
+                        <h2 class="text-warning">Not yet.</h2><br>
+                        <p class="lead" my-4>
+                            <em>The Downtown Recovery website is undergoing scheduled maintenance.<br>
+                                Come back in <span class="text-warning" style="font-weight:bold;">x(time)</span> to track pandemic recovery across 66 North American cities.
+                            </em><br>
+                            <div class="d-flex align-items-start justify-content-between align-self-baseline">
+                                <p class="lead" my-4>Until then,
+                                <button type="button" class="btn btn-primary btn-sm"><a href="https://hmoore.shinyapps.io/multi_city_covid19_analysis/_w_741378ad/death_of_downtown_policy_brief.pdf "></a>read policy brief</button>
+                                or
+                                <button type="button" class="btn btn-primary btn-sm"><a href="mailto: downtownrecovery@hotmail.com"></a>leave us a message.</button>
+                                </p>
+                            </div>
+                        </p>
+                    </div>
+                    <img class="img-fluid w-50 d-sm-block" src="routine maintenance.svg" alt="routine maintenance"/>
                 </div>
-              </div>
+                
             </div>
-          </div>
-
-          <div class="col">
-            <div class="card shadow-sm">
-              <img class="card-img-top bg-img" width="100%" height="225" src="images/explanatory_variables.png"
-                   role="img" aria-label="Explanatory variables: Thumbnail" preserveAspectRatio="xMidYMid slice" focusable="false"/>
-              <div class="card-body">
-                <h5 class="card-title">Explanatory variables</h5>
-                <p class="card-text">Experiment with downtown recovery correlations with employment, land use, and socioeconomic data.</p>
-                <div class="d-flex justify-content-left align-items-center">
-                  <a href="dashboards/explanatory_variables.html" class="btn btn-primary data-page-btn">View</a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col">
-            <div class="card shadow-sm">
-              <img class="card-img-top bg-img" width="100%" height="225" src="images/can_us_map.png"
-                role="img" aria-label="Leaflet: Thumbnail" preserveAspectRatio="xMidYMid slice" focusable="false"/>
-              <div class="card-body">
-                <h5 class="card-title">Comparative Map</h5>
-                <p class="card-text">Visualize our urban recovery comparatively across the United States and Canada.</p>
-                <div class="d-flex align-items-start">
-                  <a href="dashboards/maps_2d.html" class="btn btn-primary data-page-btn">View</a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-      
-          <div class="col">
-            <div class="card shadow-sm">
-              <svg class="bd-placeholder-img card-img-top" width="100%" height="225" xmlns="http://www.w3.org/2000/svg"
-                role="img" aria-label="Placeholder: Thumbnail" preserveAspectRatio="xMidYMid slice" focusable="false">
-                <title>Methodology</title>
-                <rect width="100%" height="100%" fill="#55595c" /><text x="50%" y="50%" fill="#eceeef" dy=".3em">Methodology</text>
-              </svg>
-              <div class="card-body">
-                <h5 class="card-title">Methodology</h5>
-                <p class="card-text">
-                  Methodology, sources, and future plans.
-                </p>
-                <div class="d-flex justify-content-between align-items-center">
-                  <div class="d-flex align-items-start flex-column">
-                    <a href="dashboards/text_pages.html" class="btn btn-primary data-page-btn">View</a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-  </main>
-  
-  <footer class="text-muted py-5">
-
-  <div class="container">
-      <p class="float-end mb-1">
-        <a href="#" style="float:left;">Back to top</a>
-        
-      </p>
-      <p>
-      For more interactive options, visit the <a href="https://hmoore.shinyapps.io/downtownrecovery/">Shiny app</a>
-      </p>
-    </div>
-
-
-
-    
-  </footer>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-  <script src="assets/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-
+        </section>
+            <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.5/dist/umd/popper.min.js" integrity="sha384-Xe+8cL9oJa6tN/veChSP7q+mnSPaj5Bcu9mPX5F5xIGE0DVittaqT5lorf0EI7Vk" crossorigin="anonymous"></script>
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.min.js" integrity="sha384-kjU+l4N0Yf4ZOJErLsIcvOU2qSb74wXpOhqTvwVx3OElZRweTnQ6d31fXEoRD1Jy" crossorigin="anonymous"></script>    
+    </body>
 </html>

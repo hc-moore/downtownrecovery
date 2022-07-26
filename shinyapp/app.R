@@ -331,30 +331,30 @@ ui <- bootstrapPage(
             )
           )
         ),
-         tabPanel(
-           value = "single_city_map",
-           "Single city",
-           fluidRow(
-             column(
-               width = 3,
-               wellPanel(
-                  singleCitySelectorUI("city_1", n = 1, selected_city = "San Francisco, CA"),
-                  singleCityMapUI("citymap_1")
-               )
-             ),
-             column(
-               width = 6,
-               #singleCityMapUI("citymaps")
-             ),
-             column(
-               width = 3,
-               wellPanel(
-                 singleCitySelectorUI("city_2", n = 2, selected_city = "Sacramento, CA"),
-                 singleCityMapUI("citymap_2")
-               )
-               )
-             )
-           ),
+         # tabPanel(
+         #   value = "single_city_map",
+         #   "Single city",
+         #   fluidRow(
+         #     column(
+         #       width = 3,
+         #       wellPanel(
+         #          singleCitySelectorUI("city_1", n = 1, selected_city = "San Francisco, CA"),
+         #          singleCityMapUI("citymap_1")
+         #       )
+         #     ),
+         #     column(
+         #       width = 6,
+         #       #singleCityMapUI("citymaps")
+         #     ),
+         #     column(
+         #       width = 3,
+         #       wellPanel(
+         #         singleCitySelectorUI("city_2", n = 2, selected_city = "Sacramento, CA"),
+         #         singleCityMapUI("citymap_2")
+         #       )
+         #       )
+         #     )
+         #   ),
         tabPanel(
           "About this tool",
           includeMarkdown("text_files/maps_README.md")
