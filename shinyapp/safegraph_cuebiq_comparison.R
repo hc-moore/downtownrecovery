@@ -6,17 +6,11 @@ library(arrow)
 library(tidyverse)
 library(broom)
 library(dplyr)
-library(htmlwidgets)
 library(scales)
-library(sf)
-library(sp)
-library(spdep)
 library(plotly)
-library(geojsonio)
 
-input_path <- "C:\\Users/hannah/git/downtownrecovery/shinyapp/"
-
-cuebiq_data <- read.csv("E:\\data/downtownrecovery/counts/cuebiq_daily_agg.csv") %>%
+setwd("C:\\Users/hannah/")
+cuebiq_data <- read.csv("data/downtownrecovery/counts/cuebiq_daily_agg.csv") %>%
   filter((vdate >= 20210524)) %>%
   mutate(country_code = case_when(country_code == "US" ~ "USA",
                                   TRUE ~ "CAN"),
@@ -28,7 +22,7 @@ cuebiq_data <- read.csv("E:\\data/downtownrecovery/counts/cuebiq_daily_agg.csv")
          state = geography_name) %>%
   select(-X)
 
-safegraph_data <- read_parquet("E:\\git/downtownrecovery/shinyapp/input_data/safegraph_dt_recovery.pq") %>%
+safegraph_data <- read_parquet("data/downtownrecovery/counts/safegraph_dt_recovery.pq") %>%
   mutate(city = str_replace(city, "é", "e")) %>%
   select(-country, -postal_code, -is_downtown) %>%
   inner_join(cuebiq_data %>% select(city, country_code, state) %>% distinct()) %>%
@@ -101,8 +95,6 @@ all_counts %>% glimpse()
 
 p <- all_counts %>%
   group_by(date_range_start, source, state, city) %>%
-  mutate(normalized_visits_by_total_visits = case_when(source == "cuebiq" ~ .3 * normalized_visits_by_total_visits,
-                                                          source == "safegraph" ~ normalized_visits_by_total_visits)) %>%
   ggplot(aes(x = date_range_start, y = normalized_visits_by_total_visits, color = source)) +
   geom_line() +
   facet_wrap(.~city, scales = "free") +
@@ -139,7 +131,7 @@ p2 <- all_counts %>%
 ggplotly(p2)
 
 normalized_cuebiq <- all_counts %>%
-  filter((country_code == "CAN") & (date_range_start < "2022-10-24")) %>%
+  filter(date_range_start < "2022-10-24") %>%
   left_join(safegraph_cuebiq_ratio %>% distinct()) %>%
   group_by(date_range_start, source, state, city) %>%
   summarise(normalized_visits_by_total_visits = case_when(source == "cuebiq" ~ safegraph_cuebiq_ratio * normalized_visits_by_total_visits,
@@ -175,3 +167,81 @@ ggplotly(downtown_rq %>%
   ggplot(aes(x = date_range_start, y = value, color = city)) +
   geom_line())
 
+downtown_rq[(downtown_rq$date_range_start >= base::as.Date("2020-03-02")) & (downtown_rq$date_range_start < base::as.Date("2020-06-01")), "Season"] = "Season_1" 
+downtown_rq[(downtown_rq$date_range_start >= base::as.Date("2020-06-01")) & (downtown_rq$date_range_start < base::as.Date("2020-08-31")), "Season"] = "Season_2"
+downtown_rq[(downtown_rq$date_range_start >= base::as.Date("2020-08-31")) & (downtown_rq$date_range_start < base::as.Date("2020-11-30")), "Season"] = "Season_3"
+downtown_rq[(downtown_rq$date_range_start >= base::as.Date("2020-11-30")) & (downtown_rq$date_range_start < base::as.Date("2021-03-01")), "Season"] = "Season_4"
+downtown_rq[(downtown_rq$date_range_start >= base::as.Date("2021-03-01")) & (downtown_rq$date_range_start < base::as.Date("2021-05-31")), "Season"] = "Season_5"
+downtown_rq[(downtown_rq$date_range_start >= base::as.Date("2021-05-31")) & (downtown_rq$date_range_start < base::as.Date("2021-08-30")), "Season"] = "Season_6"
+downtown_rq[(downtown_rq$date_range_start >= base::as.Date("2021-08-30")) & (downtown_rq$date_range_start < base::as.Date("2021-12-06")), "Season"] = "Season_7"
+# these are edited to be consistent with policy brief but they do not quite fully represent the months in season 8 and 9- consider changing these for the paper
+downtown_rq[(downtown_rq$date_range_start >= base::as.Date("2021-12-06")) & (downtown_rq$date_range_start < base::as.Date("2022-03-07")), "Season"] = "Season_8"
+downtown_rq[(downtown_rq$date_range_start >= base::as.Date("2022-03-07")) & (downtown_rq$date_range_start < base::as.Date("2022-06-13")), "Season"] = "Season_9"
+downtown_rq[(downtown_rq$date_range_start >= base::as.Date("2022-06-13")) & (downtown_rq$date_range_start < base::as.Date("2022-08-29")), "Season"] = "Season_10"
+downtown_rq[(downtown_rq$date_range_start >= base::as.Date("2022-08-29")) & (downtown_rq$date_range_start < base::as.Date("2022-10-24")), "Season"] = "Season_11"
+
+ranking_df_safegraph <- read.csv("git/downtownrecovery/shinyapp/input_data/all_seasonal_metrics.csv")
+
+ranking_df_safegraph %>% glimpse()
+
+seasonal_rq <- downtown_rq %>%
+  group_by(city, Season) %>%
+  summarise(seasonal_average = mean(value, na.rm = TRUE)) %>%
+  left_join(ranking_df_safegraph %>% select(city, region, display_title) %>% distinct())
+
+seasonal_rq %>% glimpse()
+
+
+
+
+
+ranking_df <- unique(seasonal_rq) %>%
+  dplyr::filter(!is.na(seasonal_average)) %>%
+  group_by(Season) %>%
+  dplyr::arrange(-seasonal_average) %>%
+  mutate(lq_rank = rank(-seasonal_average, ties.method = "first")) %>%
+  ungroup()
+
+seasons <- ranking_df %>% arrange(Season) %>% pull(Season) %>% unique()
+seasons
+plot_season <- seasons[11]
+g1 <-
+  ggplot(ranking_df %>% filter(Season == plot_season)) + aes(lq_rank,
+                   group = city,
+                   fill = region
+                   ) +
+  geom_tile(
+    aes(y = seasonal_average / 2,
+        height = seasonal_average,
+        width = 1), 
+    alpha = .8,
+    color = "white") +
+  
+  geom_text(
+    aes(y = 0, label = paste("", city,  ":", percent(round(seasonal_average, 2), 1))),
+    color = "white",
+    hjust = "inward",
+    size = 4
+  ) +
+  coord_flip(clip = "off", expand = FALSE) +
+  labs(title = paste("Downtown Recovery Rankings"),
+       subtitle = plot_season,
+       fill = "Region") +
+  scale_y_continuous("", labels = scales::percent) +
+  scale_x_reverse("") +
+  theme(panel.grid = element_blank(),
+        axis.text.y = element_blank(),
+        axis.title = element_blank(),
+        axis.title.y = element_blank(),
+        plot.title = element_text(size = 12, hjust = .5),
+        plot.subtitle = element_text(size = 10, hjust = .5),
+        plot.margin = unit(c(1, 1, 1, 3), "cm")
+  )+
+  scale_fill_manual(values = c("Canada" = "#e41a1c",
+                               "Midwest" = "#377eb8",
+                               "Northeast" = "#4daf4a",
+                               "Pacific" = "#984ea3",
+                               "Southeast" = "#ff7f00",
+                               "Southwest" = "#e6ab02")
+  )
+g1
