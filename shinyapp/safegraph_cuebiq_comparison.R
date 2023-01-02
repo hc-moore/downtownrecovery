@@ -105,28 +105,26 @@ ggplotly(p)
 # on average, how much greater is safegraph than cuebiq?
 # generally, it's about 2x
 safegraph_cuebiq_ratio <- all_counts %>%
-  filter(date_range_start >= "2021-05-24") %>%
+  filter(date_range_start >= "2022-01-01") %>%
   ungroup() %>%
   select(date_range_start, city, state, source:raw_visit_counts) %>%
   pivot_wider(id_cols = c('date_range_start', 'city', 'state'), names_from = 'source', values_from = 'normalized_visits_by_total_visits') %>%
   group_by(city) %>%
   summarise(safegraph_cuebiq_ratio = mean(safegraph / cuebiq, na.rm = TRUE)) %>%
   filter(!is.na(safegraph_cuebiq_ratio))
-  ggplot(aes(x = date_range_start, y = cuebiq, color = source)) +
-  geom_line() +
-  theme(axis.text = element_blank())
 
 safegraph_cuebiq_ratio %>% glimpse()
 
 p2 <- all_counts %>%
-  filter((country_code == "CAN") & (date_range_start < "2022-10-24")) %>%
+  filter(date_range_start < "2022-10-24") %>%
   left_join(safegraph_cuebiq_ratio %>% distinct()) %>%
   group_by(date_range_start, source, state, city) %>%
   summarise(normalized_visits_by_total_visits = case_when(source == "cuebiq" ~ safegraph_cuebiq_ratio * normalized_visits_by_total_visits,
                                                           source == "safegraph" ~ normalized_visits_by_total_visits)) %>%
   ggplot(aes(x = date_range_start, y = normalized_visits_by_total_visits, color = source)) +
   geom_line() +
-  facet_wrap(.~city, scales = "free")
+  facet_wrap(.~city, scales = "free") +
+  theme(axis.text = element_blank())
 
 ggplotly(p2)
 
@@ -195,16 +193,40 @@ seasonal_rq %>% glimpse()
 
 
 
-ranking_df <- unique(seasonal_rq) %>%
-  dplyr::filter(!is.na(seasonal_average)) %>%
-  group_by(Season) %>%
+ranking_df <- bind_rows(unique(seasonal_rq) %>%
+                          dplyr::filter(!is.na(Season)) %>%
+                          mutate(source = "cuebiq"),
+                        ranking_df_safegraph %>%
+                          filter((metric == "downtown") &
+                                 (city != "Hamilton")) %>%
+                          select(-metric, -metro_size) %>%
+                          mutate(source = "safegraph")
+                ) %>%
+  group_by(Season, source) %>%
   dplyr::arrange(-seasonal_average) %>%
-  mutate(lq_rank = rank(-seasonal_average, ties.method = "first")) %>%
+  mutate(lq_rank = rank(-seasonal_average,
+                        ties.method = "first")) %>%
   ungroup()
+  
+
+ranking_df %>% glimpse()
+
 
 seasons <- ranking_df %>% arrange(Season) %>% pull(Season) %>% unique()
 seasons
-plot_season <- seasons[11]
+plot_season <- seasons[2]
+
+ranking_df %>%
+  pivot_wider(id_cols = c('city', 'Season'),
+              names_from = 'source',
+              values_from = 'lq_rank') %>%
+  mutate(change = safegraph - cuebiq) %>%
+  filter(Season == plot_season) %>%
+  arrange(safegraph) %>%
+  print(n = Inf)
+  
+
+
 g1 <-
   ggplot(ranking_df %>% filter(Season == plot_season)) + aes(lq_rank,
                    group = city,
@@ -243,5 +265,6 @@ g1 <-
                                "Pacific" = "#984ea3",
                                "Southeast" = "#ff7f00",
                                "Southwest" = "#e6ab02")
-  )
+  ) +
+  facet_wrap(.~source)
 g1
