@@ -1,0 +1,727 @@
+"","city","metric","region","metro_size","display_title","Season","seasonal_average","lq_rank"
+"1","Dallas","downtown","Southwest","large","Dallas, TX","Season_9",1.91576025390161,1
+"2","Orlando","downtown","Southeast","medium","Orlando, FL","Season_8",1.83473376030098,1
+"3","Dallas","downtown","Southwest","large","Dallas, TX","Season_7",1.79153846153846,1
+"4","Dallas","downtown","Southwest","large","Dallas, TX","Season_8",1.76608732215938,2
+"5","Dallas","downtown","Southwest","large","Dallas, TX","Season_6",1.75,1
+"6","Dallas","downtown","Southwest","large","Dallas, TX","Season_11",1.74715809643678,1
+"7","Dallas","downtown","Southwest","large","Dallas, TX","Season_10",1.65782865064385,1
+"8","Salt Lake City","downtown","Southwest","medium","Salt Lake City, UT","Season_9",1.55052939044592,2
+"9","Oklahoma City","downtown","Southwest","medium","Oklahoma City, OK","Season_9",1.54855565029747,3
+"10","Oklahoma City","downtown","Southwest","medium","Oklahoma City, OK","Season_10",1.40118736300679,2
+"11","Oklahoma City","downtown","Southwest","medium","Oklahoma City, OK","Season_11",1.38396012769395,2
+"12","Salt Lake City","downtown","Southwest","medium","Salt Lake City, UT","Season_11",1.34518742545159,3
+"13","Oklahoma City","downtown","Southwest","medium","Oklahoma City, OK","Season_4",1.31615384615385,1
+"14","Orlando","downtown","Southeast","medium","Orlando, FL","Season_2",1.31583333333333,1
+"15","Oklahoma City","downtown","Southwest","medium","Oklahoma City, OK","Season_8",1.30851666970228,3
+"16","Bakersfield","downtown","Pacific","medium","Bakersfield, CA","Season_11",1.25339675604912,4
+"17","Salt Lake City","downtown","Southwest","medium","Salt Lake City, UT","Season_8",1.22489191425888,4
+"18","Salt Lake City","downtown","Southwest","medium","Salt Lake City, UT","Season_10",1.21917508745421,3
+"19","Orlando","downtown","Southeast","medium","Orlando, FL","Season_10",1.21611075027859,4
+"20","Fresno","downtown","Pacific","medium","Fresno, CA","Season_11",1.21159752623657,5
+"21","Bakersfield","downtown","Pacific","medium","Bakersfield, CA","Season_7",1.19833333333333,2
+"22","Bakersfield","downtown","Pacific","medium","Bakersfield, CA","Season_10",1.19169045754152,5
+"23","Fresno","downtown","Pacific","medium","Fresno, CA","Season_10",1.18765734206057,6
+"24","Bakersfield","downtown","Pacific","medium","Bakersfield, CA","Season_9",1.17335015176475,4
+"25","El Paso","downtown","Southwest","medium","El Paso, TX","Season_11",1.16787727665261,6
+"26","Orlando","downtown","Southeast","medium","Orlando, FL","Season_1",1.16333333333333,1
+"27","Dallas","downtown","Southwest","large","Dallas, TX","Season_5",1.1475,1
+"28","Bakersfield","downtown","Pacific","medium","Bakersfield, CA","Season_6",1.137,2
+"29","Oklahoma City","downtown","Southwest","medium","Oklahoma City, OK","Season_6",1.12153846153846,3
+"30","Columbus","downtown","Midwest","large","Columbus, OH","Season_9",1.12153278462065,5
+"31","Salt Lake City","downtown","Southwest","medium","Salt Lake City, UT","Season_7",1.09166666666667,3
+"32","Oklahoma City","downtown","Southwest","medium","Oklahoma City, OK","Season_7",1.09076923076923,4
+"33","Fresno","downtown","Pacific","medium","Fresno, CA","Season_9",1.07993389719628,6
+"34","Bakersfield","downtown","Pacific","medium","Bakersfield, CA","Season_5",1.077,2
+"35","Albuquerque","downtown","Southwest","medium","Albuquerque, NM","Season_8",1.07389219902438,5
+"36","Bakersfield","downtown","Pacific","medium","Bakersfield, CA","Season_8",1.06546946191967,6
+"37","Columbus","downtown","Midwest","large","Columbus, OH","Season_8",1.04629600598957,7
+"38","Fresno","downtown","Pacific","medium","Fresno, CA","Season_8",1.03386943306583,8
+"39","Fresno","downtown","Pacific","medium","Fresno, CA","Season_7",1.02153846153846,5
+"40","Mississauga","downtown","Canada","medium","Mississauga, ON","Season_3",1.018,1
+"41","Bakersfield","downtown","Pacific","medium","Bakersfield, CA","Season_3",1.01409090909091,2
+"42","Bakersfield","downtown","Pacific","medium","Bakersfield, CA","Season_4",1.00916666666667,2
+"43","Mississauga","downtown","Canada","medium","Mississauga, ON","Season_7",1.00272727272727,6
+"44","Orlando","downtown","Southeast","medium","Orlando, FL","Season_9",1.00182060628132,7
+"45","Columbus","downtown","Midwest","large","Columbus, OH","Season_4",1,3
+"46","Kansas City","downtown","Midwest","medium","Kansas City, MO","Season_1",0.986666666666667,2
+"47","San Diego","downtown","Pacific","large","San Diego, CA","Season_11",0.985836921018153,7
+"48","El Paso","downtown","Southwest","medium","El Paso, TX","Season_7",0.980909090909091,7
+"49","San Diego","downtown","Pacific","large","San Diego, CA","Season_6",0.971538461538462,4
+"50","San Diego","downtown","Pacific","large","San Diego, CA","Season_10",0.96355136044413,7
+"51","El Paso","downtown","Southwest","medium","El Paso, TX","Season_10",0.954272656344783,8
+"52","Omaha","downtown","Midwest","medium","Omaha, NE","Season_11",0.951440724668015,8
+"53","Honolulu","downtown","Pacific","medium","Honolulu, HI","Season_2",0.948,2
+"54","Baltimore","downtown","Northeast","medium","Baltimore, MD","Season_11",0.946719728265062,9
+"55","Washington DC","downtown","Northeast","large","Washington DC","Season_3",0.942916666666667,3
+"56","Orlando","downtown","Southeast","medium","Orlando, FL","Season_7",0.939230769230769,8
+"57","Columbus","downtown","Midwest","large","Columbus, OH","Season_11",0.934936495382568,10
+"58","Bakersfield","downtown","Pacific","medium","Bakersfield, CA","Season_2",0.927272727272727,3
+"59","San Diego","downtown","Pacific","large","San Diego, CA","Season_7",0.922142857142857,9
+"60","Omaha","downtown","Midwest","medium","Omaha, NE","Season_9",0.919112002038487,8
+"61","Fresno","downtown","Pacific","medium","Fresno, CA","Season_6",0.916,5
+"62","Baltimore","downtown","Northeast","medium","Baltimore, MD","Season_9",0.913880878509941,9
+"63","Honolulu","downtown","Pacific","medium","Honolulu, HI","Season_1",0.9105,3
+"64","El Paso","downtown","Southwest","medium","El Paso, TX","Season_9",0.909937380923298,10
+"65","Mississauga","downtown","Canada","medium","Mississauga, ON","Season_6",0.905,6
+"66","Houston","downtown","Southwest","large","Houston, TX","Season_7",0.9,10
+"67","Albuquerque","downtown","Southwest","medium","Albuquerque, NM","Season_11",0.898453118743903,11
+"68","Las Vegas","downtown","Southwest","medium","Las Vegas, NV","Season_5",0.898181818181818,3
+"69","San Diego","downtown","Pacific","large","San Diego, CA","Season_9",0.891254318818246,11
+"70","Salt Lake City","downtown","Southwest","medium","Salt Lake City, UT","Season_6",0.886,7
+"71","Bakersfield","downtown","Pacific","medium","Bakersfield, CA","Season_1",0.882,4
+"72","Las Vegas","downtown","Southwest","medium","Las Vegas, NV","Season_6",0.881111111111111,8
+"73","Oklahoma City","downtown","Southwest","medium","Oklahoma City, OK","Season_3",0.868461538461539,4
+"74","Oklahoma City","downtown","Southwest","medium","Oklahoma City, OK","Season_5",0.866153846153846,4
+"75","Baltimore","downtown","Northeast","medium","Baltimore, MD","Season_7",0.865454545454545,11
+"76","Orlando","downtown","Southeast","medium","Orlando, FL","Season_11",0.862850362947832,12
+"77","Tampa","downtown","Southeast","medium","Tampa, FL","Season_9",0.852070576983144,12
+"78","Albuquerque","downtown","Southwest","medium","Albuquerque, NM","Season_10",0.850620991100161,9
+"79","Tampa","downtown","Southeast","medium","Tampa, FL","Season_6",0.848888888888889,9
+"80","Honolulu","downtown","Pacific","medium","Honolulu, HI","Season_4",0.848333333333333,4
+"81","Colorado Springs","downtown","Southwest","medium","Colorado Springs, CO","Season_7",0.848333333333333,12
+"82","Wichita","downtown","Midwest","medium","Wichita, KS","Season_10",0.845503301560035,10
+"83","Baltimore","downtown","Northeast","medium","Baltimore, MD","Season_8",0.845278217455864,9
+"84","Colorado Springs","downtown","Southwest","medium","Colorado Springs, CO","Season_11",0.839732209495375,13
+"85","Honolulu","downtown","Pacific","medium","Honolulu, HI","Season_9",0.839496708152467,13
+"86","Colorado Springs","downtown","Southwest","medium","Colorado Springs, CO","Season_6",0.832727272727273,10
+"87","Kansas City","downtown","Midwest","medium","Kansas City, MO","Season_2",0.8325,4
+"88","El Paso","downtown","Southwest","medium","El Paso, TX","Season_6",0.83,11
+"89","Wichita","downtown","Midwest","medium","Wichita, KS","Season_11",0.829852601613364,14
+"90","Wichita","downtown","Midwest","medium","Wichita, KS","Season_9",0.829788571612427,14
+"91","El Paso","downtown","Southwest","medium","El Paso, TX","Season_8",0.827049286347508,10
+"92","Mississauga","downtown","Canada","medium","Mississauga, ON","Season_11",0.822355332313465,15
+"93","Las Vegas","downtown","Southwest","medium","Las Vegas, NV","Season_9",0.822197306692222,15
+"94","Mississauga","downtown","Canada","medium","Mississauga, ON","Season_2",0.82,5
+"95","San Diego","downtown","Pacific","large","San Diego, CA","Season_8",0.819777941748278,11
+"96","Fresno","downtown","Pacific","medium","Fresno, CA","Season_5",0.818,5
+"97","San Diego","downtown","Pacific","large","San Diego, CA","Season_5",0.816666666666667,6
+"98","Omaha","downtown","Midwest","medium","Omaha, NE","Season_10",0.814838750247766,11
+"99","Tucson","downtown","Southwest","medium","Tucson, AZ","Season_11",0.813420813622575,16
+"100","Las Vegas","downtown","Southwest","medium","Las Vegas, NV","Season_7",0.812727272727273,13
+"101","Fresno","downtown","Pacific","medium","Fresno, CA","Season_1",0.81,5
+"102","Tampa","downtown","Southeast","medium","Tampa, FL","Season_7",0.806,14
+"103","Tampa","downtown","Southeast","medium","Tampa, FL","Season_10",0.805635378814931,12
+"104","Las Vegas","downtown","Southwest","medium","Las Vegas, NV","Season_8",0.804932040151017,12
+"105","Tampa","downtown","Southeast","medium","Tampa, FL","Season_8",0.80338398602049,13
+"106","Sacramento","downtown","Pacific","medium","Sacramento, CA","Season_9",0.801788233788623,16
+"107","Baltimore","downtown","Northeast","medium","Baltimore, MD","Season_10",0.800928777211981,13
+"108","Tucson","downtown","Southwest","medium","Tucson, AZ","Season_10",0.799772401993242,14
+"109","San Diego","downtown","Pacific","large","San Diego, CA","Season_3",0.798636363636364,5
+"110","Fresno","downtown","Pacific","medium","Fresno, CA","Season_3",0.797,6
+"111","Omaha","downtown","Midwest","medium","Omaha, NE","Season_7",0.796153846153846,15
+"112","Honolulu","downtown","Pacific","medium","Honolulu, HI","Season_10",0.795836591461295,15
+"113","Wichita","downtown","Midwest","medium","Wichita, KS","Season_6",0.795454545454545,12
+"114","Mississauga","downtown","Canada","medium","Mississauga, ON","Season_8",0.793564876512599,14
+"115","Fresno","downtown","Pacific","medium","Fresno, CA","Season_4",0.793333333333333,5
+"116","Honolulu","downtown","Pacific","medium","Honolulu, HI","Season_5",0.793,7
+"117","London","downtown","Canada","medium","London, ON","Season_11",0.792492870747769,17
+"118","Wichita","downtown","Midwest","medium","Wichita, KS","Season_7",0.791666666666667,16
+"119","Honolulu","downtown","Pacific","medium","Honolulu, HI","Season_3",0.791,7
+"120","Salt Lake City","downtown","Southwest","medium","Salt Lake City, UT","Season_5",0.789166666666667,8
+"121","Las Vegas","downtown","Southwest","medium","Las Vegas, NV","Season_11",0.787577102547862,18
+"122","Honolulu","downtown","Pacific","medium","Honolulu, HI","Season_11",0.784679995001202,19
+"123","Wichita","downtown","Midwest","medium","Wichita, KS","Season_5",0.784444444444444,9
+"124","Mississauga","downtown","Canada","medium","Mississauga, ON","Season_1",0.7825,6
+"125","Omaha","downtown","Midwest","medium","Omaha, NE","Season_6",0.781,13
+"126","Salt Lake City","downtown","Southwest","medium","Salt Lake City, UT","Season_4",0.78,6
+"127","Tampa","downtown","Southeast","medium","Tampa, FL","Season_11",0.779480238120199,20
+"128","Memphis","downtown","Southeast","medium","Memphis, TN","Season_7",0.779230769230769,17
+"129","New York","downtown","Northeast","large","New York, NY","Season_9",0.778402611922658,17
+"130","Las Vegas","downtown","Southwest","medium","Las Vegas, NV","Season_10",0.773977724456269,16
+"131","Nashville","downtown","Southeast","large","Nashville, TN","Season_6",0.771538461538462,14
+"132","Tucson","downtown","Southwest","medium","Tucson, AZ","Season_9",0.770082326817726,18
+"133","Honolulu","downtown","Pacific","medium","Honolulu, HI","Season_6",0.77,15
+"134","Jacksonville","downtown","Southeast","large","Jacksonville, FL","Season_7",0.77,18
+"135","Tucson","downtown","Southwest","medium","Tucson, AZ","Season_7",0.769230769230769,19
+"136","Sacramento","downtown","Pacific","medium","Sacramento, CA","Season_10",0.767832255069569,17
+"137","Honolulu","downtown","Pacific","medium","Honolulu, HI","Season_8",0.767572282389131,15
+"138","Milwaukee","downtown","Midwest","medium","Milwaukee, WI","Season_7",0.767142857142857,20
+"139","Tampa","downtown","Southeast","medium","Tampa, FL","Season_3",0.764545454545455,8
+"140","Fresno","downtown","Pacific","medium","Fresno, CA","Season_2",0.764,6
+"141","Mississauga","downtown","Canada","medium","Mississauga, ON","Season_9",0.763472350557266,19
+"142","Albuquerque","downtown","Southwest","medium","Albuquerque, NM","Season_6",0.763,16
+"143","Mississauga","downtown","Canada","medium","Mississauga, ON","Season_10",0.761995157486216,18
+"144","Miami","downtown","Southeast","medium","Miami, FL","Season_3",0.761923076923077,9
+"145","Colorado Springs","downtown","Southwest","medium","Colorado Springs, CO","Season_10",0.760196186431895,19
+"146","Honolulu","downtown","Pacific","medium","Honolulu, HI","Season_7",0.76,21
+"147","Baltimore","downtown","Northeast","medium","Baltimore, MD","Season_3",0.759166666666667,10
+"148","Fort Worth","downtown","Southwest","large","Fort Worth, TX","Season_6",0.756666666666667,17
+"149","Milwaukee","downtown","Midwest","medium","Milwaukee, WI","Season_9",0.756010638456642,20
+"150","Mississauga","downtown","Canada","medium","Mississauga, ON","Season_5",0.755,10
+"151","Tampa","downtown","Southeast","medium","Tampa, FL","Season_4",0.754615384615385,7
+"152","Sacramento","downtown","Pacific","medium","Sacramento, CA","Season_11",0.754574921673326,21
+"153","Milwaukee","downtown","Midwest","medium","Milwaukee, WI","Season_8",0.750274269492125,16
+"154","Colorado Springs","downtown","Southwest","medium","Colorado Springs, CO","Season_9",0.747323223104582,21
+"155","Columbus","downtown","Midwest","large","Columbus, OH","Season_7",0.744166666666667,22
+"156","Milwaukee","downtown","Midwest","medium","Milwaukee, WI","Season_3",0.743846153846154,11
+"157","Phoenix","downtown","Southwest","large","Phoenix, AZ","Season_2",0.7425,7
+"158","New York","downtown","Northeast","large","New York, NY","Season_11",0.740296287596794,22
+"159","Omaha","downtown","Midwest","medium","Omaha, NE","Season_3",0.74,12
+"160","Albuquerque","downtown","Southwest","medium","Albuquerque, NM","Season_9",0.73966560421534,22
+"161","Jacksonville","downtown","Southeast","large","Jacksonville, FL","Season_9",0.739570443065067,23
+"162","Las Vegas","downtown","Southwest","medium","Las Vegas, NV","Season_3",0.737083333333333,13
+"163","Nashville","downtown","Southeast","large","Nashville, TN","Season_7",0.735833333333333,23
+"164","Houston","downtown","Southwest","large","Houston, TX","Season_8",0.73449667851312,17
+"165","Albuquerque","downtown","Southwest","medium","Albuquerque, NM","Season_7",0.733636363636364,24
+"166","Omaha","downtown","Midwest","medium","Omaha, NE","Season_5",0.733333333333333,11
+"167","Omaha","downtown","Midwest","medium","Omaha, NE","Season_8",0.729657598489,18
+"168","San Antonio","downtown","Southwest","large","San Antonio, TX","Season_6",0.728461538461538,18
+"169","Washington DC","downtown","Northeast","large","Washington DC","Season_11",0.728003927283093,23
+"170","Las Vegas","downtown","Southwest","medium","Las Vegas, NV","Season_4",0.725454545454545,8
+"171","Colorado Springs","downtown","Southwest","medium","Colorado Springs, CO","Season_8",0.72490237858291,19
+"172","Wichita","downtown","Midwest","medium","Wichita, KS","Season_8",0.723426222957792,20
+"173","Halifax","downtown","Canada","medium","Halifax, NS","Season_9",0.720469759096462,24
+"174","Tucson","downtown","Southwest","medium","Tucson, AZ","Season_6",0.719,19
+"175","Albuquerque","downtown","Southwest","medium","Albuquerque, NM","Season_3",0.7185,14
+"176","Salt Lake City","downtown","Southwest","medium","Salt Lake City, UT","Season_3",0.715384615384615,15
+"177","Memphis","downtown","Southeast","medium","Memphis, TN","Season_11",0.71496037101209,24
+"178","Tucson","downtown","Southwest","medium","Tucson, AZ","Season_8",0.71471047741597,21
+"179","Miami","downtown","Southeast","medium","Miami, FL","Season_6",0.712222222222222,20
+"180","El Paso","downtown","Southwest","medium","El Paso, TX","Season_5",0.712,12
+"181","Phoenix","downtown","Southwest","large","Phoenix, AZ","Season_9",0.710505887699383,25
+"182","Colorado Springs","downtown","Southwest","medium","Colorado Springs, CO","Season_3",0.71,16
+"183","Colorado Springs","downtown","Southwest","medium","Colorado Springs, CO","Season_2",0.708888888888889,8
+"184","Jacksonville","downtown","Southeast","large","Jacksonville, FL","Season_11",0.708611516880859,25
+"185","Milwaukee","downtown","Midwest","medium","Milwaukee, WI","Season_11",0.707325946685995,26
+"186","Tampa","downtown","Southeast","medium","Tampa, FL","Season_5",0.703846153846154,13
+"187","Fort Worth","downtown","Southwest","large","Fort Worth, TX","Season_4",0.701818181818182,9
+"188","Fort Worth","downtown","Southwest","large","Fort Worth, TX","Season_10",0.701206501012907,20
+"189","Las Vegas","downtown","Southwest","medium","Las Vegas, NV","Season_2",0.7,9
+"190","Jacksonville","downtown","Southeast","large","Jacksonville, FL","Season_10",0.699893165679341,21
+"191","Baltimore","downtown","Northeast","medium","Baltimore, MD","Season_6",0.699090909090909,21
+"192","Fort Worth","downtown","Southwest","large","Fort Worth, TX","Season_11",0.698839731872824,27
+"193","Colorado Springs","downtown","Southwest","medium","Colorado Springs, CO","Season_5",0.697777777777778,14
+"194","Orlando","downtown","Southeast","medium","Orlando, FL","Season_5",0.696666666666667,15
+"195","London","downtown","Canada","medium","London, ON","Season_7",0.696363636363636,25
+"196","Miami","downtown","Southeast","medium","Miami, FL","Season_11",0.693435916600397,28
+"197","Fort Worth","downtown","Southwest","large","Fort Worth, TX","Season_5",0.693,16
+"198","Washington DC","downtown","Northeast","large","Washington DC","Season_10",0.692952522462036,22
+"199","Phoenix","downtown","Southwest","large","Phoenix, AZ","Season_6",0.6925,22
+"200","San Jose","downtown","Pacific","large","San Jose, CA","Season_6",0.691666666666667,23
+"201","Wichita","downtown","Midwest","medium","Wichita, KS","Season_3",0.690833333333333,17
+"202","Albuquerque","downtown","Southwest","medium","Albuquerque, NM","Season_5",0.69,17
+"203","Phoenix","downtown","Southwest","large","Phoenix, AZ","Season_4",0.689166666666667,10
+"204","Miami","downtown","Southeast","medium","Miami, FL","Season_5",0.689,18
+"205","Albuquerque","downtown","Southwest","medium","Albuquerque, NM","Season_4",0.6875,11
+"206","Fort Worth","downtown","Southwest","large","Fort Worth, TX","Season_7",0.687272727272727,26
+"207","Memphis","downtown","Southeast","medium","Memphis, TN","Season_8",0.686773298352676,22
+"208","Columbus","downtown","Midwest","large","Columbus, OH","Season_10",0.686751454529409,23
+"209","Washington DC","downtown","Northeast","large","Washington DC","Season_7",0.685,27
+"210","Orlando","downtown","Southeast","medium","Orlando, FL","Season_4",0.683,12
+"211","Fort Worth","downtown","Southwest","large","Fort Worth, TX","Season_8",0.681953830823834,23
+"212","San Antonio","downtown","Southwest","large","San Antonio, TX","Season_11",0.680313288500563,29
+"213","Phoenix","downtown","Southwest","large","Phoenix, AZ","Season_10",0.680189144873763,24
+"214","Sacramento","downtown","Pacific","medium","Sacramento, CA","Season_7",0.68,28
+"215","Phoenix","downtown","Southwest","large","Phoenix, AZ","Season_8",0.679256448332979,24
+"216","Memphis","downtown","Southeast","medium","Memphis, TN","Season_6",0.677777777777778,24
+"217","New York","downtown","Northeast","large","New York, NY","Season_10",0.677547454112105,25
+"218","San Jose","downtown","Pacific","large","San Jose, CA","Season_11",0.675522261930526,30
+"219","Wichita","downtown","Midwest","medium","Wichita, KS","Season_4",0.675,13
+"220","Memphis","downtown","Southeast","medium","Memphis, TN","Season_10",0.674599426172824,26
+"221","El Paso","downtown","Southwest","medium","El Paso, TX","Season_1",0.671818181818182,7
+"222","Milwaukee","downtown","Midwest","medium","Milwaukee, WI","Season_4",0.671111111111111,14
+"223","San Jose","downtown","Pacific","large","San Jose, CA","Season_7",0.67,29
+"224","Miami","downtown","Southeast","medium","Miami, FL","Season_10",0.669201702518614,27
+"225","Omaha","downtown","Midwest","medium","Omaha, NE","Season_4",0.669090909090909,15
+"226","Cincinnati","downtown","Midwest","medium","Cincinnati, OH","Season_6",0.668333333333333,25
+"227","Sacramento","downtown","Pacific","medium","Sacramento, CA","Season_8",0.667464961536814,25
+"228","Miami","downtown","Southeast","medium","Miami, FL","Season_7",0.666666666666667,30
+"229","Orlando","downtown","Southeast","medium","Orlando, FL","Season_6",0.666153846153846,26
+"230","Albuquerque","downtown","Southwest","medium","Albuquerque, NM","Season_1",0.665454545454545,8
+"231","San Jose","downtown","Pacific","large","San Jose, CA","Season_10",0.66506956150494,28
+"232","Los Angeles","downtown","Pacific","large","Los Angeles, CA","Season_7",0.665,31
+"233","Los Angeles","downtown","Pacific","large","Los Angeles, CA","Season_10",0.664854332190501,29
+"234","Milwaukee","downtown","Midwest","medium","Milwaukee, WI","Season_5",0.664444444444444,19
+"235","Baltimore","downtown","Northeast","medium","Baltimore, MD","Season_5",0.662,20
+"236","Washington DC","downtown","Northeast","large","Washington DC","Season_1",0.662,9
+"237","Milwaukee","downtown","Midwest","medium","Milwaukee, WI","Season_10",0.660690133983221,30
+"238","Miami","downtown","Southeast","medium","Miami, FL","Season_4",0.66,16
+"239","Houston","downtown","Southwest","large","Houston, TX","Season_10",0.659103333225062,31
+"240","San Antonio","downtown","Southwest","large","San Antonio, TX","Season_9",0.658827713386928,26
+"241","Memphis","downtown","Southeast","medium","Memphis, TN","Season_9",0.655583566666378,27
+"242","Mississauga","downtown","Canada","medium","Mississauga, ON","Season_4",0.655555555555556,17
+"243","Colorado Springs","downtown","Southwest","medium","Colorado Springs, CO","Season_4",0.653333333333333,18
+"244","Wichita","downtown","Midwest","medium","Wichita, KS","Season_2",0.653,10
+"245","Washington DC","downtown","Northeast","large","Washington DC","Season_9",0.651391926504296,28
+"246","Los Angeles","downtown","Pacific","large","Los Angeles, CA","Season_11",0.65093050775195,31
+"247","San Antonio","downtown","Southwest","large","San Antonio, TX","Season_7",0.65,32
+"248","Washington DC","downtown","Northeast","large","Washington DC","Season_2",0.649166666666667,11
+"249","Miami","downtown","Southeast","medium","Miami, FL","Season_8",0.648686819345656,26
+"250","Charlotte","downtown","Southeast","large","Charlotte, NC","Season_3",0.645769230769231,18
+"251","Halifax","downtown","Canada","medium","Halifax, NS","Season_11",0.645587445204563,32
+"252","Nashville","downtown","Southeast","large","Nashville, TN","Season_11",0.645193025634128,33
+"253","Cincinnati","downtown","Midwest","medium","Cincinnati, OH","Season_7",0.641818181818182,33
+"254","Jacksonville","downtown","Southeast","large","Jacksonville, FL","Season_8",0.641035767807801,27
+"255","Phoenix","downtown","Southwest","large","Phoenix, AZ","Season_1",0.640384615384615,10
+"256","Fort Worth","downtown","Southwest","large","Fort Worth, TX","Season_9",0.640141101000386,29
+"257","Tampa","downtown","Southeast","medium","Tampa, FL","Season_2",0.64,12
+"258","Pittsburgh","downtown","Northeast","medium","Pittsburgh, PA","Season_11",0.639233308854939,34
+"259","Los Angeles","downtown","Pacific","large","Los Angeles, CA","Season_6",0.638571428571429,27
+"260","Miami","downtown","Southeast","medium","Miami, FL","Season_9",0.63712343779985,30
+"261","Jacksonville","downtown","Southeast","large","Jacksonville, FL","Season_6",0.634166666666667,28
+"262","Denver","downtown","Southwest","large","Denver, CO","Season_10",0.633432343504384,32
+"263","Albuquerque","downtown","Southwest","medium","Albuquerque, NM","Season_2",0.633333333333333,13
+"264","Baltimore","downtown","Northeast","medium","Baltimore, MD","Season_4",0.632222222222222,19
+"265","Pittsburgh","downtown","Northeast","medium","Pittsburgh, PA","Season_7",0.630909090909091,34
+"266","Phoenix","downtown","Southwest","large","Phoenix, AZ","Season_3",0.628461538461539,19
+"267","Sacramento","downtown","Pacific","medium","Sacramento, CA","Season_6",0.626666666666667,29
+"268","Tucson","downtown","Southwest","medium","Tucson, AZ","Season_5",0.626363636363636,21
+"269","Washington DC","downtown","Northeast","large","Washington DC","Season_6",0.626363636363636,30
+"270","Louisville","downtown","Midwest","medium","Louisville, KY","Season_1",0.625416666666667,11
+"271","Memphis","downtown","Southeast","medium","Memphis, TN","Season_3",0.624090909090909,20
+"272","Pittsburgh","downtown","Northeast","medium","Pittsburgh, PA","Season_8",0.621753654755434,28
+"273","Milwaukee","downtown","Midwest","medium","Milwaukee, WI","Season_6",0.620909090909091,31
+"274","El Paso","downtown","Southwest","medium","El Paso, TX","Season_4",0.620833333333333,20
+"275","El Paso","downtown","Southwest","medium","El Paso, TX","Season_3",0.619166666666667,21
+"276","Nashville","downtown","Southeast","large","Nashville, TN","Season_10",0.618276704405734,33
+"277","Fort Worth","downtown","Southwest","large","Fort Worth, TX","Season_3",0.618181818181818,22
+"278","Denver","downtown","Southwest","large","Denver, CO","Season_6",0.616666666666667,32
+"279","Sacramento","downtown","Pacific","medium","Sacramento, CA","Season_3",0.6155,23
+"280","Washington DC","downtown","Northeast","large","Washington DC","Season_8",0.614009308630147,29
+"281","Kansas City","downtown","Midwest","medium","Kansas City, MO","Season_6",0.613636363636364,33
+"282","Nashville","downtown","Southeast","large","Nashville, TN","Season_9",0.612975836205973,31
+"283","Nashville","downtown","Southeast","large","Nashville, TN","Season_8",0.612632711035073,30
+"284","Phoenix","downtown","Southwest","large","Phoenix, AZ","Season_11",0.612212966879312,35
+"285","Los Angeles","downtown","Pacific","large","Los Angeles, CA","Season_9",0.611317239094432,32
+"286","San Antonio","downtown","Southwest","large","San Antonio, TX","Season_5",0.61,22
+"287","Wichita","downtown","Midwest","medium","Wichita, KS","Season_1",0.61,12
+"288","Atlanta","downtown","Southeast","medium","Atlanta, GA","Season_11",0.609461277518489,36
+"289","Houston","downtown","Southwest","large","Houston, TX","Season_11",0.608106140985301,37
+"290","Oakland","downtown","Pacific","medium","Oakland, CA","Season_1",0.60375,13
+"291","Winnipeg","downtown","Canada","large","Winnipeg, MB","Season_1",0.602777777777778,14
+"292","Oklahoma City","downtown","Southwest","medium","Oklahoma City, OK","Season_2",0.601666666666667,14
+"293","Washington DC","downtown","Northeast","large","Washington DC","Season_5",0.600909090909091,23
+"294","Austin","downtown","Southwest","large","Austin, TX","Season_7",0.6,35
+"295","Boston","downtown","Northeast","medium","Boston, MA","Season_6",0.6,34
+"296","San Antonio","downtown","Southwest","large","San Antonio, TX","Season_10",0.599113271240783,34
+"297","Portland","downtown","Pacific","medium","Portland, OR","Season_1",0.599090909090909,15
+"298","Los Angeles","downtown","Pacific","large","Los Angeles, CA","Season_8",0.597438175815353,31
+"299","Tulsa","downtown","Southwest","medium","Tulsa, OK","Season_6",0.596666666666667,35
+"300","London","downtown","Canada","medium","London, ON","Season_8",0.596414606789906,32
+"301","Los Angeles","downtown","Pacific","large","Los Angeles, CA","Season_3",0.595,24
+"302","Omaha","downtown","Midwest","medium","Omaha, NE","Season_1",0.595,16
+"303","San Jose","downtown","Pacific","large","San Jose, CA","Season_8",0.594479357287807,33
+"304","Tulsa","downtown","Southwest","medium","Tulsa, OK","Season_10",0.593075667580066,35
+"305","Tulsa","downtown","Southwest","medium","Tulsa, OK","Season_9",0.592617685208185,33
+"306","San Antonio","downtown","Southwest","large","San Antonio, TX","Season_8",0.592323129903453,34
+"307","Tucson","downtown","Southwest","medium","Tucson, AZ","Season_3",0.590769230769231,25
+"308","Charlotte","downtown","Southeast","large","Charlotte, NC","Season_11",0.590705503195433,38
+"309","Denver","downtown","Southwest","large","Denver, CO","Season_11",0.590439942543765,39
+"310","Quebec","downtown","Canada","medium","Quebec, QC","Season_10",0.589683658567051,36
+"311","Phoenix","downtown","Southwest","large","Phoenix, AZ","Season_5",0.589090909090909,24
+"312","Colorado Springs","downtown","Southwest","medium","Colorado Springs, CO","Season_1",0.588888888888889,17
+"313","New Orleans","downtown","Southeast","medium","New Orleans, LA","Season_6",0.588181818181818,36
+"314","Philadelphia","downtown","Northeast","large","Philadelphia, PA","Season_7",0.587272727272727,36
+"315","Baltimore","downtown","Northeast","medium","Baltimore, MD","Season_2",0.586363636363636,15
+"316","Tucson","downtown","Southwest","medium","Tucson, AZ","Season_2",0.586,16
+"317","Charlotte","downtown","Southeast","large","Charlotte, NC","Season_10",0.584139585434228,37
+"318","Denver","downtown","Southwest","large","Denver, CO","Season_7",0.583333333333333,37
+"319","Austin","downtown","Southwest","large","Austin, TX","Season_6",0.58125,37
+"320","Nashville","downtown","Southeast","large","Nashville, TN","Season_5",0.579166666666667,25
+"321","Fort Worth","downtown","Southwest","large","Fort Worth, TX","Season_2",0.579166666666667,17
+"322","Charlotte","downtown","Southeast","large","Charlotte, NC","Season_9",0.578883764945375,34
+"323","Halifax","downtown","Canada","medium","Halifax, NS","Season_4",0.578333333333333,21
+"324","San Diego","downtown","Pacific","large","San Diego, CA","Season_4",0.578333333333333,22
+"325","Austin","downtown","Southwest","large","Austin, TX","Season_11",0.577485490439967,40
+"326","El Paso","downtown","Southwest","medium","El Paso, TX","Season_2",0.574,18
+"327","Denver","downtown","Southwest","large","Denver, CO","Season_3",0.572307692307692,26
+"328","Baltimore","downtown","Northeast","medium","Baltimore, MD","Season_1",0.572083333333333,18
+"329","Tucson","downtown","Southwest","medium","Tucson, AZ","Season_1",0.571818181818182,19
+"330","Cincinnati","downtown","Midwest","medium","Cincinnati, OH","Season_11",0.571574296147296,41
+"331","Tulsa","downtown","Southwest","medium","Tulsa, OK","Season_7",0.570909090909091,38
+"332","Houston","downtown","Southwest","large","Houston, TX","Season_9",0.570436722853327,35
+"333","Memphis","downtown","Southeast","medium","Memphis, TN","Season_2",0.57,19
+"334","Denver","downtown","Southwest","large","Denver, CO","Season_8",0.567637292200112,35
+"335","Houston","downtown","Southwest","large","Houston, TX","Season_6",0.567,38
+"336","Los Angeles","downtown","Pacific","large","Los Angeles, CA","Season_5",0.567,26
+"337","Cincinnati","downtown","Midwest","medium","Cincinnati, OH","Season_8",0.566035773637019,36
+"338","St Louis","downtown","Midwest","medium","St. Louis, MO","Season_11",0.56583850795966,42
+"339","Milwaukee","downtown","Midwest","medium","Milwaukee, WI","Season_1",0.565454545454545,20
+"340","London","downtown","Canada","medium","London, ON","Season_9",0.565000484034343,36
+"341","Oakland","downtown","Pacific","medium","Oakland, CA","Season_6",0.565,39
+"342","Memphis","downtown","Southeast","medium","Memphis, TN","Season_5",0.562,27
+"343","Tulsa","downtown","Southwest","medium","Tulsa, OK","Season_5",0.561428571428571,28
+"344","Halifax","downtown","Canada","medium","Halifax, NS","Season_8",0.560887971935459,37
+"345","Denver","downtown","Southwest","large","Denver, CO","Season_9",0.559876128395905,37
+"346","London","downtown","Canada","medium","London, ON","Season_3",0.557727272727273,27
+"347","Boston","downtown","Northeast","medium","Boston, MA","Season_7",0.556363636363636,39
+"348","Atlanta","downtown","Southeast","medium","Atlanta, GA","Season_7",0.556153846153846,40
+"349","Phoenix","downtown","Southwest","large","Phoenix, AZ","Season_7",0.555833333333333,41
+"350","Washington DC","downtown","Northeast","large","Washington DC","Season_4",0.554166666666667,23
+"351","Denver","downtown","Southwest","large","Denver, CO","Season_4",0.554,24
+"352","Oakland","downtown","Pacific","medium","Oakland, CA","Season_3",0.552857142857143,28
+"353","Raleigh","downtown","Southeast","medium","Raleigh, NC","Season_3",0.552083333333333,29
+"354","Pittsburgh","downtown","Northeast","medium","Pittsburgh, PA","Season_5",0.552,29
+"355","Salt Lake City","downtown","Southwest","medium","Salt Lake City, UT","Season_2",0.551818181818182,20
+"356","Tucson","downtown","Southwest","medium","Tucson, AZ","Season_4",0.551666666666667,25
+"357","Boston","downtown","Northeast","medium","Boston, MA","Season_10",0.5513353965458,38
+"358","Halifax","downtown","Canada","medium","Halifax, NS","Season_7",0.55,42
+"359","Oakland","downtown","Pacific","medium","Oakland, CA","Season_7",0.547777777777778,43
+"360","Tampa","downtown","Southeast","medium","Tampa, FL","Season_1",0.547307692307692,21
+"361","Tulsa","downtown","Southwest","medium","Tulsa, OK","Season_8",0.547302853229705,38
+"362","Quebec","downtown","Canada","medium","Quebec, QC","Season_9",0.546696120048932,38
+"363","Jacksonville","downtown","Southeast","large","Jacksonville, FL","Season_5",0.545,30
+"364","Tulsa","downtown","Southwest","medium","Tulsa, OK","Season_11",0.544713640197312,43
+"365","Pittsburgh","downtown","Northeast","medium","Pittsburgh, PA","Season_6",0.544545454545455,40
+"366","Miami","downtown","Southeast","medium","Miami, FL","Season_1",0.5445,22
+"367","St Louis","downtown","Midwest","medium","St. Louis, MO","Season_5",0.543846153846154,31
+"368","Pittsburgh","downtown","Northeast","medium","Pittsburgh, PA","Season_9",0.543687750962744,39
+"369","Los Angeles","downtown","Pacific","large","Los Angeles, CA","Season_2",0.542222222222222,21
+"370","Cincinnati","downtown","Midwest","medium","Cincinnati, OH","Season_10",0.541596010295253,39
+"371","Los Angeles","downtown","Pacific","large","Los Angeles, CA","Season_4",0.540909090909091,26
+"372","New York","downtown","Northeast","large","New York, NY","Season_7",0.54,44
+"373","Sacramento","downtown","Pacific","medium","Sacramento, CA","Season_1",0.539090909090909,23
+"374","Boston","downtown","Northeast","medium","Boston, MA","Season_11",0.538821631229814,44
+"375","Austin","downtown","Southwest","large","Austin, TX","Season_8",0.537898070477289,39
+"376","Kansas City","downtown","Midwest","medium","Kansas City, MO","Season_10",0.537656527160347,40
+"377","Memphis","downtown","Southeast","medium","Memphis, TN","Season_4",0.537,27
+"378","Austin","downtown","Southwest","large","Austin, TX","Season_3",0.536111111111111,30
+"379","Cincinnati","downtown","Midwest","medium","Cincinnati, OH","Season_9",0.535511655875268,40
+"380","Raleigh","downtown","Southeast","medium","Raleigh, NC","Season_7",0.534166666666667,45
+"381","Jacksonville","downtown","Southeast","large","Jacksonville, FL","Season_4",0.534,28
+"382","Denver","downtown","Southwest","large","Denver, CO","Season_5",0.533333333333333,32
+"383","Edmonton","downtown","Canada","large","Edmonton, AB","Season_1",0.532777777777778,24
+"384","Jacksonville","downtown","Southeast","large","Jacksonville, FL","Season_1",0.5325,25
+"385","Austin","downtown","Southwest","large","Austin, TX","Season_10",0.532254152603141,41
+"386","St Louis","downtown","Midwest","medium","St. Louis, MO","Season_7",0.531666666666667,46
+"387","Kansas City","downtown","Midwest","medium","Kansas City, MO","Season_9",0.53083686572433,41
+"388","Charlotte","downtown","Southeast","large","Charlotte, NC","Season_6",0.53,41
+"389","Austin","downtown","Southwest","large","Austin, TX","Season_9",0.528918369104792,42
+"390","San Antonio","downtown","Southwest","large","San Antonio, TX","Season_3",0.528636363636364,31
+"391","New York","downtown","Northeast","large","New York, NY","Season_8",0.528358917430783,40
+"392","Toronto","downtown","Canada","large","Toronto, ON","Season_11",0.52656721621531,45
+"393","Columbus","downtown","Midwest","large","Columbus, OH","Season_5",0.526,33
+"394","Boston","downtown","Northeast","medium","Boston, MA","Season_9",0.523475111687101,43
+"395","Detroit","downtown","Midwest","medium","Detroit, MI","Season_10",0.523043013653233,42
+"396","Tulsa","downtown","Southwest","medium","Tulsa, OK","Season_4",0.523,29
+"397","Austin","downtown","Southwest","large","Austin, TX","Season_5",0.522857142857143,34
+"398","Edmonton","downtown","Canada","large","Edmonton, AB","Season_11",0.521293617933357,46
+"399","Pittsburgh","downtown","Northeast","medium","Pittsburgh, PA","Season_3",0.521111111111111,32
+"400","Memphis","downtown","Southeast","medium","Memphis, TN","Season_1",0.5205,26
+"401","Sacramento","downtown","Pacific","medium","Sacramento, CA","Season_5",0.52,35
+"402","Sacramento","downtown","Pacific","medium","Sacramento, CA","Season_2",0.519090909090909,22
+"403","Jacksonville","downtown","Southeast","large","Jacksonville, FL","Season_3",0.5185,33
+"404","Cincinnati","downtown","Midwest","medium","Cincinnati, OH","Season_5",0.518,36
+"405","New Orleans","downtown","Southeast","medium","New Orleans, LA","Season_11",0.517812953793009,47
+"406","Seattle","downtown","Pacific","large","Seattle, WA","Season_9",0.517019166072109,44
+"407","Cincinnati","downtown","Midwest","medium","Cincinnati, OH","Season_3",0.514583333333333,34
+"408","Dallas","downtown","Southwest","large","Dallas, TX","Season_3",0.514444444444444,35
+"409","Edmonton","downtown","Canada","large","Edmonton, AB","Season_9",0.513920451196087,45
+"410","Los Angeles","downtown","Pacific","large","Los Angeles, CA","Season_1",0.51375,27
+"411","Salt Lake City","downtown","Southwest","medium","Salt Lake City, UT","Season_1",0.51375,28
+"412","Quebec","downtown","Canada","medium","Quebec, QC","Season_11",0.513133540843738,48
+"413","Charlotte","downtown","Southeast","large","Charlotte, NC","Season_7",0.5125,47
+"414","Cleveland","downtown","Midwest","medium","Cleveland, OH","Season_2",0.5125,23
+"415","Oakland","downtown","Pacific","medium","Oakland, CA","Season_4",0.512,30
+"416","Oakland","downtown","Pacific","medium","Oakland, CA","Season_2",0.511818181818182,24
+"417","Las Vegas","downtown","Southwest","medium","Las Vegas, NV","Season_1",0.511666666666667,29
+"418","Omaha","downtown","Midwest","medium","Omaha, NE","Season_2",0.510909090909091,25
+"419","Philadelphia","downtown","Northeast","large","Philadelphia, PA","Season_9",0.509569944014429,46
+"420","Ottawa","downtown","Canada","large","Ottawa, ON","Season_11",0.509257044450082,49
+"421","Minneapolis","downtown","Midwest","medium","Minneapolis, MN","Season_11",0.509049284279303,50
+"422","Miami","downtown","Southeast","medium","Miami, FL","Season_2",0.50875,26
+"423","Houston","downtown","Southwest","large","Houston, TX","Season_3",0.508333333333333,36
+"424","Raleigh","downtown","Southeast","medium","Raleigh, NC","Season_11",0.507945414799516,51
+"425","Pittsburgh","downtown","Northeast","medium","Pittsburgh, PA","Season_4",0.507,31
+"426","Louisville","downtown","Midwest","medium","Louisville, KY","Season_8",0.506926300421839,41
+"427","San Diego","downtown","Pacific","large","San Diego, CA","Season_2",0.506666666666667,27
+"428","Tulsa","downtown","Southwest","medium","Tulsa, OK","Season_2",0.505,28
+"429","San Jose","downtown","Pacific","large","San Jose, CA","Season_9",0.504809316474029,47
+"430","Chicago","downtown","Midwest","large","Chicago, IL","Season_11",0.50252896153311,52
+"431","Houston","downtown","Southwest","large","Houston, TX","Season_5",0.5025,37
+"432","Austin","downtown","Southwest","large","Austin, TX","Season_4",0.501818181818182,32
+"433","St Louis","downtown","Midwest","medium","St. Louis, MO","Season_9",0.501455592255398,48
+"434","Halifax","downtown","Canada","medium","Halifax, NS","Season_10",0.501085719465584,43
+"435","Charlotte","downtown","Southeast","large","Charlotte, NC","Season_2",0.500909090909091,29
+"436","Milwaukee","downtown","Midwest","medium","Milwaukee, WI","Season_2",0.500833333333333,30
+"437","Sacramento","downtown","Pacific","medium","Sacramento, CA","Season_4",0.5,33
+"438","Winnipeg","downtown","Canada","large","Winnipeg, MB","Season_7",0.5,48
+"439","New Orleans","downtown","Southeast","medium","New Orleans, LA","Season_10",0.499428451970854,44
+"440","Indianapolis","downtown","Midwest","large","Indianapolis, IN","Season_7",0.498,49
+"441","Louisville","downtown","Midwest","medium","Louisville, KY","Season_6",0.497692307692308,42
+"442","Fort Worth","downtown","Southwest","large","Fort Worth, TX","Season_1",0.496923076923077,30
+"443","Tulsa","downtown","Southwest","medium","Tulsa, OK","Season_1",0.496111111111111,31
+"444","San Jose","downtown","Pacific","large","San Jose, CA","Season_3",0.495416666666667,37
+"445","Pittsburgh","downtown","Northeast","medium","Pittsburgh, PA","Season_10",0.492617077263901,45
+"446","Oakland","downtown","Pacific","medium","Oakland, CA","Season_11",0.492249753874716,53
+"447","Orlando","downtown","Southeast","medium","Orlando, FL","Season_3",0.492083333333333,38
+"448","Halifax","downtown","Canada","medium","Halifax, NS","Season_3",0.491363636363636,39
+"449","Louisville","downtown","Midwest","medium","Louisville, KY","Season_4",0.491111111111111,34
+"450","Oklahoma City","downtown","Southwest","medium","Oklahoma City, OK","Season_1",0.49,32
+"451","St Louis","downtown","Midwest","medium","St. Louis, MO","Season_6",0.489166666666667,43
+"452","Indianapolis","downtown","Midwest","large","Indianapolis, IN","Season_4",0.488181818181818,35
+"453","Atlanta","downtown","Southeast","medium","Atlanta, GA","Season_10",0.487853198916182,46
+"454","Detroit","downtown","Midwest","medium","Detroit, MI","Season_11",0.4865208508148,54
+"455","Quebec","downtown","Canada","medium","Quebec, QC","Season_8",0.48540700590512,42
+"456","Raleigh","downtown","Southeast","medium","Raleigh, NC","Season_10",0.484982370591276,47
+"457","Kansas City","downtown","Midwest","medium","Kansas City, MO","Season_3",0.484615384615385,40
+"458","Charlotte","downtown","Southeast","large","Charlotte, NC","Season_1",0.484545454545455,33
+"459","Oakland","downtown","Pacific","medium","Oakland, CA","Season_5",0.484444444444444,38
+"460","London","downtown","Canada","medium","London, ON","Season_6",0.484,44
+"461","London","downtown","Canada","medium","London, ON","Season_4",0.483333333333333,36
+"462","Winnipeg","downtown","Canada","large","Winnipeg, MB","Season_9",0.482741843381319,49
+"463","Jacksonville","downtown","Southeast","large","Jacksonville, FL","Season_2",0.482727272727273,31
+"464","Ottawa","downtown","Canada","large","Ottawa, ON","Season_9",0.481889182918732,50
+"465","Kansas City","downtown","Midwest","medium","Kansas City, MO","Season_5",0.481666666666667,39
+"466","Winnipeg","downtown","Canada","large","Winnipeg, MB","Season_11",0.481630714320137,55
+"467","Tulsa","downtown","Southwest","medium","Tulsa, OK","Season_3",0.4805,41
+"468","Charlotte","downtown","Southeast","large","Charlotte, NC","Season_8",0.480252762159266,43
+"469","Atlanta","downtown","Southeast","medium","Atlanta, GA","Season_9",0.480003612270951,51
+"470","Calgary","downtown","Canada","large","Calgary, AB","Season_3",0.48,42
+"471","Cleveland","downtown","Midwest","medium","Cleveland, OH","Season_1",0.48,34
+"472","Philadelphia","downtown","Northeast","large","Philadelphia, PA","Season_3",0.479,43
+"473","Nashville","downtown","Southeast","large","Nashville, TN","Season_3",0.47875,44
+"474","Portland","downtown","Pacific","medium","Portland, OR","Season_7",0.47875,50
+"475","Philadelphia","downtown","Northeast","large","Philadelphia, PA","Season_8",0.477380940255122,44
+"476","Edmonton","downtown","Canada","large","Edmonton, AB","Season_3",0.477222222222222,45
+"477","Chicago","downtown","Midwest","large","Chicago, IL","Season_10",0.476547746992193,48
+"478","Oakland","downtown","Pacific","medium","Oakland, CA","Season_10",0.476480232095932,49
+"479","New Orleans","downtown","Southeast","medium","New Orleans, LA","Season_8",0.476302430596579,45
+"480","New Orleans","downtown","Southeast","medium","New Orleans, LA","Season_5",0.475833333333333,40
+"481","Halifax","downtown","Canada","medium","Halifax, NS","Season_5",0.474166666666667,41
+"482","Atlanta","downtown","Southeast","medium","Atlanta, GA","Season_8",0.472976536189902,46
+"483","Detroit","downtown","Midwest","medium","Detroit, MI","Season_7",0.472857142857143,51
+"484","Raleigh","downtown","Southeast","medium","Raleigh, NC","Season_6",0.4725,45
+"485","Philadelphia","downtown","Northeast","large","Philadelphia, PA","Season_11",0.472329489119194,56
+"486","Louisville","downtown","Midwest","medium","Louisville, KY","Season_9",0.472071443979709,52
+"487","Chicago","downtown","Midwest","large","Chicago, IL","Season_7",0.471666666666667,52
+"488","Kansas City","downtown","Midwest","medium","Kansas City, MO","Season_8",0.471113174529716,47
+"489","Ottawa","downtown","Canada","large","Ottawa, ON","Season_2",0.471,32
+"490","Philadelphia","downtown","Northeast","large","Philadelphia, PA","Season_5",0.47,42
+"491","Kansas City","downtown","Midwest","medium","Kansas City, MO","Season_11",0.469831165756836,57
+"492","Pittsburgh","downtown","Northeast","medium","Pittsburgh, PA","Season_2",0.469166666666667,33
+"493","Edmonton","downtown","Canada","large","Edmonton, AB","Season_7",0.4675,53
+"494","Calgary","downtown","Canada","large","Calgary, AB","Season_10",0.467124212832892,50
+"495","Quebec","downtown","Canada","medium","Quebec, QC","Season_6",0.467,46
+"496","Oakland","downtown","Pacific","medium","Oakland, CA","Season_8",0.466631713222466,48
+"497","St Louis","downtown","Midwest","medium","St. Louis, MO","Season_8",0.466399778082005,49
+"498","New York","downtown","Northeast","large","New York, NY","Season_6",0.46625,47
+"499","Vancouver","downtown","Canada","medium","Vancouver, BC","Season_11",0.46579854305957,58
+"500","Oakland","downtown","Pacific","medium","Oakland, CA","Season_9",0.464836912115579,53
+"501","Indianapolis","downtown","Midwest","large","Indianapolis, IN","Season_5",0.464166666666667,43
+"502","New Orleans","downtown","Southeast","medium","New Orleans, LA","Season_9",0.462815066125337,54
+"503","Calgary","downtown","Canada","large","Calgary, AB","Season_9",0.46258629388737,55
+"504","Houston","downtown","Southwest","large","Houston, TX","Season_4",0.462307692307692,37
+"505","Toronto","downtown","Canada","large","Toronto, ON","Season_9",0.462039313531831,56
+"506","Indianapolis","downtown","Midwest","large","Indianapolis, IN","Season_6",0.462,48
+"507","San Diego","downtown","Pacific","large","San Diego, CA","Season_1",0.4615,35
+"508","Calgary","downtown","Canada","large","Calgary, AB","Season_1",0.46,36
+"509","Philadelphia","downtown","Northeast","large","Philadelphia, PA","Season_6",0.46,49
+"510","Seattle","downtown","Pacific","large","Seattle, WA","Season_6",0.46,50
+"511","Charlotte","downtown","Southeast","large","Charlotte, NC","Season_5",0.459090909090909,44
+"512","Minneapolis","downtown","Midwest","medium","Minneapolis, MN","Season_7",0.458461538461538,54
+"513","Denver","downtown","Southwest","large","Denver, CO","Season_2",0.458181818181818,34
+"514","Ottawa","downtown","Canada","large","Ottawa, ON","Season_1",0.458181818181818,37
+"515","Cincinnati","downtown","Midwest","medium","Cincinnati, OH","Season_4",0.458,38
+"516","Winnipeg","downtown","Canada","large","Winnipeg, MB","Season_8",0.457373056716729,50
+"517","Halifax","downtown","Canada","medium","Halifax, NS","Season_1",0.457272727272727,38
+"518","Montreal","downtown","Canada","large","Montreal, QC","Season_11",0.457192180479571,59
+"519","Calgary","downtown","Canada","large","Calgary, AB","Season_6",0.456,51
+"520","Winnipeg","downtown","Canada","large","Winnipeg, MB","Season_3",0.455909090909091,46
+"521","Edmonton","downtown","Canada","large","Edmonton, AB","Season_2",0.455555555555556,35
+"522","Vancouver","downtown","Canada","medium","Vancouver, BC","Season_10",0.453864698520415,51
+"523","Winnipeg","downtown","Canada","large","Winnipeg, MB","Season_2",0.453333333333333,36
+"524","Cleveland","downtown","Midwest","medium","Cleveland, OH","Season_8",0.452835877803241,51
+"525","New Orleans","downtown","Southeast","medium","New Orleans, LA","Season_3",0.4525,47
+"526","Halifax","downtown","Canada","medium","Halifax, NS","Season_6",0.452222222222222,52
+"527","London","downtown","Canada","medium","London, ON","Season_10",0.451949713406308,52
+"528","Chicago","downtown","Midwest","large","Chicago, IL","Season_8",0.45186585514928,52
+"529","Raleigh","downtown","Southeast","medium","Raleigh, NC","Season_9",0.45130522561982,57
+"530","San Jose","downtown","Pacific","large","San Jose, CA","Season_5",0.451111111111111,45
+"531","Kansas City","downtown","Midwest","medium","Kansas City, MO","Season_7",0.45,55
+"532","San Antonio","downtown","Southwest","large","San Antonio, TX","Season_4",0.45,39
+"533","Seattle","downtown","Pacific","large","Seattle, WA","Season_1",0.45,39
+"534","Dallas","downtown","Southwest","large","Dallas, TX","Season_4",0.449166666666667,40
+"535","Winnipeg","downtown","Canada","large","Winnipeg, MB","Season_6",0.448181818181818,53
+"536","Seattle","downtown","Pacific","large","Seattle, WA","Season_10",0.446846827748346,53
+"537","Edmonton","downtown","Canada","large","Edmonton, AB","Season_8",0.446442046121117,53
+"538","Seattle","downtown","Pacific","large","Seattle, WA","Season_11",0.444839933582846,60
+"539","Toronto","downtown","Canada","large","Toronto, ON","Season_10",0.444804119884358,54
+"540","Detroit","downtown","Midwest","medium","Detroit, MI","Season_8",0.444388723764755,54
+"541","Calgary","downtown","Canada","large","Calgary, AB","Season_7",0.444,56
+"542","Raleigh","downtown","Southeast","medium","Raleigh, NC","Season_8",0.443424746281907,55
+"543","Atlanta","downtown","Southeast","medium","Atlanta, GA","Season_6",0.443,54
+"544","St Louis","downtown","Midwest","medium","St. Louis, MO","Season_4",0.442727272727273,41
+"545","Louisville","downtown","Midwest","medium","Louisville, KY","Season_5",0.4425,46
+"546","Vancouver","downtown","Canada","medium","Vancouver, BC","Season_7",0.442222222222222,57
+"547","San Jose","downtown","Pacific","large","San Jose, CA","Season_1",0.442,40
+"548","Nashville","downtown","Southeast","large","Nashville, TN","Season_4",0.441666666666667,42
+"549","Minneapolis","downtown","Midwest","medium","Minneapolis, MN","Season_9",0.441119951489089,58
+"550","Quebec","downtown","Canada","medium","Quebec, QC","Season_7",0.441,58
+"551","Montreal","downtown","Canada","large","Montreal, QC","Season_9",0.44052504557813,59
+"552","Houston","downtown","Southwest","large","Houston, TX","Season_1",0.4405,41
+"553","Seattle","downtown","Pacific","large","Seattle, WA","Season_3",0.440454545454545,48
+"554","Seattle","downtown","Pacific","large","Seattle, WA","Season_7",0.439090909090909,59
+"555","Winnipeg","downtown","Canada","large","Winnipeg, MB","Season_5",0.438888888888889,47
+"556","Edmonton","downtown","Canada","large","Edmonton, AB","Season_10",0.438712454157753,55
+"557","Ottawa","downtown","Canada","large","Ottawa, ON","Season_7",0.438,60
+"558","Indianapolis","downtown","Midwest","large","Indianapolis, IN","Season_9",0.43782514421882,60
+"559","Seattle","downtown","Pacific","large","Seattle, WA","Season_8",0.437526195533853,56
+"560","San Jose","downtown","Pacific","large","San Jose, CA","Season_2",0.436363636363636,37
+"561","London","downtown","Canada","medium","London, ON","Season_5",0.43625,48
+"562","Charlotte","downtown","Southeast","large","Charlotte, NC","Season_4",0.435,43
+"563","Winnipeg","downtown","Canada","large","Winnipeg, MB","Season_4",0.435,44
+"564","Calgary","downtown","Canada","large","Calgary, AB","Season_11",0.434450264248565,61
+"565","Chicago","downtown","Midwest","large","Chicago, IL","Season_6",0.434444444444444,55
+"566","Denver","downtown","Southwest","large","Denver, CO","Season_1",0.434090909090909,42
+"567","Columbus","downtown","Midwest","large","Columbus, OH","Season_3",0.433846153846154,49
+"568","Raleigh","downtown","Southeast","medium","Raleigh, NC","Season_4",0.433,45
+"569","Indianapolis","downtown","Midwest","large","Indianapolis, IN","Season_8",0.432575798665262,57
+"570","St Louis","downtown","Midwest","medium","St. Louis, MO","Season_10",0.432111967868853,56
+"571","Vancouver","downtown","Canada","medium","Vancouver, BC","Season_9",0.430708313095951,61
+"572","Pittsburgh","downtown","Northeast","medium","Pittsburgh, PA","Season_1",0.43,43
+"573","Boston","downtown","Northeast","medium","Boston, MA","Season_8",0.428998627568352,58
+"574","Dallas","downtown","Southwest","large","Dallas, TX","Season_2",0.427,38
+"575","Chicago","downtown","Midwest","large","Chicago, IL","Season_9",0.426039140714014,62
+"576","Winnipeg","downtown","Canada","large","Winnipeg, MB","Season_10",0.425369639315841,57
+"577","Minneapolis","downtown","Midwest","medium","Minneapolis, MN","Season_10",0.424264526816172,58
+"578","New Orleans","downtown","Southeast","medium","New Orleans, LA","Season_7",0.424166666666667,61
+"579","Detroit","downtown","Midwest","medium","Detroit, MI","Season_9",0.4234393357334,63
+"580","Philadelphia","downtown","Northeast","large","Philadelphia, PA","Season_10",0.4226252268771,59
+"581","Calgary","downtown","Canada","large","Calgary, AB","Season_8",0.422594637342645,59
+"582","Montreal","downtown","Canada","large","Montreal, QC","Season_10",0.421546460694364,60
+"583","Vancouver","downtown","Canada","medium","Vancouver, BC","Season_8",0.420188210588329,60
+"584","Minneapolis","downtown","Midwest","medium","Minneapolis, MN","Season_1",0.4195,44
+"585","Edmonton","downtown","Canada","large","Edmonton, AB","Season_6",0.417777777777778,56
+"586","Minneapolis","downtown","Midwest","medium","Minneapolis, MN","Season_8",0.417508183531787,61
+"587","Vancouver","downtown","Canada","medium","Vancouver, BC","Season_4",0.417142857142857,46
+"588","Ottawa","downtown","Canada","large","Ottawa, ON","Season_6",0.414545454545455,57
+"589","Portland","downtown","Pacific","medium","Portland, OR","Season_9",0.413264205882938,64
+"590","Detroit","downtown","Midwest","medium","Detroit, MI","Season_6",0.412857142857143,58
+"591","Cleveland","downtown","Midwest","medium","Cleveland, OH","Season_4",0.412727272727273,47
+"592","Seattle","downtown","Pacific","large","Seattle, WA","Season_4",0.412222222222222,48
+"593","Vancouver","downtown","Canada","medium","Vancouver, BC","Season_1",0.412222222222222,45
+"594","Cleveland","downtown","Midwest","medium","Cleveland, OH","Season_7",0.411428571428571,62
+"595","Ottawa","downtown","Canada","large","Ottawa, ON","Season_10",0.410564116402989,61
+"596","Boston","downtown","Northeast","medium","Boston, MA","Season_5",0.40875,49
+"597","Columbus","downtown","Midwest","large","Columbus, OH","Season_6",0.408461538461538,59
+"598","Indianapolis","downtown","Midwest","large","Indianapolis, IN","Season_2",0.408181818181818,39
+"599","Philadelphia","downtown","Northeast","large","Philadelphia, PA","Season_4",0.408181818181818,49
+"600","Vancouver","downtown","Canada","medium","Vancouver, BC","Season_3",0.4075,50
+"601","Philadelphia","downtown","Northeast","large","Philadelphia, PA","Season_1",0.404166666666667,46
+"602","Toronto","downtown","Canada","large","Toronto, ON","Season_7",0.404,63
+"603","Cincinnati","downtown","Midwest","medium","Cincinnati, OH","Season_2",0.402727272727273,40
+"604","Louisville","downtown","Midwest","medium","Louisville, KY","Season_7",0.4025,64
+"605","Edmonton","downtown","Canada","large","Edmonton, AB","Season_4",0.4,50
+"606","Columbus","downtown","Midwest","large","Columbus, OH","Season_1",0.399444444444444,47
+"607","Halifax","downtown","Canada","medium","Halifax, NS","Season_2",0.399090909090909,41
+"608","Vancouver","downtown","Canada","medium","Vancouver, BC","Season_6",0.399090909090909,60
+"609","Louisville","downtown","Midwest","medium","Louisville, KY","Season_10",0.399041828210693,62
+"610","Boston","downtown","Northeast","medium","Boston, MA","Season_3",0.398888888888889,51
+"611","Austin","downtown","Southwest","large","Austin, TX","Season_2",0.398181818181818,42
+"612","Houston","downtown","Southwest","large","Houston, TX","Season_2",0.398,43
+"613","Seattle","downtown","Pacific","large","Seattle, WA","Season_5",0.397777777777778,50
+"614","Indianapolis","downtown","Midwest","large","Indianapolis, IN","Season_3",0.3975,52
+"615","Cincinnati","downtown","Midwest","medium","Cincinnati, OH","Season_1",0.395,48
+"616","Montreal","downtown","Canada","large","Montreal, QC","Season_7",0.394444444444444,65
+"617","Toronto","downtown","Canada","large","Toronto, ON","Season_1",0.392222222222222,49
+"618","Kansas City","downtown","Midwest","medium","Kansas City, MO","Season_4",0.391666666666667,51
+"619","Calgary","downtown","Canada","large","Calgary, AB","Season_5",0.39125,51
+"620","Louisville","downtown","Midwest","medium","Louisville, KY","Season_11",0.385469478648006,62
+"621","Ottawa","downtown","Canada","large","Ottawa, ON","Season_8",0.384617830130465,62
+"622","Cleveland","downtown","Midwest","medium","Cleveland, OH","Season_3",0.384545454545455,53
+"623","Indianapolis","downtown","Midwest","large","Indianapolis, IN","Season_11",0.384016990335474,63
+"624","Indianapolis","downtown","Midwest","large","Indianapolis, IN","Season_10",0.383366085878747,63
+"625","Calgary","downtown","Canada","large","Calgary, AB","Season_2",0.383333333333333,44
+"626","Edmonton","downtown","Canada","large","Edmonton, AB","Season_5",0.383333333333333,52
+"627","Quebec","downtown","Canada","medium","Quebec, QC","Season_1",0.381363636363636,50
+"628","Montreal","downtown","Canada","large","Montreal, QC","Season_1",0.380555555555556,51
+"629","Detroit","downtown","Midwest","medium","Detroit, MI","Season_3",0.379090909090909,54
+"630","Minneapolis","downtown","Midwest","medium","Minneapolis, MN","Season_6",0.379,61
+"631","Portland","downtown","Pacific","medium","Portland, OR","Season_5",0.378888888888889,53
+"632","Ottawa","downtown","Canada","large","Ottawa, ON","Season_3",0.377777777777778,55
+"633","Portland","downtown","Pacific","medium","Portland, OR","Season_2",0.3775,45
+"634","Raleigh","downtown","Southeast","medium","Raleigh, NC","Season_5",0.376666666666667,54
+"635","Chicago","downtown","Midwest","large","Chicago, IL","Season_3",0.375454545454545,56
+"636","Louisville","downtown","Midwest","medium","Louisville, KY","Season_3",0.375,57
+"637","Portland","downtown","Pacific","medium","Portland, OR","Season_11",0.372813208845109,64
+"638","Calgary","downtown","Canada","large","Calgary, AB","Season_4",0.37,52
+"639","Chicago","downtown","Midwest","large","Chicago, IL","Season_1",0.37,52
+"640","Indianapolis","downtown","Midwest","large","Indianapolis, IN","Season_1",0.37,53
+"641","London","downtown","Canada","medium","London, ON","Season_1",0.37,54
+"642","Quebec","downtown","Canada","medium","Quebec, QC","Season_4",0.37,53
+"643","Seattle","downtown","Pacific","large","Seattle, WA","Season_2",0.369,46
+"644","Louisville","downtown","Midwest","medium","Louisville, KY","Season_2",0.368,47
+"645","Quebec","downtown","Canada","medium","Quebec, QC","Season_2",0.367272727272727,48
+"646","Cleveland","downtown","Midwest","medium","Cleveland, OH","Season_11",0.363507915353498,65
+"647","Toronto","downtown","Canada","large","Toronto, ON","Season_3",0.363181818181818,58
+"648","Portland","downtown","Pacific","medium","Portland, OR","Season_8",0.362644276500476,63
+"649","Portland","downtown","Pacific","medium","Portland, OR","Season_6",0.362,62
+"650","Ottawa","downtown","Canada","large","Ottawa, ON","Season_4",0.359,54
+"651","Vancouver","downtown","Canada","medium","Vancouver, BC","Season_2",0.357777777777778,49
+"652","New Orleans","downtown","Southeast","medium","New Orleans, LA","Season_4",0.357272727272727,55
+"653","Vancouver","downtown","Canada","medium","Vancouver, BC","Season_5",0.357142857142857,55
+"654","Cleveland","downtown","Midwest","medium","Cleveland, OH","Season_9",0.357031177935086,65
+"655","Atlanta","downtown","Southeast","medium","Atlanta, GA","Season_1",0.354,55
+"656","Minneapolis","downtown","Midwest","medium","Minneapolis, MN","Season_3",0.353181818181818,59
+"657","Austin","downtown","Southwest","large","Austin, TX","Season_1",0.3525,56
+"658","Atlanta","downtown","Southeast","medium","Atlanta, GA","Season_5",0.351818181818182,56
+"659","Ottawa","downtown","Canada","large","Ottawa, ON","Season_5",0.35,57
+"660","San Francisco","downtown","Pacific","large","San Francisco, CA","Season_10",0.349853735367802,64
+"661","London","downtown","Canada","medium","London, ON","Season_2",0.3475,50
+"662","Quebec","downtown","Canada","medium","Quebec, QC","Season_3",0.345833333333333,60
+"663","Detroit","downtown","Midwest","medium","Detroit, MI","Season_5",0.345555555555556,58
+"664","San Jose","downtown","Pacific","large","San Jose, CA","Season_4",0.345,56
+"665","Toronto","downtown","Canada","large","Toronto, ON","Season_8",0.340489206258399,64
+"666","San Antonio","downtown","Southwest","large","San Antonio, TX","Season_1",0.340416666666667,57
+"667","Montreal","downtown","Canada","large","Montreal, QC","Season_6",0.34,63
+"668","San Antonio","downtown","Southwest","large","San Antonio, TX","Season_2",0.34,51
+"669","St Louis","downtown","Midwest","medium","St. Louis, MO","Season_3",0.338888888888889,61
+"670","Dallas","downtown","Southwest","large","Dallas, TX","Season_1",0.338333333333333,58
+"671","Boston","downtown","Northeast","medium","Boston, MA","Season_4",0.337,57
+"672","Minneapolis","downtown","Midwest","medium","Minneapolis, MN","Season_4",0.335714285714286,58
+"673","Toronto","downtown","Canada","large","Toronto, ON","Season_6",0.334,64
+"674","New York","downtown","Northeast","large","New York, NY","Season_3",0.3325,62
+"675","Atlanta","downtown","Southeast","medium","Atlanta, GA","Season_4",0.331818181818182,59
+"676","Montreal","downtown","Canada","large","Montreal, QC","Season_8",0.331706660998291,65
+"677","New York","downtown","Northeast","large","New York, NY","Season_5",0.33125,59
+"678","New Orleans","downtown","Southeast","medium","New Orleans, LA","Season_2",0.33,52
+"679","Minneapolis","downtown","Midwest","medium","Minneapolis, MN","Season_2",0.329,53
+"680","Raleigh","downtown","Southeast","medium","Raleigh, NC","Season_1",0.328181818181818,59
+"681","St Louis","downtown","Midwest","medium","St. Louis, MO","Season_2",0.328181818181818,54
+"682","Toronto","downtown","Canada","large","Toronto, ON","Season_2",0.328,55
+"683","San Francisco","downtown","Pacific","large","San Francisco, CA","Season_6",0.326666666666667,65
+"684","Portland","downtown","Pacific","medium","Portland, OR","Season_10",0.326334418494907,65
+"685","Raleigh","downtown","Southeast","medium","Raleigh, NC","Season_2",0.325833333333333,56
+"686","Toronto","downtown","Canada","large","Toronto, ON","Season_4",0.3225,60
+"687","Nashville","downtown","Southeast","large","Nashville, TN","Season_1",0.322222222222222,60
+"688","Portland","downtown","Pacific","medium","Portland, OR","Season_3",0.319444444444444,63
+"689","Atlanta","downtown","Southeast","medium","Atlanta, GA","Season_2",0.318181818181818,57
+"690","Quebec","downtown","Canada","medium","Quebec, QC","Season_5",0.317777777777778,60
+"691","St Louis","downtown","Midwest","medium","St. Louis, MO","Season_1",0.317,61
+"692","Boston","downtown","Northeast","medium","Boston, MA","Season_1",0.316,62
+"693","Cleveland","downtown","Midwest","medium","Cleveland, OH","Season_6",0.313636363636364,66
+"694","New York","downtown","Northeast","large","New York, NY","Season_1",0.313636363636364,63
+"695","Philadelphia","downtown","Northeast","large","Philadelphia, PA","Season_2",0.313,58
+"696","Toronto","downtown","Canada","large","Toronto, ON","Season_5",0.3125,61
+"697","Chicago","downtown","Midwest","large","Chicago, IL","Season_5",0.311428571428571,62
+"698","San Francisco","downtown","Pacific","large","San Francisco, CA","Season_9",0.307947503202195,66
+"699","Portland","downtown","Pacific","medium","Portland, OR","Season_4",0.306666666666667,61
+"700","San Francisco","downtown","Pacific","large","San Francisco, CA","Season_11",0.305349601638992,66
+"701","Cleveland","downtown","Midwest","medium","Cleveland, OH","Season_10",0.30461619502421,66
+"702","Atlanta","downtown","Southeast","medium","Atlanta, GA","Season_3",0.299444444444444,64
+"703","New York","downtown","Northeast","large","New York, NY","Season_4",0.298888888888889,62
+"704","Columbus","downtown","Midwest","large","Columbus, OH","Season_2",0.298333333333333,59
+"705","San Francisco","downtown","Pacific","large","San Francisco, CA","Season_1",0.2955,64
+"706","Montreal","downtown","Canada","large","Montreal, QC","Season_3",0.295,65
+"707","Nashville","downtown","Southeast","large","Nashville, TN","Season_2",0.294545454545455,60
+"708","Montreal","downtown","Canada","large","Montreal, QC","Season_4",0.29375,63
+"709","Cleveland","downtown","Midwest","medium","Cleveland, OH","Season_5",0.293333333333333,63
+"710","Montreal","downtown","Canada","large","Montreal, QC","Season_2",0.29125,61
+"711","Chicago","downtown","Midwest","large","Chicago, IL","Season_4",0.287,64
+"712","San Francisco","downtown","Pacific","large","San Francisco, CA","Season_7",0.286666666666667,66
+"713","Minneapolis","downtown","Midwest","medium","Minneapolis, MN","Season_5",0.283333333333333,64
+"714","Detroit","downtown","Midwest","medium","Detroit, MI","Season_1",0.282272727272727,65
+"715","Montreal","downtown","Canada","large","Montreal, QC","Season_5",0.282,65
+"716","Boston","downtown","Northeast","medium","Boston, MA","Season_2",0.279090909090909,62
+"717","San Francisco","downtown","Pacific","large","San Francisco, CA","Season_8",0.261613704085807,66
+"718","New Orleans","downtown","Southeast","medium","New Orleans, LA","Season_1",0.261,66
+"719","Detroit","downtown","Midwest","medium","Detroit, MI","Season_4",0.259,65
+"720","Detroit","downtown","Midwest","medium","Detroit, MI","Season_2",0.258888888888889,63
+"721","New York","downtown","Northeast","large","New York, NY","Season_2",0.25125,64
+"722","San Francisco","downtown","Pacific","large","San Francisco, CA","Season_3",0.245,66
+"723","San Francisco","downtown","Pacific","large","San Francisco, CA","Season_4",0.243,66
+"724","San Francisco","downtown","Pacific","large","San Francisco, CA","Season_5",0.241428571428571,66
+"725","Chicago","downtown","Midwest","large","Chicago, IL","Season_2",0.237,65
+"726","San Francisco","downtown","Pacific","large","San Francisco, CA","Season_2",0.23,66

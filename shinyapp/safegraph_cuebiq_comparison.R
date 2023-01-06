@@ -334,7 +334,7 @@ ggplotly(downtown_rq %>%
 
 # this will become all_weekly_metrics.csv, minus the Season column
 
-write.csv(downtown_rq, "data/downtownrecovery/all_weekly_metrics_cuebiq_update.csv")
+write.csv(downtown_rq, "git/downtownrecovery/shinyapp/input_data/all_weekly_metrics_cuebiq_update.csv")
 
 
 
@@ -393,7 +393,7 @@ ranking_df <- rbind(seasonal_rq,
 
 ranking_df %>% glimpse()
 
-# write.csv(ranking_df, "data/downtownrecovery/all_seasonal_metrics_cuebiq_update.csv")
+write.csv(ranking_df, "git/downtownrecovery/shinyapp/input_data/all_seasonal_metrics_cuebiq_update.csv")
 
 g1 <-
   ggplot(ranking_df %>%
