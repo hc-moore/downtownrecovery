@@ -14,11 +14,7 @@ library(glue)
 library(stringr)
 library(ggrepel)
 library(ggpmisc)
-library(shiny.router)
 library(ggiraph)
-library(shinyLP)
-library(shinyBS)
-library(crosstalk)
 library(zoo)
 library(tidyverse)
 library(broom)
@@ -26,24 +22,31 @@ library(dplyr)
 library(htmlwidgets)
 library(leaflet)
 library(scales)
-library(shiny)
-library(shinyWidgets)
-library(shinythemes)
 library(sf)
 library(sp)
 library(spdep)
 library(plotly)
 library(geojsonio)
-
+setwd("E:\\git/downtownrecovery/shinyapp")
 explanatory_vars <- read.csv("input_data/updated_model_features.csv")
 
 # 2022-07-15: updates: anything pertaining to single city map tab has been removed
 # this is a 'policy brief only' version of the app
 
-all_weekly_metrics <- read.csv("input_data/all_weekly_metrics.csv")
+# 2023-01: cuebiq data and color update
+region_colors <- c("Canada" = "#ab1368",
+                   "Midwest" = "#007fa3",
+                   "Northeast" = "#8dbf2e",
+                   "Pacific" = "#6d247a",
+                   "Southeast" = "#dc4633",
+                   "Southwest" = "#e6ab02")
+
+
+
+all_weekly_metrics <- read.csv("input_data/all_weekly_metrics_cuebiq_update.csv")
 all_weekly_metrics$metric <- str_replace(all_weekly_metrics$metric, "metro", "city")
 all_city_coords <- read.csv("input_data/all_city_coords.csv")
-all_seasonal_metrics <- read.csv("input_data/all_seasonal_metrics.csv")
+all_seasonal_metrics <- read.csv("input_data/all_seasonal_metrics_cuebiq_update.csv")
 
 # to automatically apply the shinytheme to all ggplots for consistency's sake
 # thematic_shiny()
@@ -77,7 +80,8 @@ explanatory_vars <- explanatory_vars %>%
 # this was manually set but can be updated with however you want to define metro_size
 # you can drop the population col from regions_df and left_join with some other table with city and population info and use this
 
-# also maybe save a lat and long col to this so that way all the geographic information is in one table
+#' also maybe save a lat and long col to this so all the geographic information is in one table
+#' or to the census vars table
 regions_df <- read.csv("input_data/regions.csv")
 
 regions_df <- regions_df %>%

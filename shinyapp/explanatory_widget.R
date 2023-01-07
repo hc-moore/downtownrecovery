@@ -1,21 +1,9 @@
 source("load_data.R")
 source("dtra_functions.R")
 
-
-
-#g1 <- explanatory_plot(selected_metric, "pct_jobs_information", "Season_9")
-#interactive_plot <- girafe(ggobj = g1, width_svg = 10, height_svg = 10,
-#                            options = list(
-#                              opts_tooltip(use_fill = TRUE),
-#                              opts_hover_inv(css = "opacity:0.1;"),
-#                              opts_hover(css = "stroke-width:2;"),
-#                              opts_sizing(rescale = TRUE, width = 1)
-#                            ))
-# interactive_plot
-
 plot_x_vars <- named_factors
 plot_data <- create_model_df(unname(plot_x_vars))
-write.csv(plot_data, "../docs/model_data_full.csv")
+write.csv(plot_data, "../docs/model_data_full_cuebiq_update.csv")
 
 plot_data %>%
   dplyr::select(-city) %>%
@@ -26,7 +14,12 @@ plot_data %>%
 
 
 
+plot_data <- read.csv("../docs/model_data.csv")
 
+write.csv(plot_data %>%
+            dplyr::select(-city, -state, -Season, -X) %>%
+            pivot_wider(names_from = "metric", values_from = "y") %>%
+            distinct(), "../docs/model_data_metrics_cuebiq_update.csv")
 
 plot_data <- read.csv("../docs/model_data.csv")
 
