@@ -313,8 +313,7 @@ downtown_rq_cuebiq <- rbind(safegraph_data %>%
 downtown_rq_cuebiq %>% glimpse()
 
 downtown_rq_safegraph <- read.csv("git/downtownrecovery/shinyapp/input_data/all_weekly_metrics.csv") %>%
-  filter((metric == "downtown") &
-         (city != "Hamilton"))   
+  filter(city != "Hamilton")   
 
 
 downtown_rq_safegraph %>% glimpse()
@@ -327,7 +326,7 @@ downtown_rq <- rbind(downtown_rq_cuebiq %>%
 
 
 ggplotly(downtown_rq %>%
-        filter(week >= "2020-03-16") %>%
+        filter((week >= "2020-03-16") & (metric == "downtown")) %>%
   ggplot(aes(x = week, y = normalized_visits_by_total_visits)) +
   geom_line() +
     facet_wrap(.~city, nrow = 6))
@@ -354,7 +353,7 @@ downtown_rq[(downtown_rq$week >= base::as.Date("2022-08-29")) & (downtown_rq$wee
 
 
 ranking_df_safegraph <- read.csv("git/downtownrecovery/shinyapp/input_data/all_seasonal_metrics.csv") %>%
-  filter((metric == "downtown") & (city != "Hamilton"))
+  filter(city != "Hamilton")
 
 ranking_df_safegraph %>% glimpse()
 

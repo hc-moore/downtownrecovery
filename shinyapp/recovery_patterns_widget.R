@@ -17,9 +17,9 @@ plot_data$week <- as.Date(plot_data$week)
 plot_data <- plot_data %>%
   arrange(week, region, display_title)
 
-recovery_patterns_plot(plot_data, "downtown", 11)
+recovery_patterns_plot(na.omit(plot_data), "downtown", 11)
 
-
+plot_data %>% glimpse()
 
 
 write.csv(plot_data, "../docs/all_weekly_metrics_plot_cuebiq_update.csv")
