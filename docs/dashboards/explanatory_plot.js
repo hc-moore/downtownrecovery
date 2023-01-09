@@ -1,7 +1,7 @@
 
 
 // load in data
-Plotly.d3.csv('https://raw.githubusercontent.com/hmooreo/downtownrecovery/cuebiq_update/docs/model_data_full_cuebiq_update.csv', function (err, rows) {
+d3.csv('https://raw.githubusercontent.com/hmooreo/downtownrecovery/cuebiq_update/docs/model_data_full_cuebiq_update.csv', function (err, rows) {
 
     function unpack(rows, key) {
         return rows.map(function (row) { return row[key]; });
