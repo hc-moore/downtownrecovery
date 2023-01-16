@@ -106,12 +106,17 @@ all_counts %>% glimpse()
 
 
 p <- all_counts %>%
-  filter(date_range_start < "2022-12-05") %>%
+  filter((date_range_start < "2022-06-06") &
+           (city %in% c("Portland", "Cleveland", "Edmonton", "Toronto",
+                        "Milwaukee", "Los Angeles", "St Louis", "San Jose",
+                        "Fresno", "Minneapolis", "Tucson", "Tampa", "Raleigh",
+                        "Louisville")) &
+           (date_range_start >= "2022-03-7")) %>%
   group_by(date_range_start, source, state, city) %>%
   ggplot(aes(x = date_range_start, y = normalized_visits_by_total_visits, color = source)) +
   geom_line() +
   facet_wrap(.~city, nrow = 6) +
-  theme(axis.text = element_blank())
+  theme(axis.text = element_blank(), scales = 'free')
 
 ggplotly(p)
 
@@ -131,7 +136,7 @@ comparisons_df <- all_counts %>%
     ) %>%
   # halifax has no observations for provider_id == 190199 prior to may 2021
   # to do the following visualizations, omit it
-  filter(!is.na(normalized_safegraph_cuebiq_diff))
+  filter(!is.na(normalized_safegraph_cuebiq_diff) & (city != "Halifax"))
 
 comparisons_df %>% glimpse()
 
@@ -158,7 +163,9 @@ comparisons_df[(comparisons_df$date_range_start >= base::as.Date("2022-03-07")) 
 
 comparisons_df <- comparisons_df %>% filter(!is.na(Season))
 
-season_df <- comparisons_df %>% filter(Season == "prepandemic")
+season_df <- comparisons_df %>%
+  filter(date_range_start >= "2022-05-01")
+
 t_test_city_seasons <- lapply(split(season_df, factor(season_df$city)), function(x) {t.test(x$normalized_safegraph_cuebiq_diff)})
 t_test_sheet <- as.data.frame(do.call(rbind, t_test_city_seasons))
 t_test_sheet$city <- row.names(t_test_sheet)
@@ -167,7 +174,10 @@ t_test_sheet_df <- t_test_sheet %>%
   unnest_wider(conf.int, names_sep = '_') %>%
   unnest(statistic:data.name) %>% as.data.frame()
 
-t_test_sheet_df %>% glimpse()
+t_test_sheet_df %>%
+  select(statistic, p.value, city) %>%
+  mutate(rounded_pvalue = round(p.value, 2)) %>%
+  arrange(-p.value)
 
 write.xlsx2(t_test_sheet_df %>% select(city, statistic:data.name),
            file = "data/downtownrecovery/t_tests/t_tests.xlsx",
@@ -201,10 +211,14 @@ t_test_df <- as.data.frame(do.call(rbind, t_test_list))
 
 t_test_df %>% glimpse()
 
+# inspect cities that had high p-values for season 9
 comparisons_df %>%
-  ggplot(aes(x = date_range_start, y = normalized_safegraph_cuebiq_diff, color = Season)) + 
+  filter((date_range_start < "2022-06-06") &
+           (city %in% c("Albuquerque", "Quebec", "Honolulu")) &
+           (date_range_start >= "2019-01-01")) %>%
+  ggplot(aes(x = date_range_start, y = normalized_safegraph_cuebiq_diff)) + 
   geom_line() +
-  facet_wrap(.~city, nrow = 5) + 
+  facet_wrap(.~city, nrow = 5, scales = 'free') + 
   theme(legend.position = 'top')
 
 p0 <- safegraph_cuebiq_ratio %>%

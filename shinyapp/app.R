@@ -112,7 +112,7 @@ ui <- bootstrapPage(
                         )
                       )),
                       choices = named_periods,
-                      selected = named_periods[9],
+                      selected = named_periods[10],
                       multiple = FALSE,
                       pickerOptions(mobile = TRUE)
                     )
@@ -246,7 +246,7 @@ ui <- bootstrapPage(
                         )
                       )),
                       choices = named_periods,
-                      selected = named_periods[9],
+                      selected = named_periods[10],
                       multiple = FALSE,
                       pickerOptions(mobile = TRUE)
                     ),
@@ -324,7 +324,7 @@ ui <- bootstrapPage(
                  "map_period",
                  label = span(tags$i(h5("Select recovery period:")), style = "color:#045a8d"),
                  choices = named_periods,
-                 selected = named_periods[9],
+                 selected = named_periods[10],
                  multiple = FALSE,
                  pickerOptions(mobile = TRUE)
                )
@@ -457,7 +457,7 @@ server = function(input, output, session) {
       dplyr::select(city, display_title, Season, seasonal_average)
     
     X <- explanatory_vars %>%
-        dplyr::filter(Season == input$y) %>%
+        # dplyr::filter(Season == input$y) %>%
         dplyr::select(city, region, starts_with(input$x)) %>%
         distinct(city, region, all_of(input$x), .keep_all = TRUE)
     
@@ -740,12 +740,7 @@ server = function(input, output, session) {
            subtitle = r_squared,
            color = "Region") +
       scale_y_continuous(labels = scales::percent, limits = c(min(key_study_cases_df$seasonal_average), max(key_study_cases_df$seasonal_average))) +
-      scale_color_manual(values = c("Canada" = "#e41a1c",
-                                    "Midwest" = "#377eb8",
-                                    "Northeast" = "#4daf4a",
-                                    "Pacific" = "#984ea3",
-                                    "Southeast" = "#ff7f00",
-                                    "Southwest" = "#e6ab02"))
+      scale_color_manual(values = region_colors)
     g1
     })
   #})
@@ -1091,12 +1086,7 @@ server = function(input, output, session) {
         expand = expansion(mult = .15)
       ) +
       scale_y_continuous("", labels = scales::percent) +
-      scale_color_manual(values = c("Canada" = "#e41a1c",
-                                    "Midwest" = "#377eb8",
-                                    "Northeast" = "#4daf4a",
-                                    "Pacific" = "#984ea3",
-                                    "Southeast" = "#ff7f00",
-                                    "Southwest" = "#e6ab02"))
+      scale_color_manual(values = region_colors)
     })
   #})
   
@@ -1138,12 +1128,7 @@ server = function(input, output, session) {
             plot.subtitle = element_text(size = 14, hjust = .5)
             #plot.margin = unit(c(1, 1, 1, 3), "cm")
             ) +
-      scale_fill_manual(values = c("Canada" = "#e41a1c",
-                                    "Midwest" = "#377eb8",
-                                    "Northeast" = "#4daf4a",
-                                    "Pacific" = "#984ea3",
-                                    "Southeast" = "#ff7f00",
-                                    "Southwest" = "#e6ab02"))
+      scale_fill_manual(values = region_colors)
     g1
   }, height = function(){540 + 12 * length(input$rankings_cities)})
   #})

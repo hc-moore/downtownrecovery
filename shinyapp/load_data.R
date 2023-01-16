@@ -14,7 +14,11 @@ library(glue)
 library(stringr)
 library(ggrepel)
 library(ggpmisc)
+#library(shiny.router)
 library(ggiraph)
+#library(shinyLP)
+#library(shinyBS)
+library(crosstalk)
 library(zoo)
 library(tidyverse)
 library(broom)
@@ -22,24 +26,27 @@ library(dplyr)
 library(htmlwidgets)
 library(leaflet)
 library(scales)
+library(shiny)
+library(shinyWidgets)
+library(shinythemes)
 library(sf)
 library(sp)
 library(spdep)
 library(plotly)
 library(geojsonio)
-setwd("E:\\git/downtownrecovery/shinyapp")
-explanatory_vars <- read.csv("input_data/updated_model_features.csv")
+# setwd("E:\\git/downtownrecovery/shinyapp")
+explanatory_vars <- read.csv("input_data/all_model_features_1015_weather.csv")
 
 # 2022-07-15: updates: anything pertaining to single city map tab has been removed
 # this is a 'policy brief only' version of the app
 
 # 2023-01: cuebiq data and color update
-region_colors <- c("Canada" = "#ab1368",
-                   "Midwest" = "#007fa3",
-                   "Northeast" = "#8dbf2e",
-                   "Pacific" = "#6d247a",
-                   "Southeast" = "#dc4633",
-                   "Southwest" = "#e6ab02")
+region_colors <- c("Canada" = "#DC4633",
+                   "Midwest" = "#6FC7EA",
+                   "Northeast" = "#8DBF2E",
+                   "Pacific" = "#00A189",
+                   "Southeast" = "#AB1368",
+                   "Southwest" = "#F1C500")
 
 
 
@@ -99,9 +106,9 @@ largest_n_cities <- regions_df %>%
 # explanatory_vars already has a metro_size col from when it was created on databricks, but it's reassigned here just in case
 # you did want to do a quick change in definition to metro_size without having to recreate or redownload anything
 explanatory_vars <- explanatory_vars %>%
-   mutate(metro_size = case_when(
-     city %in% largest_n_cities$city ~ "large",!(city %in% largest_n_cities$city) ~ "medium"
-   )) %>%
+  mutate(metro_size = case_when(
+    city %in% largest_n_cities$city ~ "large",!(city %in% largest_n_cities$city) ~ "medium"
+  )) %>%
   inner_join(regions_df %>% select(city, region))
 
 all_weekly_metrics$week <-
@@ -198,12 +205,16 @@ named_factors <- c(
   "Number of days with required cancellation of all events" = "days_cancel_all_events",
   "Number of days with stay at home requirements" = "days_stay_home_requirements",
   "Number of days with income support policy" = "days_income_support",
-  "Number of days with mask mandates" = "days_mask_mandates"
+  "Number of days with mask mandates" = "days_mask_mandates",
   # political leaning - city level
   #"Percentage Liberal Leaning" = "pct_liberal_leaning",
   #"Percentage Conservative Leaning" = "pct_conservative_leaning"
   # "Percentage Other Leaning" = "pct_other"
   #weather - all at city level
+  "Average Winter Temperature (F)" = "winter_avg_temp",
+  "Average Spring Temperature (F)" = "spring_avg_temp",
+  "Average Summer Temperature (F)" = "summer_avg_temp",
+  "Average Fall Temperature (F)" = "fall_avg_temp"
 )
 
 # 2022/07/15 update: everything is a 3 month season
@@ -216,7 +227,9 @@ named_periods <- c(
   "Summer: June 2021 - Aug 2021" = "Season_6",
   "Fall: Sept 2021 - Nov 2021" = "Season_7",
   "Winter: Dec 2021 - Feb 2022" = "Season_8",
-  "Spring: Mar 2022 - May 2022" = "Season_9"
+  "Spring: Mar 2022 - May 2022" = "Season_9",
+  "Summer: June 2022 - Aug 2022" = "Season_10",
+  "Fall: Sept 2022 - Nov 2022" = "Season_11"
   
 )
 
@@ -292,8 +305,8 @@ card <- function(.img, .title, .text, .tab) {
 all_shapefile <- st_read("shp/study_area_all.shp")
 # 
 all_shapefile <-
-   st_transform(all_shapefile, st_crs("+proj=longlat +datum=WGS84"))
- colnames(all_shapefile) <- c("postal_code", "geometry")
+  st_transform(all_shapefile, st_crs("+proj=longlat +datum=WGS84"))
+colnames(all_shapefile) <- c("postal_code", "geometry")
 
 all_city_index <- read.csv("input_data/all_city_index.csv")
 
