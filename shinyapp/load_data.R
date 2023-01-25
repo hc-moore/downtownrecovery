@@ -153,7 +153,7 @@ named_factors <- c(
   "Median Age of Residents in Downtown" = "median_age_downtown",
   "Percentage of Residents with a Bachelor's Degree or Higher in Downtown" = "bachelor_plus_downtown",
   "Percentage of Vacant Housing Units in Downtown" = "pct_vacant_downtown",
-  "Median Rent of Housing Units in Downtown" = "median_rent_downtown",
+  "Median Rent of Housing Units Downtown" = "median_rent_downtown",
   "Median Household Income of Residents in Downtown" = "median_hhinc_downtown",
   "Percentage of White Residents in Downtown" = "pct_nhwhite_downtown", # always city
   "Percentage of Black Residents in Downtown" = "pct_nhblack_downtown", # always city
@@ -171,30 +171,30 @@ named_factors <- c(
   "Percentage of Residents in City who Commute to Work by Bicycle" = "pct_commute_bicycle_city", # always city
   "Percentage of Residents in City who Commute to Work by Walking" = "pct_commute_walk_city", # always city
   #"Percentage of Residents in City who Commute to Work by Other Modes" = "pct_commute_others_city", # always city
-  "Average City-wide Commute Time" = "average_commute_time_city", #always city
+  "Average City-wide Commute Time (Minutes)" = "average_commute_time_city", #always city
   # LEHD / employment vars, always downtown
-  "Employment Density in Downtown" = "employment_density_downtown",
-  "Employment Entropy in Downtown" = "employment_entropy",
-  "Percentage of Jobs in Agriculture, Forestry, Fishing, and Hunting in Downtown" = "pct_jobs_agriculture_forestry_fishing_hunting",
-  "Percentage of Jobs in Mining, Quarrying, Oil, and Gas in Downtown" = "pct_jobs_mining_quarrying_oil_gas",
-  "Percentage of Jobs in Utilities in Downtown" = "pct_jobs_utilities",
-  "Percentage of Jobs in Construction in Downtown" = "pct_jobs_construction",
-  "Percentage of Jobs in Manufacturing in Downtown" = "pct_jobs_manufacturing",
-  "Percentage of Jobs in Wholesale Trade in Downtown" = "pct_jobs_wholesale_trade",
-  "Percentage of Jobs in Retail Trade in Downtown" = "pct_jobs_retail_trade",
-  "Percentage of Jobs in Transportation and Warehousing in Downtown" = "pct_jobs_transport_warehouse",
-  "Percentage of Jobs in Information in Downtown" = "pct_jobs_information",
-  "Percentage of Jobs in Finance & Insurance in Downtown" = "pct_jobs_finance_insurance",
-  "Percentage of Jobs in Real Estate in Downtown" = "pct_jobs_real_estate",
-  "Percentage of Jobs in Professional, Scientific, and Management in Downtown" = "pct_jobs_professional_science_techical",
-  "Percentage of Jobs in Management in Downtown" = "pct_jobs_management_of_companies_enterprises",
-  "Percentage of Jobs in Administrative Support & Waste Management in Downtown" = "pct_jobs_administrative_support_waste",
-  "Percentage of Jobs in Educational Services in Downtown" = "pct_jobs_educational_services",
-  "Percentage of Jobs in Healthcare & Social Assistance in Downtown" = "pct_jobs_healthcare_social_assistance",
-  "Percentage of Jobs in Arts, Entertainment, and Recreation in Downtown" = "pct_jobs_arts_entertainment_recreation",
-  "Percentage of Jobs in Accommodation & Food Services in Downtown" = "pct_jobs_accomodation_food_services",
-  "Percentage of Jobs in Public Administration in Downtown" = "pct_jobs_public_administration",
-  #"Percentage of Jobs in Other Categories in Downtown" = "pct_jobs_other",
+  "Employment Density" = "employment_density_downtown",
+  "Employment Entropy" = "employment_entropy",
+  "Percentage of Jobs in Agriculture, Forestry, Fishing, and Hunting" = "pct_jobs_agriculture_forestry_fishing_hunting",
+  "Percentage of Jobs in Mining, Quarrying, Oil, and Gas" = "pct_jobs_mining_quarrying_oil_gas",
+  "Percentage of Jobs in Utilities" = "pct_jobs_utilities",
+  "Percentage of Jobs in Construction" = "pct_jobs_construction",
+  "Percentage of Jobs in Manufacturing" = "pct_jobs_manufacturing",
+  "Percentage of Jobs in Wholesale Trade" = "pct_jobs_wholesale_trade",
+  "Percentage of Jobs in Retail Trade" = "pct_jobs_retail_trade",
+  "Percentage of Jobs in Transportation and Warehousing" = "pct_jobs_transport_warehouse",
+  "Percentage of Jobs in Information" = "pct_jobs_information",
+  "Percentage of Jobs in Finance & Insurance" = "pct_jobs_finance_insurance",
+  "Percentage of Jobs in Real Estate" = "pct_jobs_real_estate",
+  "Percentage of Jobs in Professional, Scientific, and Technical" = "pct_jobs_professional_science_techical",
+  "Percentage of Jobs in Management" = "pct_jobs_management_of_companies_enterprises",
+  "Percentage of Jobs in Administrative Support & Waste Management" = "pct_jobs_administrative_support_waste",
+  "Percentage of Jobs in Educational Services" = "pct_jobs_educational_services",
+  "Percentage of Jobs in Healthcare & Social Assistance" = "pct_jobs_healthcare_social_assistance",
+  "Percentage of Jobs in Arts, Entertainment, and Recreation" = "pct_jobs_arts_entertainment_recreation",
+  "Percentage of Jobs in Accommodation & Food Services" = "pct_jobs_accomodation_food_services",
+  "Percentage of Jobs in Public Administration" = "pct_jobs_public_administration",
+  #"Percentage of Jobs in Other Categories" = "pct_jobs_other",
   # covid policies, all at city level
   #"Composite of COVID-19 Closing Policies" = "composite_closing",
   #"Composite of COVID-19 Economic Policies" = "composite_economic",
@@ -267,9 +267,7 @@ explanatory_cities <- regions_df %>%
   dplyr::slice_head(n = 2)
 
 patterns_cities <- regions_df %>%
-  group_by(region) %>%
-  dplyr::arrange(-population) %>%
-  dplyr::slice_head(n = 1)
+                    filter(city %in% c("Omaha", "Miami", "Los Angeles", "Denver", "Vancouver", "Toronto", "New York", "Chicago", "San Francisco"))
 
 ranking_cities <- regions_df %>%
   group_by(region) %>%
