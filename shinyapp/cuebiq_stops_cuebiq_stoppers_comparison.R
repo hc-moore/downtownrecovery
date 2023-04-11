@@ -13,10 +13,10 @@ library(plotly)
 # reading in cuebiq device counts by downtowns & by statewide visits
 cuebiq_data <- read.csv("~/data/downtownrecovery/counts/cuebiq_daily_agg_20230104.csv") %>%
   mutate(
-         as_datetime = as.Date(as.character(vdate), format = "%Y%m%d"),
-         source = "cuebiq",
-         userbase = as.numeric(userbase),
-         provider_id = as.character(provider_id))%>%
+    as_datetime = as.Date(as.character(vdate), format = "%Y%m%d"),
+    source = "cuebiq",
+    userbase = as.numeric(userbase),
+    provider_id = as.character(provider_id))%>%
   select(-X)
 
 cuebiq_data %>% glimpse()
@@ -40,7 +40,7 @@ safegraph_data <- read_parquet("~/data/downtownrecovery/counts/safegraph_dt_reco
   summarise(raw_visit_counts = sum(raw_visit_counts),
             normalized_visits_by_total_visits = sum(normalized_visits_by_total_visits)) %>%
   mutate(source = "safegraph")
-  
+
 safegraph_data %>% glimpse()
 
 
@@ -58,7 +58,7 @@ cuebiq_data_agg <- cuebiq_data %>%
             date_range_start = lubridate::floor_date(as_datetime,
                                                      unit = "week",
                                                      week_start = getOption("lubridate.week.start", 1))
-            ) %>%
+  ) %>%
   ungroup() %>%
   # the date starting the first full week for at which point the provider_id in CAN switched
   
@@ -67,7 +67,7 @@ cuebiq_data_agg <- cuebiq_data %>%
     normalized_visits_by_total_visits = sum(raw_visit_counts*provider_190199_ratio) / sum(total_visits),
     raw_visit_counts = sum(raw_visit_counts*provider_190199_ratio),
     total_visits = sum(total_visits)
-            )
+  )
 
 # daily counts
 ggplotly(cuebiq_data %>%
@@ -82,10 +82,10 @@ ggplotly(cuebiq_data %>%
 ggplotly(cuebiq_data_agg %>%
            distinct(date_range_start, geography_name, .keep_all = TRUE) %>%
            filter((date_range_start <= "2022-12-01")) %>%
-  group_by(date_range_start, geography_name) %>%
-  ggplot(aes(x = date_range_start, y = total_visits)) +
-  geom_line()+
-    facet_wrap(.~geography_name, nrow = 6))
+           group_by(date_range_start, geography_name) %>%
+           ggplot(aes(x = date_range_start, y = total_visits)) +
+           geom_line()+
+           facet_wrap(.~geography_name, nrow = 6))
 
 ggplotly(cuebiq_data_agg %>%
            filter((date_range_start <= "2022-12-01")) %>%
@@ -141,7 +141,7 @@ comparisons_df <- all_counts %>%
   group_by(city, date_range_start) %>%
   mutate(
     normalized_safegraph_cuebiq_diff = safegraph - cuebiq
-    ) %>%
+  ) %>%
   # halifax has no observations for provider_id == 190199 prior to may 2021
   # to do the following visualizations, omit it
   filter(!is.na(normalized_safegraph_cuebiq_diff) & (city != "Halifax"))
@@ -188,11 +188,11 @@ t_test_sheet_df %>%
   arrange(-p.value)
 
 write.xlsx2(t_test_sheet_df %>% select(city, statistic:data.name),
-           file = "data/downtownrecovery/t_tests/t_tests.xlsx",
-           sheetName = "Prepandemic",
-           col.names = TRUE,
-           row.names = TRUE,
-           append = FALSE)
+            file = "data/downtownrecovery/t_tests/t_tests.xlsx",
+            sheetName = "Prepandemic",
+            col.names = TRUE,
+            row.names = TRUE,
+            append = FALSE)
 
 all_seasons <- comparisons_df %>% pull(Season) %>% unique()
 all_seasons
@@ -207,11 +207,11 @@ for (seasons in all_seasons[-1]) {
     unnest(statistic:data.name) %>% as.data.frame()
   
   write.xlsx2(t_test_sheet_df %>% select(city, statistic:data.name),
-             "data/downtownrecovery/t_tests/t_tests.xlsx",
-             sheetName = seasons,
-             col.names = TRUE,
-             row.names = TRUE,
-             append = TRUE)
+              "data/downtownrecovery/t_tests/t_tests.xlsx",
+              sheetName = seasons,
+              col.names = TRUE,
+              row.names = TRUE,
+              append = TRUE)
 }
 
 # bind each separate list to into a data frame
@@ -242,13 +242,13 @@ ggplotly(p0)
 all_counts %>% glimpse()
 
 last_safegraph_date <- all_counts %>%
-                          filter((source == 'safegraph') & !is.na(normalized_visits_by_total_visits)) %>%
-                          group_by(city) %>%
-                          summarise(last_valid_date = max(date_range_start)) %>%
-                          pull(last_valid_date) %>%
-                          unique() %>%
-                          min()
-                        
+  filter((source == 'safegraph') & !is.na(normalized_visits_by_total_visits)) %>%
+  group_by(city) %>%
+  summarise(last_valid_date = max(date_range_start)) %>%
+  pull(last_valid_date) %>%
+  unique() %>%
+  min()
+
 last_safegraph_date
 
 
@@ -259,7 +259,7 @@ p2 <- all_counts %>%
   pivot_wider(id_cols = c('date_range_start', 'city'), names_from = 'source', values_from = 'normalized_visits_by_total_visits') %>%
   mutate(value = case_when(date_range_start <= last_safegraph_date ~ safegraph,
                            TRUE ~ cuebiq)
-         ) %>%
+  ) %>%
   left_join(comparisons_df %>%
               # give this the entirety of season 9 to 'adjust' to safegraph counts
               filter((date_range_start >= "2022-01-01") & (date_range_start <= last_safegraph_date)) %>%
@@ -300,9 +300,9 @@ normalized_cuebiq <- cuebiq_data_agg %>%
 normalized_cuebiq %>% glimpse()
 
 ggplotly(normalized_cuebiq %>% 
-  ggplot(aes(x = date_range_start, y = normalized_visits_by_total_visits)) +
-  geom_line() +
-  facet_wrap(.~city, nrow = 6, scales = 'free'))
+           ggplot(aes(x = date_range_start, y = normalized_visits_by_total_visits)) +
+           geom_line() +
+           facet_wrap(.~city, nrow = 6, scales = 'free'))
 
 
 # TODO: append new downtown rqs to old and find 11, 13, 15, etc week rolling average to be 
@@ -348,10 +348,10 @@ downtown_rq <- rbind(downtown_rq_cuebiq %>%
 
 
 ggplotly(downtown_rq %>%
-        filter((week >= "2020-03-16") & (metric == "downtown")) %>%
-  ggplot(aes(x = week, y = normalized_visits_by_total_visits)) +
-  geom_line() +
-    facet_wrap(.~city, nrow = 6))
+           filter((week >= "2020-03-16") & (metric == "downtown")) %>%
+           ggplot(aes(x = week, y = normalized_visits_by_total_visits)) +
+           geom_line() +
+           facet_wrap(.~city, nrow = 6))
 
 # this will become all_weekly_metrics.csv, minus the Season column
 
@@ -398,7 +398,7 @@ cuebiq_denom <- read.csv("data/downtownrecovery/seasonal_rq_US_cuebiq.csv") %>%
                         ties.method = "first"),
          Season = case_when(str_detect(Season, "Season_\\d{1}$") ~ str_replace(Season, "Season_", "Season_0"),
                             TRUE ~ Season)
-         ) %>%
+  ) %>%
   ungroup() 
 
 cuebiq_denom %>% glimpse()
@@ -410,7 +410,7 @@ ranking_df <- rbind(seasonal_rq,
   mutate(lq_rank = rank(-seasonal_average,
                         ties.method = "first")) %>%
   ungroup() 
-  
+
 
 ranking_df %>% glimpse()
 
@@ -422,13 +422,13 @@ g1 <-
   aes(x = lq_rank,
       group = display_title,
       fill = region
-      ) +
+  ) +
   geom_tile(
     aes(y = seasonal_average / 2,
         height = seasonal_average,
         width = 1), 
-        alpha = .8,
-        color = "white") +
+    alpha = .8,
+    color = "white") +
   
   geom_text(
     aes(y = 0, label = paste("", city,  ":", percent(round(seasonal_average, 2), 1))),
