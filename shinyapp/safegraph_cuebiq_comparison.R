@@ -9,10 +9,22 @@ library(dplyr)
 library(scales)
 library(plotly)
 
+# Load cuebiq & safegraph data
+#==============================================
 
-# reading in cuebiq device counts by downtowns & by statewide visits
-setwd("E:\\")
-cuebiq_data <- read.csv("data/downtownrecovery/counts/cuebiq_daily_agg_20230104.csv") %>%
+# reading in cuebiq device counts by downtowns & by statewide visits.
+# this is *only* from the stops_uplevelled table for now (NOT stoppers_hll).
+
+# variable explanations:
+
+## n_devices = # of visits to downtown in sample
+## userbase = # of visits in entire state in sample
+## provider_id = who provided the data (700199 - cuebiq collected data themselves; 190199 means data was collected by a third party)
+
+
+# setwd("E:\\")
+
+cuebiq_data <- read.csv("~/data/downtownrecovery/counts/cuebiq_daily_agg.csv") %>%
   mutate(
          as_datetime = as.Date(as.character(vdate), format = "%Y%m%d"),
          source = "cuebiq",
@@ -20,10 +32,18 @@ cuebiq_data <- read.csv("data/downtownrecovery/counts/cuebiq_daily_agg_20230104.
          provider_id = as.character(provider_id))%>%
   select(-X)
 
-
+cuebiq_data %>% head()
 cuebiq_data %>% glimpse()
 
-# read in safegraph raw device counts
+table(cuebiq_data$city)
+summary(cuebiq_data$as_datetime)
+
+# read in safegraph raw device counts. variable explanations:
+
+## raw_visit_counts = # of visits to downtown in sample
+## normalized_visits_by_total_visits = raw_visit_counts / # of visits in state in sample
+## normalized_visits_by_state_scaling = the # of actual visits to downtown that Safegraph estimates
+
 safegraph_data <- read_parquet("data/downtownrecovery/counts/safegraph_dt_recovery.pq") %>%
   mutate(city = str_replace(city, "é", "e")) %>%
   select(-country, -postal_code, -is_downtown) %>%
@@ -31,22 +51,33 @@ safegraph_data <- read_parquet("data/downtownrecovery/counts/safegraph_dt_recove
   group_by(date_range_start, city, country_code, geography_name) %>%
   summarise(raw_visit_counts = sum(raw_visit_counts),
             normalized_visits_by_total_visits = sum(normalized_visits_by_total_visits)) %>%
-  mutate(source = "safegraph")
+  mutate(source = "safegraph") %>%
+  data.frame()
   
+safegraph_data %>% head()
 safegraph_data %>% glimpse()
 
+# Do they contain any different cities?
+setdiff(unique(cuebiq_data$city), unique(safegraph_data$city)) # no
+
+
+# Aggregate cuebiq data
+#==============================================
 
 cuebiq_data_agg <- cuebiq_data %>%
   # turn longform userbase column into wide with 2 columns for each provider
-  pivot_wider(names_from = 'provider_id', values_from = 'userbase', names_prefix = 'provider_') %>%
+  pivot_wider(
+    names_from = 'provider_id', 
+    values_from = 'userbase', 
+    names_prefix = 'provider_') %>%
   # day, state, city, country, and source are the columns to index by
   group_by(as_datetime, geography_name, city, country_code, source) %>%
   #' the provider information was not collected at the downtown level, but was statewide.
   #' this ratio is computed under the assumption that the volume of devices by provider should be
-  #' evenly distributed across the state
-  summarise(provider_190199_ratio = provider_190199 / sum(provider_190199, provider_700199),
-            raw_visit_counts = n_devices,
-            total_visits = provider_190199,
+  #' evenly distributed across the state.
+  summarise(provider_190199_ratio = provider_190199 / sum(provider_190199, provider_700199), # share of counts that were provided by 190199
+            raw_visit_counts = n_devices, # number of downtown visits (from both providers)
+            total_visits = provider_190199, # number of statewide visits from provider 190199
             date_range_start = lubridate::floor_date(as_datetime,
                                                      unit = "week",
                                                      week_start = getOption("lubridate.week.start", 1))
@@ -56,12 +87,23 @@ cuebiq_data_agg <- cuebiq_data %>%
   
   group_by(date_range_start, city, geography_name, country_code, source) %>%
   summarise(
+    # share of total visits in state provided by 190199 that are in downtown (weekly):
     normalized_visits_by_total_visits = sum(raw_visit_counts*provider_190199_ratio) / sum(total_visits),
+    # number of downtown visits provided by 190199 (weekly):
     raw_visit_counts = sum(raw_visit_counts*provider_190199_ratio),
+    # number of total visits in state provided by 190199 (weekly):
     total_visits = sum(total_visits)
-            )
+    ) %>%
+  data.frame()
 
-# daily counts
+cuebiq_data_agg %>% glimpse()
+cuebiq_data_agg %>% head()
+
+
+# Make plots
+#==============================================
+
+# daily statewide counts (show both providers)
 ggplotly(cuebiq_data %>%
            filter((as_datetime <= "2022-12-03")) %>%
            distinct(as_datetime, provider_id, geography_name, .keep_all = TRUE) %>%
@@ -70,7 +112,7 @@ ggplotly(cuebiq_data %>%
            facet_wrap(.~geography_name, scales = 'free', nrow = 7) +
            theme(axis.text.x = element_blank()))
 
-# weekly counts
+# weekly statewide counts (provided by 190199 only)
 ggplotly(cuebiq_data_agg %>%
            distinct(date_range_start, geography_name, .keep_all = TRUE) %>%
            filter((date_range_start <= "2022-12-01")) %>%
@@ -79,6 +121,7 @@ ggplotly(cuebiq_data_agg %>%
   geom_line()+
     facet_wrap(.~geography_name, nrow = 6))
 
+# weekly downtown counts (provided by 190199 only)
 ggplotly(cuebiq_data_agg %>%
            filter((date_range_start <= "2022-12-01")) %>%
            group_by(date_range_start, city) %>%
@@ -86,13 +129,66 @@ ggplotly(cuebiq_data_agg %>%
            geom_line()+
            facet_wrap(.~city, nrow = 6))
 
+
 cuebiq_data_agg %>% glimpse()
 
 safegraph_data %>% glimpse()
 
-all_counts <- bind_rows(cuebiq_data_agg, safegraph_data) %>% rename(state = geography_name)
+# Stack weekly cuebiq data (provided by 190199) and weekly safegraph data
+all_counts <- 
+  bind_rows(cuebiq_data_agg, safegraph_data) %>% 
+  rename(state = geography_name)
 
 all_counts %>% glimpse()
+all_counts %>% head()
+
+# Number of downtown visits (weekly):
+p0 <- all_counts %>%
+  filter(# (date_range_start < "2022-06-06") &
+    (city %in% c("Portland", "Cleveland", "Edmonton", "Toronto",
+                 "Milwaukee", "Los Angeles", "St Louis", "San Jose",
+                 "Fresno", "Minneapolis", "Tucson", "Tampa", "Raleigh",
+                 "Louisville"))) %>% # &
+  #(date_range_start >= "2022-03-7")) %>%
+  group_by(date_range_start, source, state, city) %>%
+  ggplot(aes(x = date_range_start, y = raw_visit_counts, 
+             color = source)) +
+  geom_line() +
+  facet_wrap(.~city, nrow = 6, scales = 'free') +
+  theme(axis.text = element_blank())
+
+ggplotly(p0)
+
+
+# Number of downtown visits (weekly) - Toronto
+
+toronto <- all_counts %>%
+  filter(# (date_range_start < "2022-06-06") &
+    (city == 'Toronto')) %>% # &
+  #(date_range_start >= "2022-03-7")) %>%
+  group_by(date_range_start, source, state, city) %>%
+  ggplot(aes(x = date_range_start, y = raw_visit_counts, 
+             color = source)) +
+  geom_line() +
+  ggtitle('Toronto raw downtown visits (weekly)')
+
+ggplotly(toronto)
+
+
+# Number of downtown visits (weekly) - San Francisco
+
+sf <- all_counts %>%
+  filter(# (date_range_start < "2022-06-06") &
+    (city == 'San Francisco')) %>% # &
+  #(date_range_start >= "2022-03-7")) %>%
+  group_by(date_range_start, source, state, city) %>%
+  ggplot(aes(x = date_range_start, y = raw_visit_counts, 
+             color = source)) +
+  geom_line() +
+  ggtitle('San Francisco raw downtown visits (weekly)')
+
+ggplotly(sf)
+
 
 #' raw_visit_counts close to safegraph over the selected range
 #' normalized_visits_by_total_visits is NOT
@@ -105,30 +201,37 @@ all_counts %>% glimpse()
 #' therefore... all_state_visits = raw_visit_counts/ normalized_visits_by_total_visits
 
 
+# Share of total visits in state that are downtown (weekly) - March-June 2022:
 p <- all_counts %>%
-  filter((date_range_start < "2022-06-06") &
+  filter(#(date_range_start < "2022-06-06") &
            (city %in% c("Portland", "Cleveland", "Edmonton", "Toronto",
                         "Milwaukee", "Los Angeles", "St Louis", "San Jose",
                         "Fresno", "Minneapolis", "Tucson", "Tampa", "Raleigh",
-                        "Louisville")) &
-           (date_range_start >= "2022-03-7")) %>%
+                        "Louisville"))) %>% # &
+           #(date_range_start >= "2022-03-7")) %>%
   group_by(date_range_start, source, state, city) %>%
-  ggplot(aes(x = date_range_start, y = normalized_visits_by_total_visits, color = source)) +
+  ggplot(aes(x = date_range_start, y = normalized_visits_by_total_visits, 
+             color = source)) +
   geom_line() +
-  facet_wrap(.~city, nrow = 6) +
-  theme(axis.text = element_blank(), scales = 'free')
+  facet_wrap(.~city, nrow = 6, scales = 'free') +
+  theme(axis.text = element_blank())
 
 ggplotly(p)
+
 
 #' normalized_visits_by_total_visits is the proportion of devices that visited the selected area
 #' relative to all observed visits in the state for that day
 # on average, how much greater is safegraph than cuebiq?
 # generally, it's a bit less- cuebiq creeps up and surpasses safegraph after 2021 or so
 # for most cities, by a slightly increasing margin
+
 comparisons_df <- all_counts %>%
   ungroup() %>%
   select(date_range_start, city, source:raw_visit_counts) %>%
-  pivot_wider(id_cols = c('date_range_start', 'city'), names_from = 'source', values_from = 'normalized_visits_by_total_visits') %>%
+  pivot_wider(
+    id_cols = c('date_range_start', 'city'), 
+    names_from = 'source', 
+    values_from = 'normalized_visits_by_total_visits') %>%
   arrange(date_range_start) %>%
   group_by(city, date_range_start) %>%
   mutate(
@@ -139,6 +242,7 @@ comparisons_df <- all_counts %>%
   filter(!is.na(normalized_safegraph_cuebiq_diff) & (city != "Halifax"))
 
 comparisons_df %>% glimpse()
+comparisons_df %>% head()
 
 # histogram of differences between sources
 comparisons_df %>%
