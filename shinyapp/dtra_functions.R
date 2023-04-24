@@ -4,7 +4,7 @@ library(markdown)
 library(readxl)
 library(stringr)
 library(ggrepel)
-library(ggpmisc)
+#library(ggpmisc)
 library(zoo)
 library(tidyverse)
 library(broom)
@@ -89,7 +89,7 @@ recovery_rankings_plot <- function(df) {
     ggplot(df) + aes(lq_rank,
                      group = display_title,
                      fill = region) +
-    geom_tile_interactive(
+    geom_tile(
       aes(y = seasonal_average / 2,
           height = seasonal_average,
           width = 1,
@@ -135,7 +135,7 @@ recovery_patterns_df <- function(selected_metric, selected_cities, rolling_windo
       normalized_visits_by_total_visits,
       as.numeric(rolling_window),
       na.pad = TRUE,
-      align = "center"
+      align = "right"
     )) %>%
     ungroup() %>%
       mutate(color = region_colors[region]))
@@ -151,7 +151,7 @@ recovery_patterns_df_long <- function(rolling_window) {
               normalized_visits_by_total_visits,
               as.numeric(rolling_window),
               na.pad = TRUE,
-              align = "center"
+              align = "right"
             )) %>%
     ungroup() %>%
     dplyr::select(-city, -normalized_visits_by_total_visits, -region, -metro_size, -X)
@@ -181,15 +181,15 @@ recovery_patterns_plot <- function(df, metric, n) {
     color = region,
     label = city,
     
-  ) + geom_line_interactive(aes(data_id = city), size = 1) +
-    geom_point_interactive(aes(tooltip =
+  ) + geom_line(aes(data_id = city), size = 1) +
+    geom_point(aes(tooltip =
                                  paste0(
                                    "<b>City:</b> ", city, "<br>",
                                    "<b>Week:</b> ", week, "<br>",
                                    n, " <b>week rolling average:</b> ", percent(round(rolling_avg, 2), 1), "<br>"
                                  ),
                                data_id = city), size = 1, alpha = .1) +
-     geom_label_repel_interactive(
+     geom_label_repel(
        data = starting_lqs,
        size = 3,
        direction = "y",
@@ -205,7 +205,7 @@ recovery_patterns_plot <- function(df, metric, n) {
        show.legend = FALSE
        #nudge_x = rep(-total_weeks / as.numeric(input$rolling_window[1]), times = total_cities),
      ) +
-    geom_label_repel_interactive(
+    geom_label_repel(
        data = ending_lqs,
        size = 3,
        direction = "y",
@@ -318,7 +318,7 @@ explanatory_plot <- function(selected_metric, y_var, x_var) {
                                          list(r2 = format(summary(model.ols)$r.squared, digits = 3))))
   
   g1 <- ggplot(plot_df, aes(x = x, y = y)) +
-    geom_point_interactive(data = plot_df,
+    geom_point(data = plot_df,
                aes(color = region,
                    tooltip = paste0("<b>City:</b> ", city, "<br>",
                                     "<b>", names(named_factors[named_factors == x_var]), ":</b> ", round(x, 2),"<br>",
@@ -340,7 +340,7 @@ explanatory_plot <- function(selected_metric, y_var, x_var) {
       segment.angle = 20,
       show.legend = FALSE
     ) +
-    geom_point_interactive(data = key_study_cases_df, aes(color = region, 
+    geom_point(data = key_study_cases_df, aes(color = region, 
                                                           tooltip = paste0("<b>City:</b> ", city, "<br>",
                                                                            "<b>", names(named_factors[named_factors == x_var]), ":</b> ", round(x, 2),"<br>",
                                                                            "<b>", names(named_metrics[named_metrics == selected_metric]), " recovery:</b> ", percent(round(y, 2), 1),  "<br>"
@@ -406,7 +406,7 @@ explanatory_plot_long <- function(plot_df, selected_metric) {
   #                                      list(r2 = format(summary(model.ols)$r.squared, digits = 3))))
   
   g1 <- ggplot(plot_df, aes(x = x_var, y = y, group = x_var)) +
-    geom_point_interactive(data = plot_df,
+    geom_point(data = plot_df,
                            aes(color = region,
                                text = paste0("<b>City:</b> ", city, "<br>",
                                                 "<b>", names(named_factors[named_factors == x_var]), ":</b> ", round(x, 2),"<br>",

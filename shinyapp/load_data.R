@@ -13,9 +13,9 @@ library(readxl)
 library(glue)
 library(stringr)
 library(ggrepel)
-library(ggpmisc)
+#library(ggpmisc)
 #library(shiny.router)
-library(ggiraph)
+#library(ggiraph)
 #library(shinyLP)
 #library(shinyBS)
 library(crosstalk)
@@ -26,15 +26,15 @@ library(dplyr)
 library(htmlwidgets)
 library(leaflet)
 library(scales)
-library(shiny)
-library(shinyWidgets)
-library(shinythemes)
+#library(shiny)
+#library(shinyWidgets)
+#library(shinythemes)
 library(sf)
 library(sp)
 library(spdep)
 library(plotly)
 library(geojsonio)
-# setwd("E:\\git/downtownrecovery/shinyapp")
+#setwd("~/git/downtownrecovery/shinyapp")
 explanatory_vars <- read.csv("input_data/all_model_features_1015_weather.csv")
 
 # 2022-07-15: updates: anything pertaining to single city map tab has been removed
@@ -50,10 +50,10 @@ region_colors <- c("Canada" = "#DC4633",
 
 
 
-all_weekly_metrics <- read.csv("input_data/all_weekly_metrics_cuebiq_update.csv")
+all_weekly_metrics <- read.csv("input_data/all_weekly_metrics_cuebiq_update_hll.csv")
 all_weekly_metrics$metric <- str_replace(all_weekly_metrics$metric, "metro", "city")
 all_city_coords <- read.csv("input_data/all_city_coords.csv")
-all_seasonal_metrics <- read.csv("input_data/all_seasonal_metrics_cuebiq_update.csv")
+all_seasonal_metrics <- read.csv("input_data/all_seasonal_metrics_cuebiq_update_hll.csv")
 
 # to automatically apply the shinytheme to all ggplots for consistency's sake
 # thematic_shiny()
@@ -68,19 +68,19 @@ all_seasonal_metrics <- all_seasonal_metrics %>%
   )
 
 # 2022/07/15: remove outlier cities 
-outlier_cities <- c("Dallas", "Hamilton", "Mississauga", "Orlando", "Oklahoma City")
+#outlier_cities <- c("Dallas", "Hamilton", "Mississauga", "Orlando", "Oklahoma City")
 
-all_seasonal_metrics <- all_seasonal_metrics %>%
-  dplyr::filter(!(city %in% outlier_cities))
-
-all_weekly_metrics <- all_weekly_metrics %>%
-  dplyr::filter(!(city %in% outlier_cities))
-
-all_city_coords <- all_city_coords %>%
-  dplyr::filter(!(city %in% outlier_cities))
-
-explanatory_vars <- explanatory_vars %>%
-  dplyr::filter(!(city %in% outlier_cities))
+# all_seasonal_metrics <- all_seasonal_metrics %>%
+#   dplyr::filter(!(city %in% outlier_cities))
+# 
+# all_weekly_metrics <- all_weekly_metrics %>%
+#   dplyr::filter(!(city %in% outlier_cities))
+# 
+# all_city_coords <- all_city_coords %>%
+#   dplyr::filter(!(city %in% outlier_cities))
+# 
+# explanatory_vars <- explanatory_vars %>%
+#   dplyr::filter(!(city %in% outlier_cities))
 
 # the 26th most populous city is denver, that is the cutoff point for large/medium
 # this is using the population data from can_city_with_pop.csv and us_city_with_pop.csv from 03/22/2022
@@ -91,13 +91,13 @@ explanatory_vars <- explanatory_vars %>%
 #' or to the census vars table
 regions_df <- read.csv("input_data/regions.csv")
 
-regions_df <- regions_df %>%
-  dplyr::filter(!(city %in% outlier_cities))
+# regions_df <- regions_df %>%
+#   dplyr::filter(!(city %in% outlier_cities))
 
 
 n = 26
 largest_n_cities <- regions_df %>%
-  dplyr::filter(!(city %in% outlier_cities)) %>%
+ # dplyr::filter(!(city %in% outlier_cities)) %>%
   dplyr::arrange(-population) %>%
   mutate(pop_rank = rank(-population)) %>%
   dplyr::filter(pop_rank <= n) %>%
@@ -229,7 +229,8 @@ named_periods <- c(
   "Winter: Dec 2021 - Feb 2022" = "Season_8",
   "Spring: Mar 2022 - May 2022" = "Season_9",
   "Summer: June 2022 - Aug 2022" = "Season_10",
-  "Fall: Sept 2022 - Nov 2022" = "Season_11"
+  "Fall: Sept 2022 - Nov 2022" = "Season_11",
+  "Winter: Dec 2022 - Feb 2023" = "Season_12"
   
 )
 

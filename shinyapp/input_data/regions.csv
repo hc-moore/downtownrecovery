@@ -12,6 +12,7 @@ Cincinnati,Midwest,#007fa3,medium,"Cincinnati, OH",309317
 Cleveland,Midwest,#007fa3,medium,"Cleveland, OH",372624
 Colorado Springs,Southwest,#e6ab02,medium,"Colorado Springs, CO",478961
 Columbus,Midwest,#007fa3,large,"Columbus, OH",905748
+Dallas,Southwest,#e6ab02,large,"Dallas, TX",1304442
 Denver,Southwest,#e6ab02,large,"Denver, CO",715522
 Detroit,Midwest,#007fa3,medium,"Detroit, MI",639111
 Edmonton,Canada,#ab1368,large,"Edmonton, AB",1010899
@@ -32,12 +33,15 @@ Memphis,Southeast,#dc4633,medium,"Memphis, TN",633104
 Miami,Southeast,#dc4633,medium,"Miami, FL",442241
 Milwaukee,Midwest,#007fa3,medium,"Milwaukee, WI",577222
 Minneapolis,Midwest,#007fa3,medium,"Minneapolis, MN",429954
+Mississauga,Canada,#ab1368,large,"Mississauga, ON",717961
 Montreal,Canada,#ab1368,large,"Montreal, QC",1762949
 Nashville,Southeast,#dc4633,large,"Nashville, TN",689447
 New Orleans,Southeast,#dc4633,medium,"New Orleans, LA",383997
 New York,Northeast,#8dbf2e,large,"New York, NY",8804190
 Oakland,Pacific,#6d247a,medium,"Oakland, CA",440646
+Oklahoma City,Midwest,#007fa3,medium,"Oklahoma City, OK",681054
 Omaha,Midwest,#007fa3,medium,"Omaha, NE",486051
+Orlando,Southeast,#dc4633,medium,"Orlando, FL",307573
 Ottawa,Canada,#ab1368,large,"Ottawa, ON",1017449
 Philadelphia,Northeast,#8dbf2e,large,"Philadelphia, PA",1603797
 Phoenix,Southwest,#e6ab02,large,"Phoenix, AZ",1608139
