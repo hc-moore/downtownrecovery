@@ -53,7 +53,9 @@ safegraph_data <- read_parquet("data/downtownrecovery/counts/safegraph_dt_recove
             normalized_visits_by_total_visits = sum(normalized_visits_by_total_visits)) %>%
   mutate(source = "safegraph") %>%
   data.frame()
-  
+
+# Note that Safegraph doesn't reveal the number of statewide visits!
+
 safegraph_data %>% head()
 safegraph_data %>% glimpse()
 
@@ -143,7 +145,7 @@ all_counts %>% glimpse()
 all_counts %>% head()
 
 # Number of downtown visits (weekly):
-p0 <- all_counts %>%
+week_dt <- all_counts %>%
   filter(# (date_range_start < "2022-06-06") &
     (city %in% c("Portland", "Cleveland", "Edmonton", "Toronto",
                  "Milwaukee", "Los Angeles", "St Louis", "San Jose",
@@ -157,7 +159,7 @@ p0 <- all_counts %>%
   facet_wrap(.~city, nrow = 6, scales = 'free') +
   theme(axis.text = element_blank())
 
-ggplotly(p0)
+ggplotly(week_dt)
 
 
 # Number of downtown visits (weekly) - Toronto
@@ -201,14 +203,14 @@ ggplotly(sf)
 #' therefore... all_state_visits = raw_visit_counts/ normalized_visits_by_total_visits
 
 
-# Share of total visits in state that are downtown (weekly) - March-June 2022:
+# Share of total visits in state that are downtown (weekly):
 p <- all_counts %>%
-  filter(#(date_range_start < "2022-06-06") &
-           (city %in% c("Portland", "Cleveland", "Edmonton", "Toronto",
-                        "Milwaukee", "Los Angeles", "St Louis", "San Jose",
-                        "Fresno", "Minneapolis", "Tucson", "Tampa", "Raleigh",
-                        "Louisville"))) %>% # &
-           #(date_range_start >= "2022-03-7")) %>%
+  # filter(#(date_range_start < "2022-06-06") &
+  #          (city %in% c("Portland", "Cleveland", "Edmonton", "Toronto",
+  #                       "Milwaukee", "Los Angeles", "St Louis", "San Jose",
+  #                       "Fresno", "Minneapolis", "Tucson", "Tampa", "Raleigh",
+  #                       "Louisville"))) %>% # &
+  #          #(date_range_start >= "2022-03-7")) %>%
   group_by(date_range_start, source, state, city) %>%
   ggplot(aes(x = date_range_start, y = normalized_visits_by_total_visits, 
              color = source)) +
@@ -252,6 +254,16 @@ comparisons_df %>%
 # t test for all observations
 t.test(comparisons_df$normalized_safegraph_cuebiq_diff)
 
+# small p-value -> can reject null hypothesis that true mean = 0. This means
+# that we cannot say that the difference between normalized safegraph and 
+# normalized cuebiq is consistent over the entire time period. In other words,
+# the vertical difference between the blue and red lines in the plot above
+# (ggplotly(p)) changes throughout the time period.
+
+# Could have also done a two-sample t-test for normalized safegraph and
+# normalized cuebiq -- Hannah just chose to do a one-sample t-test instead on
+# the difference between them.
+
 # t test by season
 comparisons_df[(comparisons_df$date_range_start >= base::as.Date("2019-01-01")) & (comparisons_df$date_range_start < base::as.Date("2020-03-02")), "Season"] = "prepandemic" 
 comparisons_df[(comparisons_df$date_range_start >= base::as.Date("2020-03-02")) & (comparisons_df$date_range_start < base::as.Date("2020-06-01")), "Season"] = "Season_1" 
@@ -267,13 +279,20 @@ comparisons_df[(comparisons_df$date_range_start >= base::as.Date("2022-03-07")) 
 
 comparisons_df <- comparisons_df %>% filter(!is.na(Season))
 
+head(comparisons_df)
+table(comparisons_df$Season)
+
 season_df <- comparisons_df %>%
   filter(date_range_start >= "2022-05-01")
 
+table(season_df$Season) # Season 9 only
+
+# Run t-test for each city in Season 9
 t_test_city_seasons <- lapply(split(season_df, factor(season_df$city)), function(x) {t.test(x$normalized_safegraph_cuebiq_diff)})
 t_test_sheet <- as.data.frame(do.call(rbind, t_test_city_seasons))
 t_test_sheet$city <- row.names(t_test_sheet)
 t_test_sheet %>% glimpse()
+
 t_test_sheet_df <- t_test_sheet %>%
   unnest_wider(conf.int, names_sep = '_') %>%
   unnest(statistic:data.name) %>% as.data.frame()
@@ -283,12 +302,12 @@ t_test_sheet_df %>%
   mutate(rounded_pvalue = round(p.value, 2)) %>%
   arrange(-p.value)
 
-write.xlsx2(t_test_sheet_df %>% select(city, statistic:data.name),
-           file = "data/downtownrecovery/t_tests/t_tests.xlsx",
-           sheetName = "Prepandemic",
-           col.names = TRUE,
-           row.names = TRUE,
-           append = FALSE)
+# write.xlsx2(t_test_sheet_df %>% select(city, statistic:data.name),
+#            file = "data/downtownrecovery/t_tests/t_tests.xlsx",
+#            sheetName = "Prepandemic",
+#            col.names = TRUE,
+#            row.names = TRUE,
+#            append = FALSE)
 
 all_seasons <- comparisons_df %>% pull(Season) %>% unique()
 all_seasons
@@ -302,12 +321,12 @@ for (seasons in all_seasons[-1]) {
     unnest_wider(conf.int, names_sep = '_') %>%
     unnest(statistic:data.name) %>% as.data.frame()
   
-  write.xlsx2(t_test_sheet_df %>% select(city, statistic:data.name),
-             "data/downtownrecovery/t_tests/t_tests.xlsx",
-             sheetName = seasons,
-             col.names = TRUE,
-             row.names = TRUE,
-             append = TRUE)
+  # write.xlsx2(t_test_sheet_df %>% select(city, statistic:data.name),
+  #            "data/downtownrecovery/t_tests/t_tests.xlsx",
+  #            sheetName = seasons,
+  #            col.names = TRUE,
+  #            row.names = TRUE,
+  #            append = TRUE)
 }
 
 # bind each separate list to into a data frame
@@ -325,15 +344,15 @@ comparisons_df %>%
   facet_wrap(.~city, nrow = 5, scales = 'free') + 
   theme(legend.position = 'top')
 
-p0 <- safegraph_cuebiq_ratio %>%
-  mutate(vdate = as.integer(format(date_range_start, "%Y%m%d"))) %>%
-  arrange(date_range_start) %>%
-  ggplot(aes(x = safegraph, y = cuebiq, color = vdate)) +
-  geom_point() +
-  facet_wrap(.~city, nrow = 6) +
-  theme(axis.text = element_blank())
-
-ggplotly(p0)
+# p0 <- safegraph_cuebiq_ratio %>%
+#   mutate(vdate = as.integer(format(date_range_start, "%Y%m%d"))) %>%
+#   arrange(date_range_start) %>%
+#   ggplot(aes(x = safegraph, y = cuebiq, color = vdate)) +
+#   geom_point() +
+#   facet_wrap(.~city, nrow = 6) +
+#   theme(axis.text = element_blank())
+# 
+# ggplotly(p0)
 
 all_counts %>% glimpse()
 
