@@ -18,6 +18,38 @@ ipak(c('tidyverse', 'ggplot2', 'sf', 'lubridate', 'plotly', 'zoo',
 # Load data
 #-----------------------------------------
 
+filepath_sf <- "C:/Users/jpg23/data/downtownrecovery/shapefiles/"
+
+## Shapefile of BIAs
+
+bia_sf <- read_sf(paste0(filepath_sf, "business_improvement_areas_simplified.geojson")) %>%
+  select(bia = AREA_NAME)
+
+head(bia_sf)
+class(bia_sf)
+n_distinct(bia_sf$bia) # there are 85 BIAs
+
+## Study area downtowns filtered to Toronto ('inner core')
+
+core <- read_sf(paste0(filepath_sf, "study_area_downtowns.shp")) %>%
+  filter(city == 'Toronto')
+
+core
+
+## Former municipal boundaries of Toronto ('outer core')
+## https://open.toronto.ca/dataset/former-municipality-boundaries/
+
+inner_ring_raw <- read_sf(paste0(filepath_sf, "Former_Municipality_Boundaries.geojson"))
+
+head(inner_ring_raw)
+plot(inner_ring_raw$geometry)
+
+inner_ring <- st_union(inner_ring_raw) %>% st_as_sf()
+class(inner_ring)
+head(inner_ring)
+
+plot(inner_ring)
+
 ## 1/1/2019 - 4/25/2023 (userbase + BIAs)
 
 filepath <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/BIAs/'
@@ -138,6 +170,88 @@ one_prov_plot <-
   theme_bw()
 
 ggplotly(one_prov_plot)
+
+#-----------------------------------------
+# Determine 'region' for each BIA
+#-----------------------------------------
+
+regions_map <-
+  leaflet(
+    options = leafletOptions(minZoom = 9, maxZoom = 18, zoomControl = FALSE)
+  ) %>%
+  # setView(lat = 28.72, lng = -81.97, zoom = 7) %>%
+  addMapPane(name = "inner_ring", zIndex = 410) %>%
+  addMapPane(name = "core", zIndex = 420) %>%
+  addMapPane(name = "bia", zIndex = 430) %>%
+  addMapPane(name = "polylines", zIndex = 440) %>%
+  addMapPane(name = "Layers", zIndex = 450) %>%
+  addMapPane(name = "maplabels", zIndex = 460) %>%
+  addProviderTiles("CartoDB.PositronNoLabels") %>%
+  addProviderTiles("Stamen.TonerLines",
+                   options = providerTileOptions(opacity = 0.3),
+                   group = "Roads"
+  ) %>%
+  addProviderTiles("CartoDB.PositronOnlyLabels",
+                   options = leafletOptions(pane = "maplabels"),
+                   group = "map labels") %>%
+  addPolygons(
+    data = inner_ring,
+    fillOpacity = .8,
+    color = 'lightpink',
+    stroke = TRUE,
+    weight = 1,
+    opacity = 1,
+    highlightOptions =
+      highlightOptions(
+        color = "black",
+        weight = 3,
+        bringToFront = TRUE),
+    options = pathOptions(pane = "inner_ring")
+  ) %>%
+  addPolygons(
+    data = core,
+    fillOpacity = .8,
+    color = 'orange',
+    stroke = TRUE,
+    weight = 1,
+    opacity = 1,
+    highlightOptions =
+      highlightOptions(
+        color = "black",
+        weight = 3,
+        bringToFront = TRUE),
+    options = pathOptions(pane = "core")
+  ) %>%
+  addPolygons(
+    data = bia_sf,
+    label = ~bia,
+    labelOptions = labelOptions(textsize = "12px"),
+    fillOpacity = .8,
+    color = 'purple',
+    stroke = TRUE,
+    weight = 1,
+    opacity = 1,
+    highlightOptions =
+      highlightOptions(
+        color = "black",
+        weight = 3,
+        bringToFront = TRUE),
+    options = pathOptions(pane = "bia")
+  )
+
+regions_map
+
+which_region <-
+  bia_sf %>%
+  st_join(core %>% mutate(core = 'yes') %>% select(core)) %>%
+  st_join(inner_ring %>% mutate(inner_ring = 'yes')) %>%
+  st_drop_geometry() %>%
+  data.frame()
+
+which_region
+
+# Look at a BIA that's only slightly inside the core
+which_region %>% filter(bia == 'Rosedale Main Street') # it's in core
 
 #-----------------------------------------
 # Trend plot: recovery rate (all BIAs)
@@ -282,46 +396,55 @@ each_bia_for_plot <-
   ungroup() %>%
   data.frame() %>%
   filter(!(year == 2020 & week_num < 12)) %>%
+  left_join(which_region) %>%
   mutate(
     dark_alpha = case_when(
-      bia == 'Financial District' ~ TRUE,
-      TRUE ~ FALSE
+      bia == 'Financial District' ~ 1,
+      TRUE ~ 0
     ),
     region = case_when(
-      bia %in% c() ~ 'Outer ring',
-      bia %in% c() ~ 'Inner ring',
-      bia %in% c() ~ 'Core'
+      core == 'yes' ~ 0, # core
+      inner_ring == 'yes' ~ 1 # inner ring
+      # ? ~ 'outer ring'
   )) %>%
-  filter(!is.na(bia))
+  filter(!is.na(bia)) %>%
+  mutate(
+    mytext = paste0(bia, '<br>Week of ', week, ': ',
+                    scales::percent(rq_rolling, accuracy = 2)),
+    bia_region = case_when(
+      region == 0 ~ paste0('Core (', bia, ')'),
+      region == 1 ~ paste0('Inner ring (', bia, ')')
+    ))
 
 head(each_bia_for_plot)
+each_bia_for_plot %>% group_by(region) %>% count()
 
 # Color by outer ring, inner ring, and core. And highlight financial district
 
-# alpha <- ifelse(d$big, 0.9, 0.35)
-# 
-# ggplot(d, aes(x=Date, y=Weight, fill=Cultivar)) +
-#   geom_bar(position="dodge", stat="identity", aes(alpha=big)) +
-#   scale_alpha_continuous(guide=FALSE)
-
-alpha <- ifelse(each_bia_for_plot$dark_alpha, .9, .8)
-
 each_bia_plot <-
   each_bia_for_plot %>%
-  ggplot(aes(x = week, y = rq_rolling, group = bia, color = bia, 
-             # alpha = factor(which_alpha),
-             text = str_c(bia, ',<br>week of ', week, ':<br>',
-                          scales::percent(rq_rolling, accuracy = 2)))) +
-  geom_line(size = .8, aes(alpha = alpha)) +
+  ggplot(aes(x = week, y = rq_rolling, group = bia, 
+             color = interaction(as.factor(region), as.factor(dark_alpha)))) + # text = mytext
+  geom_line(size = 1) +
   ggtitle('Recovery rate for all Business Improvement Areas in Toronto (11 week rolling average)') +
   scale_x_date(date_breaks = "4 month", date_labels = "%b %Y") +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
   xlab('Month') +
   ylab('Recovery rate') +
-  labs(color = 'Business Improvement Area') +
-  scale_alpha_continuous(guide = 'none') +
-  # scale_alpha_discrete(range = c(0.9, 0.3), guide = 'none') +
-  # guides(alpha = 'none') +
+  labs(color = '') +
+  scale_color_manual(
+    name = 'Region',
+    values = c(
+      "0.0" = alpha("purple", .2),
+      "1.0" = alpha("orange", .2),
+      "0.1" = alpha("purple", .9),
+      "1.1" = alpha("orange", .9)
+      ),
+    labels = c(
+      'Core', 
+      'Inner Ring',
+      'Financial District',
+      'neither!')) +
   theme(
     panel.grid.major = element_line(color = 'light gray',
                                     linewidth = .5,
@@ -330,12 +453,55 @@ each_bia_plot <-
     panel.background = element_blank(),
     plot.title = element_text(hjust = .5),
     axis.ticks = element_blank(),
-    legend.title = element_text(margin = margin(b = 20)),
+    # legend.title = element_blank(),
+    legend.key = element_rect(fill = "white"),
+    legend.title = element_text(margin = margin(b = 10)),
     axis.title.y = element_text(margin = margin(r = 20)),
     axis.title.x = element_text(margin = margin(t = 20))
   )
 
-each_bia_plotly <- ggplotly(each_bia_plot, tooltip = "text")
+each_bia_plot
+
+# Now plotly
+
+fd <- each_bia_for_plot %>% filter(bia == 'Financial District')
+
+not_fd_core <- each_bia_for_plot %>% 
+  filter(bia != 'Financial District' & region == 0)
+
+inner_ring <- each_bia_for_plot %>% 
+  filter(region == 1)
+
+each_bia_plotly <- 
+  plot_ly() %>%
+  add_lines(data = fd, x = ~week, y = ~rq_rolling, 
+            name = "Financial District", 
+            text = ~mytext,
+            hoverinfo = 'text',
+            opacity = .9,
+            line = list(shape = "linear", color = 'purple')) %>%
+  add_lines(data = inner_ring, x = ~week, y = ~rq_rolling, split = ~bia,
+            name = ~bia_region, 
+            text = ~mytext,
+            hoverinfo = 'text',
+            opacity = .1,
+            line = list(shape = "linear", color = 'purple')) %>%
+  add_lines(data = not_fd_core, x = ~week, y = ~rq_rolling, split = ~bia,
+            name = ~bia_region, 
+            text = ~mytext,
+            hoverinfo = 'text',
+            opacity = .2,
+            line = list(shape = "linear", color = 'orange')) %>%
+  layout(title = "Recovery rate for all Business Improvement Areas in Toronto (11 week rolling average)",
+         xaxis = list(title = "Week", zerolinecolor = "#ffff"),
+         yaxis = list(title = "Recovery rate", zerolinecolor = "#ffff",
+                      tickformat = "%"))
+
+    # ADD TITLE, FORMAT AXES
+
+# each_bia_plotly <- 
+#   ggplotly(each_bia_plot, tooltip = "text") %>%
+#   style(each_bia_plot, showlegend = FALSE)
 
 each_bia_plotly
 
@@ -440,15 +606,6 @@ head(for_maps)
 
 # 1. Choropleth map of "recovery rate" for all BIAs
 #-----------------------------------------------------------------
-
-## Shapefile of BIAs
-
-bia_sf <- read_sf("C:/Users/jpg23/data/downtownrecovery/business_improvement_areas/business_improvement_areas_simplified.geojson") %>%
-  select(bia = AREA_NAME)
-
-head(bia_sf)
-class(bia_sf)
-n_distinct(bia_sf$bia) # there are 85 BIAs
 
 # Join spatial data with device count data.
 
