@@ -193,6 +193,7 @@ regions_map <-
     data = inner_ring,
     fillOpacity = .8,
     color = '#d6ad09',
+    label = 'Inner ring',
     stroke = TRUE,
     weight = 1,
     opacity = 1,
@@ -202,10 +203,11 @@ regions_map <-
         weight = 3,
         bringToFront = TRUE),
     options = pathOptions(pane = "inner_ring")
-  ) %>%
+  )  %>%
   addPolygons(
     data = core,
     fillOpacity = .8,
+    label = 'Core',
     color = '#8c0a03',
     stroke = TRUE,
     weight = 1,
@@ -255,7 +257,7 @@ which_region %>% filter(bia == 'Rosedale Main Street') # it's in core
 
 # 11-week rolling average of weekly normalized counts
 
-rec_rate <-
+rec_rate0 <-
   b %>%
   # Starting 5/17/21, switch providers
   filter((provider == '700199' & date < as.Date('2021-05-17')) | 
@@ -267,7 +269,16 @@ rec_rate <-
       unit = "week",
       week_start = getOption("lubridate.week.start", 1)),
     week_num = isoweek(date_range_start),
-    year = year(date_range_start)) %>%
+    year = year(date_range_start))
+
+head(rec_rate0)
+
+# Save as CSV (to compare with Environics data in 'environics_comparison.R')
+chinatown <- rec_rate0 %>% filter(bia == 'Chinatown')
+write.csv(chinatown, 'C:/Users/jpg23/data/downtownrecovery/chinatown.csv')
+
+rec_rate <-
+  rec_rate0 %>%
   # Calculate # of devices by BIA, week and year
   group_by(bia, year, week_num) %>%
   summarize(n_devices = sum(n_devices, na.rm = T),
