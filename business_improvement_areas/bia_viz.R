@@ -39,16 +39,15 @@ core
 ## Former municipal boundaries of Toronto ('outer core')
 ## https://open.toronto.ca/dataset/former-municipality-boundaries/
 
-inner_ring_raw <- read_sf(paste0(filepath_sf, "Former_Municipality_Boundaries.geojson"))
+inner_ring <- read_sf(paste0(filepath_sf, "Former_Municipality_Boundaries.geojson")) %>%
+  filter(AREA_NAME == 'TORONTO') %>%
+  select(geometry) %>%
+  st_as_sf()
 
-head(inner_ring_raw)
-plot(inner_ring_raw$geometry)
+# inner_ring <- st_union(inner_ring) %>% st_as_sf()
 
-inner_ring <- st_union(inner_ring_raw) %>% st_as_sf()
-class(inner_ring)
 head(inner_ring)
-
-plot(inner_ring)
+plot(inner_ring$geometry)
 
 ## 1/1/2019 - 4/25/2023 (userbase + BIAs)
 
@@ -185,19 +184,15 @@ regions_map <-
   addMapPane(name = "bia", zIndex = 430) %>%
   addMapPane(name = "polylines", zIndex = 440) %>%
   addMapPane(name = "Layers", zIndex = 450) %>%
-  addMapPane(name = "maplabels", zIndex = 460) %>%
   addProviderTiles("CartoDB.PositronNoLabels") %>%
   addProviderTiles("Stamen.TonerLines",
                    options = providerTileOptions(opacity = 0.3),
                    group = "Roads"
   ) %>%
-  addProviderTiles("CartoDB.PositronOnlyLabels",
-                   options = leafletOptions(pane = "maplabels"),
-                   group = "map labels") %>%
   addPolygons(
     data = inner_ring,
     fillOpacity = .8,
-    color = 'lightpink',
+    color = '#d6ad09',
     stroke = TRUE,
     weight = 1,
     opacity = 1,
@@ -211,14 +206,14 @@ regions_map <-
   addPolygons(
     data = core,
     fillOpacity = .8,
-    color = 'orange',
+    color = '#8c0a03',
     stroke = TRUE,
     weight = 1,
     opacity = 1,
     highlightOptions =
       highlightOptions(
         color = "black",
-        weight = 3,
+        weight = 2,
         bringToFront = TRUE),
     options = pathOptions(pane = "core")
   ) %>%
@@ -226,8 +221,9 @@ regions_map <-
     data = bia_sf,
     label = ~bia,
     labelOptions = labelOptions(textsize = "12px"),
-    fillOpacity = .8,
-    color = 'purple',
+    fillOpacity = .9,
+    color = 'black',
+    fillColor = 'lightblue',
     stroke = TRUE,
     weight = 1,
     opacity = 1,
@@ -248,7 +244,7 @@ which_region <-
   st_drop_geometry() %>%
   data.frame()
 
-which_region
+head(which_region)
 
 # Look at a BIA that's only slightly inside the core
 which_region %>% filter(bia == 'Rosedale Main Street') # it's in core
@@ -404,8 +400,8 @@ each_bia_for_plot <-
     ),
     region = case_when(
       core == 'yes' ~ 0, # core
-      inner_ring == 'yes' ~ 1 # inner ring
-      # ? ~ 'outer ring'
+      inner_ring == 'yes' ~ 1, # inner ring
+      TRUE ~ 2 # outer ring
   )) %>%
   filter(!is.na(bia)) %>%
   mutate(
@@ -413,7 +409,8 @@ each_bia_for_plot <-
                     scales::percent(rq_rolling, accuracy = 2)),
     bia_region = case_when(
       region == 0 ~ paste0('Core (', bia, ')'),
-      region == 1 ~ paste0('Inner ring (', bia, ')')
+      region == 1 ~ paste0('Inner ring (', bia, ')'),
+      TRUE ~ paste0('Outer ring (', bia, ')')
     ))
 
 head(each_bia_for_plot)
@@ -432,19 +429,25 @@ each_bia_plot <-
   xlab('Month') +
   ylab('Recovery rate') +
   labs(color = '') +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "black", size = .7) +
   scale_color_manual(
     name = 'Region',
     values = c(
-      "0.0" = alpha("purple", .2),
-      "1.0" = alpha("orange", .2),
-      "0.1" = alpha("purple", .9),
-      "1.1" = alpha("orange", .9)
+      "0.1" = alpha("#8c0a03", .9),
+      "0.0" = alpha("#8c0a03", .2),
+      "1.0" = alpha("#d6ad09", .2),
+      "1.1" = alpha("#d6ad09", .9),
+      "2.0" = alpha("#6bc0c2", .3),
+      "2.1" = alpha("#6bc0c2", .9)
       ),
     labels = c(
-      'Core', 
-      'Inner Ring',
+      'Core',
+      'Inner ring', 
+      'Outer ring',
       'Financial District',
-      'neither!')) +
+      'doesnt exist',
+      'doesnt exist'
+      )) +
   theme(
     panel.grid.major = element_line(color = 'light gray',
                                     linewidth = .5,
@@ -469,8 +472,11 @@ fd <- each_bia_for_plot %>% filter(bia == 'Financial District')
 not_fd_core <- each_bia_for_plot %>% 
   filter(bia != 'Financial District' & region == 0)
 
-inner_ring <- each_bia_for_plot %>% 
+inner <- each_bia_for_plot %>% 
   filter(region == 1)
+
+outer <- each_bia_for_plot %>% 
+  filter(region == 2)
 
 each_bia_plotly <- 
   plot_ly() %>%
@@ -479,29 +485,30 @@ each_bia_plotly <-
             text = ~mytext,
             hoverinfo = 'text',
             opacity = .9,
-            line = list(shape = "linear", color = 'purple')) %>%
-  add_lines(data = inner_ring, x = ~week, y = ~rq_rolling, split = ~bia,
-            name = ~bia_region, 
-            text = ~mytext,
-            hoverinfo = 'text',
-            opacity = .1,
-            line = list(shape = "linear", color = 'purple')) %>%
+            line = list(shape = "linear", color = '#8c0a03')) %>%
   add_lines(data = not_fd_core, x = ~week, y = ~rq_rolling, split = ~bia,
             name = ~bia_region, 
             text = ~mytext,
             hoverinfo = 'text',
-            opacity = .2,
-            line = list(shape = "linear", color = 'orange')) %>%
+            opacity = .3,
+            line = list(shape = "linear", color = '#8c0a03')) %>%
+  add_lines(data = inner, x = ~week, y = ~rq_rolling, split = ~bia,
+            name = ~bia_region, 
+            text = ~mytext,
+            hoverinfo = 'text',
+            opacity = .3,
+            line = list(shape = "linear", color = '#d6ad09')) %>%
+  add_lines(data = outer, x = ~week, y = ~rq_rolling, split = ~bia,
+            name = ~bia_region, 
+            text = ~mytext,
+            hoverinfo = 'text',
+            opacity = .3,
+            line = list(shape = "linear", color = '#6bc0c2')) %>%
   layout(title = "Recovery rate for all Business Improvement Areas in Toronto (11 week rolling average)",
-         xaxis = list(title = "Week", zerolinecolor = "#ffff"),
+         xaxis = list(title = "Week", zerolinecolor = "#ffff", 
+                      tickformat = "%b %Y"),
          yaxis = list(title = "Recovery rate", zerolinecolor = "#ffff",
-                      tickformat = "%"))
-
-    # ADD TITLE, FORMAT AXES
-
-# each_bia_plotly <- 
-#   ggplotly(each_bia_plot, tooltip = "text") %>%
-#   style(each_bia_plot, showlegend = FALSE)
+                      tickformat = ".0%", ticksuffix = "  "))
 
 each_bia_plotly
 
@@ -575,14 +582,31 @@ financial_plot
 # Compare overall NORMALIZED device count for period of March 1, 2023 through 
 # latest date available to same time period in 2019.
 
-for_maps <-
+for_maps0 <-
   rec_rate %>%
   mutate(week = as.Date(
     paste(as.character(year), as.character(week_num), 1, sep = '_'),
-          format = '%Y_%W_%w')) %>%
-  
-  # MAKE SURE I'M COMPARING THE SAME # OF WEEKS HERE:
-  
+          format = '%Y_%W_%w'))
+
+# Make sure I'm comparing the same number of weeks:
+only_23 <- 
+  for_maps0 %>%
+  filter((year == 2023 & week >= as.Date('2023-03-01') & 
+            week <= as.Date('2023-05-19')))
+
+only_19 <- 
+  for_maps0 %>%
+  filter((year == 2019 & week >= as.Date('2019-03-01') & 
+            week <= as.Date('2019-05-19')))
+
+nrow(only_23)
+n_distinct(only_23$week_num)
+
+nrow(only_19)
+n_distinct(only_19$week_num) # yes :)
+
+for_maps <-
+  for_maps0 %>%
   filter((year == 2023 & week >= as.Date('2023-03-01') & 
             week <= as.Date('2023-05-19')) |
            (year == 2019 & week >= as.Date('2019-03-01') & 
@@ -664,7 +688,7 @@ bia_map <-
           inherit.aes = FALSE,
           # alpha = .9, 
           color = NA) +
-  ggtitle('Recovery rate of Business Improvement Areas in Toronto\n2019 to 2023 (March 1 - May 19 (??))') +
+  ggtitle('Recovery rate of Business Improvement Areas in\nToronto, March 1 - May 19 (2023 versus 2019)') +
   scale_fill_manual(values = pal, name = 'Recovery rate') +
   guides(fill = guide_legend(barwidth = 0.5, barheight = 10, 
                              ticks = F, byrow = T)) +
@@ -713,7 +737,7 @@ bia_zoom <-
   filter(bia %in% c('Financial District', 'Downtown Yonge')) %>%
   mutate(bia_lab = factor(paste0(bia, ': ', round(rate * 100), '%'),
                           levels = c('Financial District: 71%',
-                                     'Downtown Yonge: 108%')))
+                                     'Downtown Yonge: 109%')))
 
 zoom_pal <- c(
   "#e41822",
@@ -726,7 +750,7 @@ zoom_map <-
           aes(fill = bia_lab), 
           inherit.aes = FALSE,
           color = NA) +
-  ggtitle('Recovery rate of Financial District and\nDowntown Yonge Business Improvement Areas in\nToronto 2019 to 2023 (March 1 - May 19 (??))') +
+  ggtitle('Recovery rate of Financial District and Downtown\nYonge, March 1 - May 19 (2023 versus 2019)') +
   scale_fill_manual(values = zoom_pal, name = 'Recovery rate') +
   guides(fill = guide_legend(barwidth = 0.5, barheight = 10, 
                              ticks = F, byrow = T)) +
@@ -740,7 +764,8 @@ zoom_map <-
     axis.title = element_blank(),
     axis.ticks = element_blank(),
     legend.spacing.y = unit(.1, 'cm'),
-    plot.title = element_text(hjust = 0.5, margin = margin(b = 20)),
+    plot.title = element_text(hjust = 0.5, margin = margin(b = 20),
+                              size = 11),
     plot.caption = element_text(
       margin = margin(t = 20)),
     legend.title = element_text(
@@ -769,19 +794,11 @@ interactive <-
   addMapPane(name = "polygons", zIndex = 410) %>%
   addMapPane(name = "polylines", zIndex = 420) %>%
   addMapPane(name = "Layers", zIndex = 430) %>%
-  # addMapPane(name = "rail", zIndex = 440) %>%
-  addMapPane(name = "maplabels", zIndex = 450) %>%
   addProviderTiles("CartoDB.PositronNoLabels") %>%
   addProviderTiles("Stamen.TonerLines",
                    options = providerTileOptions(opacity = 0.3),
                    group = "Roads"
   ) %>%
-  # addProviderTiles("OpenRailwayMap",
-  #                  options = leafletOptions(pane = "rail"),
-  #                  group = "Transit") %>%
-  addProviderTiles("CartoDB.PositronOnlyLabels",
-                   options = leafletOptions(pane = "maplabels"),
-                   group = "map labels") %>%
   addPolygons(
     data = bia_final_label,
     label = ~label,
@@ -803,7 +820,7 @@ interactive <-
     position = "bottomleft",
     pal = leaflet_pal,
     values = ~rate_cat,
-    title = 'Recovery rate<br>(March 1 - May 19??,<br>2019 to 2023)'
+    title = 'Recovery rate<br>(March 1 - May 19,<br>2023 vs 2019)'
   )
 
 interactive
