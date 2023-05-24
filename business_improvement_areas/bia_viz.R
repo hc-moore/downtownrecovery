@@ -12,7 +12,7 @@
 
 source('~/git/timathomas/functions/functions.r')
 ipak(c('tidyverse', 'ggplot2', 'sf', 'lubridate', 'plotly', 'zoo', 
-       'htmlwidgets', 'BAMMtools'))
+       'htmlwidgets', 'BAMMtools', 'leaflet'))
 
 #-----------------------------------------
 # Load data
@@ -71,6 +71,10 @@ summary(userbase)
 head(bia)
 glimpse(bia)
 summary(bia)
+
+range(both$date)
+range(userbase$date)
+range(bia$date)
 
 # Combine them
 b <-
@@ -200,7 +204,7 @@ all_bia_for_plot <-
   mutate(year = substr(year, 4, 7),
          week = as.Date(paste(year, week_num, 1, sep = '_'),
                         format = '%Y_%W_%w')) %>% # Monday of week
-  filter(!(year == 2023 & week_num > 17)) %>%
+  filter(!(year == 2023 & week_num > 20)) %>%
   arrange(year, week_num) %>%
   mutate(rq_rolling = zoo::rollmean(rq, k = 11, fill = NA, align = 'right')) %>%
   ungroup() %>%
@@ -271,28 +275,53 @@ each_bia_for_plot <-
   mutate(year = substr(year, 4, 7),
          week = as.Date(paste(year, week_num, 1, sep = '_'),
                         format = '%Y_%W_%w')) %>% # Monday of week
-  filter(!(year == 2023 & week_num > 17)) %>%
+  filter(!(year == 2023 & week_num > 20)) %>%
   arrange(bia, year, week_num) %>%
   group_by(bia) %>%
   mutate(rq_rolling = zoo::rollmean(rq, k = 11, fill = NA, align = 'right')) %>%
   ungroup() %>%
   data.frame() %>%
-  filter(!(year == 2020 & week_num < 12))
+  filter(!(year == 2020 & week_num < 12)) %>%
+  mutate(
+    dark_alpha = case_when(
+      bia == 'Financial District' ~ TRUE,
+      TRUE ~ FALSE
+    ),
+    region = case_when(
+      bia %in% c() ~ 'Outer ring',
+      bia %in% c() ~ 'Inner ring',
+      bia %in% c() ~ 'Core'
+  )) %>%
+  filter(!is.na(bia))
 
 head(each_bia_for_plot)
 
+# Color by outer ring, inner ring, and core. And highlight financial district
+
+# alpha <- ifelse(d$big, 0.9, 0.35)
+# 
+# ggplot(d, aes(x=Date, y=Weight, fill=Cultivar)) +
+#   geom_bar(position="dodge", stat="identity", aes(alpha=big)) +
+#   scale_alpha_continuous(guide=FALSE)
+
+alpha <- ifelse(each_bia_for_plot$dark_alpha, .9, .8)
+
 each_bia_plot <-
   each_bia_for_plot %>%
-  ggplot(aes(x = week, y = rq_rolling, group = bia, color = bia,
-             text = str_c(bia, ',<br>week of ', week, ':<br>', 
+  ggplot(aes(x = week, y = rq_rolling, group = bia, color = bia, 
+             # alpha = factor(which_alpha),
+             text = str_c(bia, ',<br>week of ', week, ':<br>',
                           scales::percent(rq_rolling, accuracy = 2)))) +
-  geom_line(size = .8) +
+  geom_line(size = .8, aes(alpha = alpha)) +
   ggtitle('Recovery rate for all Business Improvement Areas in Toronto (11 week rolling average)') +
   scale_x_date(date_breaks = "4 month", date_labels = "%b %Y") +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
   xlab('Month') +
   ylab('Recovery rate') +
   labs(color = 'Business Improvement Area') +
+  scale_alpha_continuous(guide = 'none') +
+  # scale_alpha_discrete(range = c(0.9, 0.3), guide = 'none') +
+  # guides(alpha = 'none') +
   theme(
     panel.grid.major = element_line(color = 'light gray',
                                     linewidth = .5,
@@ -525,7 +554,14 @@ attributes(basemap_transparent_zoom) <- basemap_attributes_zoom
 bia_zoom <-
   bia_final %>%
   filter(bia %in% c('Financial District', 'Downtown Yonge')) %>%
-  mutate(bia_lab = paste0(bia, ': ', round(rate * 100), '%'))
+  mutate(bia_lab = factor(paste0(bia, ': ', round(rate * 100), '%'),
+                          levels = c('Financial District: 71%',
+                                     'Downtown Yonge: 108%')))
+
+zoom_pal <- c(
+  "#e41822",
+  "#5bc4fb"
+)
 
 zoom_map <-
   ggmap(basemap_transparent_zoom) +
@@ -534,7 +570,7 @@ zoom_map <-
           inherit.aes = FALSE,
           color = NA) +
   ggtitle('Recovery rate of Financial District and\nDowntown Yonge Business Improvement Areas in\nToronto 2019 to 2023 (March 1 - May 19 (??))') +
-  scale_fill_manual(values = pal, name = 'Recovery rate') +
+  scale_fill_manual(values = zoom_pal, name = 'Recovery rate') +
   guides(fill = guide_legend(barwidth = 0.5, barheight = 10, 
                              ticks = F, byrow = T)) +
   theme(
@@ -554,3 +590,63 @@ zoom_map <-
       margin = margin(b = 10)))
 
 zoom_map
+
+# 3. Interactive map of BIAs
+#-----------------------------------------------------------------
+
+bia_final_label <-
+  bia_final %>%
+  mutate(label = paste0(bia, ": ", round(rate * 100), "%"))
+
+leaflet_pal <- colorFactor(
+  pal,
+  domain = bia_final_label$rate_cat,
+  na.color = 'transparent'
+  )
+
+interactive <-
+  leaflet(
+    options = leafletOptions(minZoom = 9, maxZoom = 18, zoomControl = FALSE)
+  ) %>%
+  # setView(lat = 28.72, lng = -81.97, zoom = 7) %>%
+  addMapPane(name = "polygons", zIndex = 410) %>%
+  addMapPane(name = "polylines", zIndex = 420) %>%
+  addMapPane(name = "Layers", zIndex = 430) %>%
+  # addMapPane(name = "rail", zIndex = 440) %>%
+  addMapPane(name = "maplabels", zIndex = 450) %>%
+  addProviderTiles("CartoDB.PositronNoLabels") %>%
+  addProviderTiles("Stamen.TonerLines",
+                   options = providerTileOptions(opacity = 0.3),
+                   group = "Roads"
+  ) %>%
+  # addProviderTiles("OpenRailwayMap",
+  #                  options = leafletOptions(pane = "rail"),
+  #                  group = "Transit") %>%
+  addProviderTiles("CartoDB.PositronOnlyLabels",
+                   options = leafletOptions(pane = "maplabels"),
+                   group = "map labels") %>%
+  addPolygons(
+    data = bia_final_label,
+    label = ~label,
+    labelOptions = labelOptions(textsize = "12px"),
+    fillOpacity = .8,
+    color = ~leaflet_pal(rate_cat),
+    stroke = TRUE,
+    weight = 1,
+    opacity = 1,
+    highlightOptions =
+      highlightOptions(
+        color = "black",
+        weight = 3,
+        bringToFront = TRUE),
+    options = pathOptions(pane = "polygons")
+  ) %>%
+  leaflet::addLegend(
+    data = bia_final_label,
+    position = "bottomleft",
+    pal = leaflet_pal,
+    values = ~rate_cat,
+    title = 'Recovery rate<br>(March 1 - May 19??,<br>2019 to 2023)'
+  )
+
+interactive
