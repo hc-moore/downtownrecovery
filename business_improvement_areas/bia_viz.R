@@ -274,8 +274,10 @@ rec_rate0 <-
 head(rec_rate0)
 
 # Save as CSV (to compare with Environics data in 'environics_comparison.R')
-chinatown <- rec_rate0 %>% filter(bia == 'Chinatown')
-write.csv(chinatown, 'C:/Users/jpg23/data/downtownrecovery/chinatown.csv')
+compare_env <- rec_rate0 %>% 
+  filter(bia %in% c('Chinatown', 'Downtown Yonge', 'Kennedy Road', 'Liberty Village'))
+
+write.csv(compare_env, 'C:/Users/jpg23/data/downtownrecovery/compare_environics.csv')
 
 rec_rate <-
   rec_rate0 %>%
