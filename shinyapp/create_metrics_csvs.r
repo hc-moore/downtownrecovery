@@ -26,19 +26,22 @@ cuebiq_data_stoppers <- read.csv("~/data/downtownrecovery/update_2023/stoppers_q
     userbase = as.numeric(userbase))%>%
   select(-X)
 
+cuebiq_stops_uplevelled <- read.csv("~/data/downtownrecovery/counts/cuebiq_daily_agg.csv")
+
 cuebiq_data_stoppers %>% glimpse()
 
 # read in safegraph raw device counts
 safegraph_data <- read_parquet("~/data/downtownrecovery/counts/safegraph_dt_recovery.pq") %>%
   mutate(city = str_replace(city, "é", "e")) %>%
-  semi_join(cuebiq_data_stoppers %>% distinct(city)) %>%
+  left_join(cuebiq_stops_uplevelled %>% distinct(city, country_code)) %>%
   select(-country, -postal_code, -is_downtown, -normalized_visits_by_state_scaling) %>%
-  group_by(date_range_start, city) %>%
+  group_by(date_range_start, city, country_code) %>%
   summarise(raw_visit_counts = sum(raw_visit_counts),
             normalized_visits_by_total_visits = sum(normalized_visits_by_total_visits)) %>%
   mutate(source = "safegraph")
-  
+
 safegraph_data %>% glimpse()
+
 
 cuebiq_stoppers_agg <- cuebiq_data_stoppers %>%
   # day, state, city, country, and source are the columns to index by
@@ -68,15 +71,15 @@ shared_start <- "2021-12-06"
 shared_end <- "2022-05-02"
 
 safegraph_data_subset <- safegraph_data %>%
-                          dplyr::filter((date_range_start <= shared_end) &
-                                        (date_range_start >= shared_start)
-                                        )
+  dplyr::filter((date_range_start <= shared_end) &
+                  (date_range_start >= shared_start)
+  )
 
 all_counts <- bind_rows(safegraph_data_subset,
                         cuebiq_stoppers_agg) %>%
-              dplyr::filter((date_range_start <= shared_end) &
-                      (date_range_start >= shared_start)) %>%
-              dplyr::distinct(date_range_start, city, source, .keep_all = TRUE)
+  dplyr::filter((date_range_start <= shared_end) &
+                  (date_range_start >= shared_start)) %>%
+  dplyr::distinct(date_range_start, city, source, .keep_all = TRUE)
 
 
 n_weeks <- all_counts %>% distinct(date_range_start) %>% nrow()
@@ -89,7 +92,7 @@ ggplotly(all_counts %>%
            geom_line() +
            facet_wrap(.~city, scales = 'free', nrow = 6) +
            theme(axis.text = element_blank()
-                 ))
+           ))
 
 minmax_normalizer <- function(x, min_x, max_x) {
   return((x- min_x) /(max_x-min_x))
@@ -106,7 +109,7 @@ city_source_scaling_df <- all_counts %>%
             max_val = max(normalized_visits_by_total_visits, na.rm = TRUE),
             avg_val = mean(normalized_visits_by_total_visits, na.rm = TRUE),
             sd_val = sd(normalized_visits_by_total_visits, na.rm = TRUE)
-            ) %>%
+  ) %>%
   ungroup()
 
 city_source_scaling_df %>% glimpse()
@@ -118,14 +121,14 @@ comparisons_df <- all_counts %>%
   left_join(city_source_scaling_df) %>%
   mutate(minmax_scaled = minmax_normalizer(normalized_visits_by_total_visits, min_val, max_val),
          standard_scaled = standard_normalizer(normalized_visits_by_total_visits, avg_val, sd_val))
-                           
+
 safegraph_ts_scaled <- comparisons_df %>%
   dplyr::filter(source == 'safegraph') %>%
   pivot_wider(id_cols = 'date_range_start', names_from = 'city', values_from = 'minmax_scaled') %>%
   ungroup() %>%
   arrange(date_range_start)
 
-safegraph_ts %>% glimpse()
+safegraph_ts_scaled %>% glimpse()
 
 
 
@@ -171,8 +174,8 @@ for (cities in cuebiq_data_stoppers %>% distinct(city) %>% arrange(city) %>% pul
 
 cos_similarity_scores = cbind(names(cos_similarities),
                               do.call("rbind", cos_similarities)) %>%
-                        as.data.frame() %>%
-                        rename(city = V1, cosine_score = V2)
+  as.data.frame() %>%
+  rename(city = V1, cosine_score = V2)
 
 
 cos_similarity_scores %>% arrange(cosine_score)
@@ -199,7 +202,7 @@ comparisons_with_diff <- comparisons_df %>%
   group_by(city) %>%
   mutate(
     normalized_safegraph_cuebiq_diff = stoppers_hll - safegraph
-    )
+  )
 
 comparisons_df %>% glimpse()
 
@@ -207,9 +210,9 @@ comparisons_df %>% glimpse()
 p0 <- comparisons_with_diff %>%
   ggplot(aes(x = normalized_safegraph_cuebiq_diff)) +
   geom_density()
-  
+
 p0
-  
+
 # t test for all observations - fails for all cities over all time periods
 t.test(x = comparisons_with_diff %>%
          pull(normalized_safegraph_cuebiq_diff)
@@ -240,11 +243,11 @@ t_test_sheet_df %>%
 
 
 write.xlsx2(t_test_sheet_df %>% select(city, statistic:data.name),
-           file = "data/downtownrecovery/t_tests/t_tests.xlsx",
-           sheetName = "Prepandemic",
-           col.names = TRUE,
-           row.names = TRUE,
-           append = FALSE)
+            file = "data/downtownrecovery/t_tests/t_tests.xlsx",
+            sheetName = "Prepandemic",
+            col.names = TRUE,
+            row.names = TRUE,
+            append = FALSE)
 
 all_seasons <- comparisons_df %>% pull(Season) %>% unique()
 all_seasons
@@ -259,11 +262,11 @@ for (seasons in all_seasons[-1]) {
     unnest(statistic:data.name) %>% as.data.frame()
   
   write.xlsx2(t_test_sheet_df %>% select(city, statistic:data.name),
-             "data/downtownrecovery/t_tests/t_tests.xlsx",
-             sheetName = seasons,
-             col.names = TRUE,
-             row.names = TRUE,
-             append = TRUE)
+              "data/downtownrecovery/t_tests/t_tests.xlsx",
+              sheetName = seasons,
+              col.names = TRUE,
+              row.names = TRUE,
+              append = TRUE)
 }
 
 # bind each separate list to into a data frame
@@ -285,7 +288,7 @@ normalized_cuebiq <-  cuebiq_stoppers_agg %>%
                 ratio = mean(safegraph / stoppers_hll)) %>% 
               dplyr::filter(!is.na(ratio)) %>%
               distinct()
-            ) %>%
+  ) %>%
   group_by(date_range_start, city) %>%
   mutate(normalized_visits_by_total_visits = ratio * normalized_visits_by_total_visits,
          source = 'normalized_cuebiq') %>%
@@ -294,10 +297,10 @@ normalized_cuebiq <-  cuebiq_stoppers_agg %>%
 normalized_cuebiq %>% glimpse()
 
 ggplotly(rbind(safegraph_data_subset, cuebiq_stoppers_agg, normalized_cuebiq) %>% 
-  ggplot(aes(x = date_range_start, y = normalized_visits_by_total_visits, color = source)) +
-  geom_line() +
-  facet_wrap(.~city, ncol = 6, scales = 'free') +
-  theme(axis.text = element_blank()))
+           ggplot(aes(x = date_range_start, y = normalized_visits_by_total_visits, color = source)) +
+           geom_line() +
+           facet_wrap(.~city, ncol = 6, scales = 'free') +
+           theme(axis.text = element_blank()))
 
 
 # TODO: append new downtown rqs to old and find 11, 13, 15, etc week rolling average to be 
@@ -309,10 +312,36 @@ ggplotly(rbind(safegraph_data_subset, cuebiq_stoppers_agg, normalized_cuebiq) %>
 
 # TODO: write up methodology changes since addition of cuebiq data
 
+ntv_full_ts <- rbind(safegraph_data %>%
+                       ungroup() %>%
+                       dplyr::filter(date_range_start <= shared_end) %>%
+                       select(date_range_start, city, normalized_visits_by_total_visits),
+                     normalized_cuebiq %>%
+                       dplyr::filter(date_range_start > shared_end) %>%
+                       select(date_range_start, city, normalized_visits_by_total_visits)) %>%
+  distinct() %>%
+  arrange(date_range_start)
+
+write.csv(ntv_full_ts, "~/data/downtownrecovery/full_ntv.csv")
+
+ntv_full_ts %>% glimpse()
+pd <- position_dodge(0.78)
+
+ntv_full_ts %>%
+  ggplot(aes(x = covid_era, y = mean)) +
+  #draws the means
+  geom_point(position=pd) +
+  #draws the CI error bars
+  geom_errorbar(aes(ymin=mean-2*se, ymax=mean+2*se, 
+                                color=covid_era), width=.1, position=pd) +
+  facet_wrap(.~city)
+
+
+
 
 downtown_rq_cuebiq <- rbind(safegraph_data %>%
                               ungroup() %>%
-                              dplyr::filter(date_range_start <= "2020-01-01") %>%
+                              dplyr::filter(date_range_start <= shared_end) %>%
                               select(date_range_start, city, normalized_visits_by_total_visits),
                             normalized_cuebiq %>%
                               dplyr::filter(date_range_start > shared_end) %>%
@@ -335,7 +364,7 @@ downtown_rq_cuebiq %>% glimpse()
 
 downtown_rq_safegraph <- read.csv("git/downtownrecovery/shinyapp/input_data/all_weekly_metrics.csv") %>%
   dplyr::filter(city != "Hamilton") %>%
-  filter(!is.na(normalized_visits_by_total_visits)) %>%
+  filter(!is.na(normalized_visits_by_total_visits) & (week < min(downtown_rq_cuebiq$week))) %>%
   distinct()
 
 
@@ -345,25 +374,27 @@ summary(downtown_rq_safegraph)
 
 max(downtown_rq_safegraph$week)
 
+min(downtown_rq_cuebiq$week)
+
 downtown_rq <- rbind(downtown_rq_cuebiq %>%
                        left_join(downtown_rq_safegraph %>%
                                    select(city, region, metro_size, display_title) %>% distinct()) %>%
                        select(-ntv_2019,  -ntv_2022, -ntv_2023, -week_num, -year) %>%
                        mutate(source = 'normalized_cuebiq'),
                      downtown_rq_safegraph %>%
-                      mutate(source = 'safegraph') %>%
+                       mutate(source = 'safegraph') %>%
                        dplyr::filter(week <= as.Date(shared_end)))
 
 downtown_rq %>% glimpse()
 
 ggplotly(downtown_rq %>%
-        dplyr::filter((week >= "2022-01-01") & (metric == "downtown")) %>%
-  ggplot(aes(x = week, y = normalized_visits_by_total_visits, color = source)) +
-  geom_line() +
-    facet_wrap(.~city, nrow = 6) +
-  theme(axis.text = element_blank()) +
-    scale_color_manual(values = c("safegraph" = "#4daf4a",
-                                  "normalized_cuebiq" = "#fb8072")))
+           dplyr::filter((week >= "2022-01-01") & (metric == "downtown")) %>%
+           ggplot(aes(x = week, y = normalized_visits_by_total_visits, color = source)) +
+           geom_line() +
+           facet_wrap(.~city, nrow = 6) +
+           theme(axis.text = element_blank()) +
+           scale_color_manual(values = c("safegraph" = "#4daf4a",
+                                         "normalized_cuebiq" = "#fb8072")))
 
 recovery_patterns_plot <- function(df, metric, n) {
   starting_lqs <- df %>%
@@ -480,8 +511,8 @@ downtown_rq[(downtown_rq$week >= base::as.Date("2022-12-05")) & (downtown_rq$wee
 
 downtown_rq %>%
   dplyr::filter((city %in% c("Washington DC", "Salt Lake City", "New York","San Francisco",
-                                           "El Paso", "Los Angeles", "San Diego", "Portland",
-                                           "Boston", "Chicago", "Vancouver", "Toronto")) &
+                             "El Paso", "Los Angeles", "San Diego", "Portland",
+                             "Boston", "Chicago", "Vancouver", "Toronto")) &
                   (metric == "downtown") &
                   (week >= "2022-01-01"))%>%
   ggplot(aes(x = week, y = normalized_visits_by_total_visits)) +
@@ -511,7 +542,7 @@ ranking_df <- rbind(seasonal_rq,
   mutate(lq_rank = rank(-seasonal_average,
                         ties.method = "first")) %>%
   ungroup() 
-  
+
 
 ranking_df %>% glimpse()
 
@@ -535,11 +566,11 @@ comparison_rankings <- rbind(ranking_df %>%
   mutate(lq_rank_change = lq_rank_stoppers_hll - lq_rank_stops_uplevelled,
          seasonal_average_change = seasonal_average_stoppers_hll - seasonal_average_stops_uplevelled) %>%
   left_join(
-ranking_df %>%
-              dplyr::filter(Season == "Season_12") %>%
-              mutate(source = 'stoppers_hll') %>%
-              pivot_wider(names_from = 'Season', values_from = c('seasonal_average', 'lq_rank')) %>%
-  select(-source)) %>%
+    ranking_df %>%
+      dplyr::filter(Season == "Season_12") %>%
+      mutate(source = 'stoppers_hll') %>%
+      pivot_wider(names_from = 'Season', values_from = c('seasonal_average', 'lq_rank')) %>%
+      select(-source)) %>%
   arrange(city, Season)
 
 comparison_rankings %>% glimpse()

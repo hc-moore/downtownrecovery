@@ -17,20 +17,22 @@ library(broom)
 library(dplyr)
 library(scales)
 library(plotly)
-library(geojsonio)
 
-git_path <- "E:\\git/downtownrecovery/shinyapp/"
+git_path <- "~/git/downtownrecovery/shinyapp/"
 
 raw_safegraph_data <- read.csv(paste0(git_path, "safegraph_dt_recovery.csv")) 
 raw_safegraph_data %>% glimpse()
 
+raw_safegraph_data %>%
+  group_by(country) %>%
+  count()
+
 raw_safegraph_data <- raw_safegraph_data %>%
-  dplyr::select(-X, -postal_code, -is_downtown) %>%
-  rename(country_code = country) %>%
+  dplyr::select(-X, -postal_code, -is_downtown, -country) %>%
   mutate(
          city = str_replace(city, "é", "e"))
 
-cuebiq_data <- read.csv("E:\\data/downtownrecovery/counts/cuebiq_daily_agg.csv") %>%
+cuebiq_data <- read.csv("~/data/downtownrecovery/counts/cuebiq_daily_agg.csv") %>%
   mutate(source = "cuebiq",
          vdate = as.Date(as.character(vdate), format = "%Y%m%d"),
          date_range_start = lubridate::floor_date(vdate, unit = "week",
@@ -64,14 +66,14 @@ all_seasonal_metrics <- all_seasonal_metrics %>%
 all_city_coords <- read.csv(paste0(git_path,"input_data/all_city_coords.csv"))
 
 raw_safegraph_data_agg <- raw_safegraph_data %>%
-                            group_by(city, date_range_start, country_code, source) %>%
+                            group_by(city, date_range_start, source) %>%
                             summarise(raw_visit_counts = sum(raw_visit_counts),
                                       normalized_visits_by_total_visits = sum(normalized_visits_by_total_visits),
                                       normalized_visits_by_state_scaling = sum(normalized_visits_by_state_scaling)
                             ) %>%
                             mutate(date_range_start = as.Date(date_range_start),
                                    ) %>%
-                            left_join(cuebiq_data %>% select(city, state) %>% distinct())
+                            left_join(cuebiq_data %>% select(city, state, country_code) %>% distinct())
 
 raw_safegraph_data_agg %>% glimpse()
 
@@ -99,9 +101,7 @@ cuebiq_data_agg <- cuebiq_data %>%
                       normalized_visits_by_total_visits = sum(raw_visit_counts / state_visit_counts)
                               ) %>%
                     ungroup() %>%
-                    filter(date_range_start >= min(raw_safegraph_data_agg$date_range_start)) %>%
-                    mutate(country_code = case_when(country_code == "CA" ~ "CAN",
-                                                    country_code == "US" ~ "USA"))
+                    filter(date_range_start >= min(raw_safegraph_data_agg$date_range_start))
                     
 
 
@@ -112,7 +112,10 @@ cuebiq_data_agg %>%
   arrange(-n)
 
 all_counts <- bind_rows(raw_safegraph_data_agg, cuebiq_data_agg) %>%
-                filter(city != "Hamilton")
+                filter(city != "Hamilton") %>%
+              ungroup() %>%
+              mutate(country_code = case_when(country_code == "CA" ~ "CAN",
+                                  country_code == "US" ~ "USA"))
 
 all_counts %>% glimpse()
 
@@ -123,18 +126,21 @@ all_counts %>%
 
 
 
-p <- ggplot(all_counts %>% filter(date_range_start >= "2021-05-17"),
+p <- ggplot(all_counts %>% filter((date_range_start <= "2020-01-01") & (country_code == "CAN")),
             aes(x = date_range_start,
                 y = normalized_visits_by_total_visits,
                 color = source)) +
       geom_line() +
-      facet_wrap(city~., nrow = 11, scales = 'free') +
+      facet_wrap(city~., #nrow = 11, 
+                 scales = 'free') +
       theme(axis.text = element_blank())
 
 fig <- ggplotly(p)
 
 fig
 
+rates <- sample(c(50:100), 1000, replace = TRUE)
 
+mean(rates)
 
 

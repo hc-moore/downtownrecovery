@@ -8,6 +8,8 @@ library(sf)
 library(sp)
 library(geojsonio)
 
+rm(list = ls())
+gc()
 
 # details the minor cleaning and transformations of csvs downloaded from databricks 
 # for the sake of recordkeeping and reproducability
