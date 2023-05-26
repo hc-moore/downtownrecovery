@@ -12,7 +12,7 @@
 
 source('~/git/timathomas/functions/functions.r')
 ipak(c('tidyverse', 'ggplot2', 'sf', 'lubridate', 'plotly', 'zoo', 
-       'htmlwidgets', 'BAMMtools', 'leaflet'))
+       'htmlwidgets', 'BAMMtools', 'leaflet', 'caret'))
 
 #-----------------------------------------
 # Load data
@@ -108,17 +108,80 @@ range(userbase$date)
 range(bia$date)
 
 # Combine them
-b <-
+b0 <-
   userbase %>%
   filter(province == 'Ontario') %>%
   select(-province) %>%
   left_join(bia, by = c('provider', 'date')) %>%
   filter(date > as.Date('2023-04-25')) %>%
-  rbind(both)
+  rbind(both) %>%
+  group_by(bia, provider, date) %>%
+  summarize(n_devices = sum(n_devices, na.rm = T),
+            userbase = sum(userbase, na.rm = T)) %>%
+  ungroup() %>%
+  mutate(normalized = n_devices/userbase)
 
-head(b)
-summary(b)
+head(b0)
+summary(b0)
+range(b0$date)
+
+## Replace 2019 data with Safegraph
+safegraph <- read.csv('C:/Users/jpg23/data/downtownrecovery/safegraph_toronto_BIA.csv')
+
+View(safegraph)
+head(safegraph)
+glimpse(safegraph)
+
+safegraph19 <-
+  safegraph %>%
+  # Pretend 700199 is provider, to make the code below work
+  mutate(date = as.Date(date_range_start),
+         userbase = raw_visit_counts/normalized_visits_by_total_visits) %>%
+  group_by(bia = AREA_NA8, date) %>%
+  summarize(
+    n_devices = sum(raw_visit_counts, na.rm = T),
+    userbase = sum(userbase, na.rm = T)
+  ) %>%
+  ungroup() %>%
+  mutate(provider = 'safegraph',
+         normalized = n_devices/userbase) %>%
+  filter(date >= as.Date('2019-01-01') & date < as.Date('2020-01-01')) %>%
+  select(userbase, provider, date, bia, n_devices, normalized) %>%
+  data.frame()
+
+head(safegraph19)
+
+# Scale both datasets
+
+process_s19 <- preProcess(safegraph19 %>% select(normalized),
+                          method = c("range"))
+
+safegraph19_scale <- predict(process_s19, safegraph19)
+
+head(safegraph19_scale)
+nrow(safegraph19_scale)
+nrow(safegraph19)
+range(safegraph19_scale$date)
+range(safegraph19_scale$normalized) # should be 0-1
+
+process_b0 <- preProcess(b0 %>% select(normalized),
+                         method = c("range"))
+
+b0_scale <- predict(process_b0, b0)
+
+head(b0_scale)
+nrow(b0_scale)
+nrow(b0)
+range(b0_scale$date)
+range(b0_scale$normalized) # should be 0-1
+
+b <-
+  b0_scale %>%
+  filter(date >= as.Date('2020-01-01')) %>%
+  rbind(safegraph19_scale)
+
 range(b$date)
+head(b)
 
 #-----------------------------------------
 # Plots (exploratory)
@@ -126,18 +189,8 @@ range(b$date)
 
 # First look at trends over time, by provider, for all BIAs.
 
-all_bia <-
-  b %>%
-  group_by(bia, provider, date) %>%
-  summarize(n_devices = sum(n_devices, na.rm = T),
-            userbase = sum(userbase, na.rm = T)) %>%
-  data.frame() %>%
-  mutate(normalized = n_devices/userbase)
-
-head(all_bia)
-
 trend_all <- 
-  all_bia %>%
+  b %>%
   ggplot(aes(x = date, y = n_devices, group = provider, color = provider,
              alpha = .8)) +
   geom_line() +
@@ -146,7 +199,7 @@ trend_all <-
 ggplotly(trend_all)
 
 normalized_all <- 
-  all_bia %>%
+  b %>%
   ggplot(aes(x = date, y = normalized, group = provider, color = provider,
              alpha = .8)) +
   geom_line() +
@@ -155,9 +208,11 @@ normalized_all <-
 ggplotly(normalized_all)
 
 one_provider <- 
-  all_bia %>%
-  # Starting 5/17/21, switch providers
-  filter((provider == '700199' & date < as.Date('2021-05-17')) | 
+  b %>%
+  # Use Safegraph data for 2019, '700199' until 5/17/21, then '190199' after
+  filter((provider == 'safegraph' & date < as.Date('2020-01-01')) | 
+           (provider == '700199' & date >= as.Date('2020-01-01') & 
+              date < as.Date('2021-05-17')) | 
            (provider == '190199' & date >= as.Date('2021-05-17')))
 
 head(one_provider)
@@ -259,8 +314,10 @@ which_region %>% filter(bia == 'Rosedale Main Street') # it's in core
 
 rec_rate0 <-
   b %>%
-  # Starting 5/17/21, switch providers
-  filter((provider == '700199' & date < as.Date('2021-05-17')) | 
+  # Use Safegraph data for 2019, '700199' until 5/17/21, then '190199' after
+  filter((provider == 'safegraph' & date < as.Date('2020-01-01')) | 
+           (provider == '700199' & date >= as.Date('2020-01-01') & 
+              date < as.Date('2021-05-17')) | 
            (provider == '190199' & date >= as.Date('2021-05-17'))) %>%
   # Determine week and year # for each date
   mutate(
@@ -269,7 +326,8 @@ rec_rate0 <-
       unit = "week",
       week_start = getOption("lubridate.week.start", 1)),
     week_num = isoweek(date_range_start),
-    year = year(date_range_start))
+    year = year(date_range_start)) %>%
+  data.frame()
 
 head(rec_rate0)
 
@@ -277,7 +335,7 @@ head(rec_rate0)
 compare_env <- rec_rate0 %>% 
   filter(bia %in% c('Chinatown', 'Downtown Yonge', 'Kennedy Road', 'Liberty Village'))
 
-write.csv(compare_env, 'C:/Users/jpg23/data/downtownrecovery/compare_environics.csv')
+write.csv(compare_env, 'C:/Users/jpg23/data/downtownrecovery/compare_environics_safegraph.csv')
 
 rec_rate <-
   rec_rate0 %>%
@@ -345,9 +403,9 @@ all_bia_plot <-
   geom_line(size = .8) +
   ggtitle('Recovery rate for all Business Improvement Areas in Toronto (11 week rolling average)') +
   scale_x_date(date_breaks = "4 month", date_labels = "%b %Y") +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1),
-                     limits = c(0.4, 1.2),
-                     breaks = seq(.4, 1.2, .2)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  #                    limits = c(0.4, 1.2),
+  #                    breaks = seq(.4, 1.2, .2)) +
   xlab('Month') +
   ylab('Recovery rate') +
   theme(
