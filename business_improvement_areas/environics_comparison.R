@@ -213,7 +213,8 @@ spectus <-
   group_by(bia, year, month) %>%
   summarize(n_devices = sum(n_devices, na.rm = T),
             userbase = sum(userbase, na.rm = T)) %>%
-  mutate(normalized = n_devices/userbase) %>%
+  mutate(normalized = n_devices/userbase,
+         normalized_775 = .775*normalized) %>%
   data.frame() %>%
   mutate(month_date = as.Date(paste(as.character(year), month, '01', sep = '_'),
                               format = '%Y_%B_%d')) %>% 
@@ -226,7 +227,7 @@ spectus <-
            bia == 'Liberty Village' ~ 'Spectus (Liberty Village)'
          )) %>%
   group_by(bia) %>%
-  mutate(scaled = scale(normalized)) %>%
+  mutate(scaled = scale(normalized_775)) %>%
   ungroup()
 
 head(spectus)

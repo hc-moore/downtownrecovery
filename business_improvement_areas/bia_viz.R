@@ -12,7 +12,7 @@
 
 source('~/git/timathomas/functions/functions.r')
 ipak(c('tidyverse', 'ggplot2', 'sf', 'lubridate', 'plotly', 'zoo', 
-       'htmlwidgets', 'BAMMtools', 'leaflet'))
+       'htmlwidgets', 'BAMMtools', 'leaflet', 'ggmap'))
 
 #-----------------------------------------
 # Load data
@@ -332,7 +332,8 @@ all_bia_for_plot <-
   mutate(rq_rolling = zoo::rollmean(rq, k = 11, fill = NA, align = 'right')) %>%
   ungroup() %>%
   data.frame() %>%
-  filter(!(year == 2020 & week_num < 12))
+  filter(!(year == 2020 & week_num < 12)) %>%
+  mutate(rq_rolling775 = .775*rq_rolling)
 
 head(all_bia_for_plot)
 tail(all_bia_for_plot)
@@ -341,13 +342,13 @@ summary(all_bia_for_plot$week)
 
 all_bia_plot <-
   all_bia_for_plot %>%
-  ggplot(aes(x = week, y = rq_rolling)) +
+  ggplot(aes(x = week, y = rq_rolling775)) +
   geom_line(size = .8) +
   ggtitle('Recovery rate for all Business Improvement Areas in Toronto (11 week rolling average)') +
   scale_x_date(date_breaks = "4 month", date_labels = "%b %Y") +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1),
-                     limits = c(0.4, 1.2),
-                     breaks = seq(.4, 1.2, .2)) +
+                     limits = c(0.3, .9),
+                     breaks = seq(.3, .9, .2)) +
   xlab('Month') +
   ylab('Recovery rate') +
   theme(
@@ -424,7 +425,8 @@ each_bia_for_plot <-
       region == 0 ~ paste0('Core (', bia, ')'),
       region == 1 ~ paste0('Inner ring (', bia, ')'),
       TRUE ~ paste0('Outer ring (', bia, ')')
-    ))
+    )) %>%
+  mutate(rq_rolling775 = .775*rq_rolling)
 
 head(each_bia_for_plot)
 each_bia_for_plot %>% group_by(region) %>% count()
@@ -433,12 +435,14 @@ each_bia_for_plot %>% group_by(region) %>% count()
 
 each_bia_plot <-
   each_bia_for_plot %>%
-  ggplot(aes(x = week, y = rq_rolling, group = bia, 
+  ggplot(aes(x = week, y = rq_rolling775, group = bia, 
              color = interaction(as.factor(region), as.factor(dark_alpha)))) + # text = mytext
   geom_line(size = 1) +
   ggtitle('Recovery rate for all Business Improvement Areas in Toronto (11 week rolling average)') +
   scale_x_date(date_breaks = "4 month", date_labels = "%b %Y") +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1),
+                     limits = c(0, 2),
+                     breaks = seq(0, 2, .5)) +
   xlab('Month') +
   ylab('Recovery rate') +
   labs(color = '') +
@@ -493,25 +497,25 @@ outer <- each_bia_for_plot %>%
 
 each_bia_plotly <- 
   plot_ly() %>%
-  add_lines(data = fd, x = ~week, y = ~rq_rolling, 
+  add_lines(data = fd, x = ~week, y = ~rq_rolling775, 
             name = "Financial District", 
             text = ~mytext,
             hoverinfo = 'text',
             opacity = .9,
             line = list(shape = "linear", color = '#8c0a03')) %>%
-  add_lines(data = not_fd_core, x = ~week, y = ~rq_rolling, split = ~bia,
+  add_lines(data = not_fd_core, x = ~week, y = ~rq_rolling775, split = ~bia,
             name = ~bia_region, 
             text = ~mytext,
             hoverinfo = 'text',
             opacity = .3,
             line = list(shape = "linear", color = '#8c0a03')) %>%
-  add_lines(data = inner, x = ~week, y = ~rq_rolling, split = ~bia,
+  add_lines(data = inner, x = ~week, y = ~rq_rolling775, split = ~bia,
             name = ~bia_region, 
             text = ~mytext,
             hoverinfo = 'text',
             opacity = .3,
             line = list(shape = "linear", color = '#d6ad09')) %>%
-  add_lines(data = outer, x = ~week, y = ~rq_rolling, split = ~bia,
+  add_lines(data = outer, x = ~week, y = ~rq_rolling775, split = ~bia,
             name = ~bia_region, 
             text = ~mytext,
             hoverinfo = 'text',
@@ -534,13 +538,13 @@ each_bia_plotly
 yonge_plot <-
   each_bia_for_plot %>%
   filter(bia == 'Downtown Yonge') %>%
-  ggplot(aes(x = week, y = rq_rolling)) +
+  ggplot(aes(x = week, y = rq_rolling775)) +
   geom_line(size = .8) +
   ggtitle('Recovery rate for Downtown Yonge (11 week rolling average)') +
   scale_x_date(date_breaks = "4 month", date_labels = "%b %Y") +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1),
-                     limits = c(0.2, 1.2),
-                     breaks = seq(.2, 1.2, .2)) +
+                     limits = c(0.15, 1),
+                     breaks = seq(.2, 1, .2)) +
   xlab('Month') +
   ylab('Recovery rate') +
   theme(
@@ -565,13 +569,13 @@ yonge_plot
 financial_plot <-
   each_bia_for_plot %>%
   filter(bia == 'Financial District') %>%
-  ggplot(aes(x = week, y = rq_rolling)) +
+  ggplot(aes(x = week, y = rq_rolling775)) +
   geom_line(size = .8) +
   ggtitle('Recovery rate for Financial District (11 week rolling average)') +
   scale_x_date(date_breaks = "4 month", date_labels = "%b %Y") +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1),
-                     limits = c(0, 1),
-                     breaks = seq(0, 1, .2)) +
+                     limits = c(0, .8),
+                     breaks = seq(0, .8, .2)) +
   xlab('Month') +
   ylab('Recovery rate') +
   theme(
@@ -634,11 +638,14 @@ for_maps <-
     names_prefix = 'normalized_',
     values_from = normalized
   ) %>%
-  mutate(rate = normalized_2023/normalized_2019) %>%
+  mutate(rate = normalized_2023/normalized_2019,
+         rate_775 = .775*rate) %>%
   filter(!is.na(bia)) %>%
   data.frame()
 
 head(for_maps)
+summary(for_maps$rate)
+summary(for_maps$rate_775)
 
 
 # 1. Choropleth map of "recovery rate" for all BIAs
@@ -649,22 +656,33 @@ head(for_maps)
 nrow(bia_sf)
 nrow(for_maps)
 
-summary(for_maps$rate)
-getJenksBreaks(for_maps$rate, 7)
+summary(for_maps$rate_775)
+getJenksBreaks(for_maps$rate_775, 7)
 
 bia_final <- 
   left_join(bia_sf, for_maps) %>%
   mutate(
     rate_cat = factor(case_when(
-      rate < .8 ~ '50 - 79%',
-      rate < 1 ~ '80 - 99%',
-      rate < 1.2 ~ '100 - 119%',
-      rate < 1.5 ~ '120 - 149%',
-      rate < 1.8 ~ '150 - 179%',
-      TRUE ~ '180 - 240%'
+      rate_775 < .6 ~ '42 - 59%',
+      rate_775 < .8 ~ '60 - 79%',
+      rate_775 < 1 ~ '80 - 99%',
+      rate_775 < 1.1 ~ '100 - 109%',
+      rate_775 < 1.4 ~ '110 - 139%',
+      TRUE ~ '140 - 181%'
     ),
-    levels = c('50 - 79%', '80 - 99%', '100 - 119%', '120 - 149%', '150 - 179%',
-               '180 - 240%')))
+    levels = c('42 - 59%', '60 - 79%', '80 - 99%', '100 - 109%', '110 - 139%',
+               '140 - 181%')))
+  # mutate(
+  #   rate_cat = factor(case_when(
+  #     rate < .8 ~ '50 - 79%',
+  #     rate < 1 ~ '80 - 99%',
+  #     rate < 1.2 ~ '100 - 119%',
+  #     rate < 1.5 ~ '120 - 149%',
+  #     rate < 1.8 ~ '150 - 179%',
+  #     TRUE ~ '180 - 240%'
+  #   ),
+  #   levels = c('50 - 79%', '80 - 99%', '100 - 119%', '120 - 149%', '150 - 179%',
+  #              '180 - 240%')))
 
 nrow(bia_final)
 head(bia_final)
@@ -748,9 +766,9 @@ attributes(basemap_transparent_zoom) <- basemap_attributes_zoom
 bia_zoom <-
   bia_final %>%
   filter(bia %in% c('Financial District', 'Downtown Yonge')) %>%
-  mutate(bia_lab = factor(paste0(bia, ': ', round(rate * 100), '%'),
-                          levels = c('Financial District: 71%',
-                                     'Downtown Yonge: 109%')))
+  mutate(bia_lab = factor(paste0(bia, ': ', round(rate_775 * 100), '%'),
+                          levels = c('Financial District: 55%',
+                                     'Downtown Yonge: 85%')))
 
 zoom_pal <- c(
   "#e41822",
@@ -791,7 +809,7 @@ zoom_map
 
 bia_final_label <-
   bia_final %>%
-  mutate(label = paste0(bia, ": ", round(rate * 100), "%"))
+  mutate(label = paste0(bia, ": ", round(rate_775 * 100), "%"))
 
 leaflet_pal <- colorFactor(
   pal,
