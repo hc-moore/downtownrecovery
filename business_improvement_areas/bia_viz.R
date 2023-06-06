@@ -419,14 +419,14 @@ each_bia_for_plot <-
   )) %>%
   filter(!is.na(bia)) %>%
   mutate(
+    rq_rolling775 = .775*rq_rolling,
     mytext = paste0(bia, '<br>Week of ', week, ': ',
-                    scales::percent(rq_rolling, accuracy = 2)),
+                    scales::percent(rq_rolling775, accuracy = 2)),
     bia_region = case_when(
       region == 0 ~ paste0('Core (', bia, ')'),
       region == 1 ~ paste0('Inner ring (', bia, ')'),
       TRUE ~ paste0('Outer ring (', bia, ')')
-    )) %>%
-  mutate(rq_rolling775 = .775*rq_rolling)
+    ))
 
 head(each_bia_for_plot)
 each_bia_for_plot %>% group_by(region) %>% count()
