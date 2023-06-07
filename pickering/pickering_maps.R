@@ -222,8 +222,7 @@ nrow(muni2)
 nrow(da_sf)
 
 da_muni_sf <- 
-  st_join(muni2 %>% st_make_valid(), da_sf %>% st_make_valid(),
-          join = st_contains) 
+  st_join(muni2 %>% st_make_valid(), da_sf %>% st_make_valid()) 
 
 nrow(da_muni_sf)
 nrow(da)
@@ -240,7 +239,32 @@ head(da_muni %>% data.frame())
 pickering <-
   da_muni %>%
   st_drop_geometry() %>%
-  filter(municipality == 'CITY OF PICKERING') %>%
+  filter(municipality == 'CITY OF PICKERING' &
+           !da %in% c(
+             '35180548',
+             '35180586',
+             '35180406',
+             '35181227',
+             '35181283',
+             '35181285',
+             '35181177',
+             '35181173',
+             '35180534',
+             '35180039',
+             '35180879',
+             '35180880',
+             '35180930',
+             '35191357',
+             '35191358',
+             '35191166',
+             '35191175',
+             '35191293',
+             '35191294',
+             '35191295',
+             '35204733',
+             '35203739',
+             '35203736'
+           )) %>%
   # Calculate # of devices by DA, week and year
   group_by(da, year, week_num) %>%
   summarize(n_devices = sum(n_devices, na.rm = T),
@@ -339,16 +363,16 @@ pal <- c(
   "#e41822",
   "#faa09d",
   "#5bc4fb",
-  "#2c92d7",
-  "#0362b0"
+  "#317fb6",
+  "#024072"
 )
 
 basemap_p <-
   get_stamenmap(
-    bbox = c(left = -79.32,
-             bottom = 43.77,
-             right = -78.92,
-             top = 44.1),
+    bbox = c(left = -79.23,
+             bottom = 43.79,
+             right = -79,
+             top = 44.02),
     zoom = 11,
     maptype = "terrain-lines") # https://r-graph-gallery.com/324-map-background-with-the-ggmap-library.html
 
@@ -367,7 +391,7 @@ pickering_map <-
           alpha = .7,
           color = 'black',
           size = .5) +
-  ggtitle('Recovery rate of Dissemination Areas in\nPickering, March 1 - April 25 (2023 versus 2019)') +
+  ggtitle('Recovery rate of Dissemination Areas in\nPickering, January 1 - April 25 (2023 versus 2019)') +
   scale_fill_manual(values = pal, name = 'Recovery rate') +
   guides(fill = guide_legend(barwidth = 0.5, barheight = 10,
                              ticks = F, byrow = T)) +
@@ -454,13 +478,12 @@ gta_final <-
   left_join(muni2, gta1) %>%
   mutate(
     rate_cat = factor(case_when(
-      rate < .5 ~ '<50%',
-      rate < 1 ~ '50 - 99%',
+      rate < 1 ~ '85 - 99%',
       rate < 1.5 ~ '100 - 149%',
       rate < 2 ~ '150 - 199%',
       TRUE ~ '200%+'
     ),
-    levels = c('<50%', '50 - 99%', '100 - 149%', '150 - 199%', '200%+')))
+    levels = c('85 - 99%', '100 - 149%', '150 - 199%', '200%+')))
 
 nrow(gta_final)
 head(gta_final)
@@ -481,10 +504,24 @@ basemap_transparent_gta <- matrix(adjustcolor(basemap_gta, alpha.f = 0.6),
 
 attributes(basemap_transparent_gta) <- basemap_attributes_gta
 
-gta_final_new <- cbind(gta_final, 
-                       st_coordinates(st_centroid(gta_final)) %>% data.frame()) 
+gta_final_new <- 
+  cbind(gta_final, st_coordinates(st_centroid(gta_final)) %>% data.frame()) %>%
+  mutate(municipality = str_remove_all(municipality, '(TOWN(SHIP)?|CITY|MUNICIPALITY)\\sOF\\s'),
+         municipality_new = case_when(
+           municipality == 'WHITCHURCH-STOUFFVILLE' ~ 'WHITCHURCH-\nSTOUFFVILLE',
+           municipality == 'EAST GWILLIMBURY' ~ 'EAST\nGWILLIMBURY',
+           municipality == 'RICHMOND HILL' ~ 'RICHMOND\nHILL',
+           TRUE ~ municipality
+         ))
 
 head(gta_final_new)
+
+pal_gta <- c(
+  "#faa09d",
+  "#5bc4fb",
+  "#317fb6",
+  "#024072"
+)
 
 gta_map <-
   ggmap(basemap_transparent_gta) +
@@ -494,12 +531,15 @@ gta_map <-
           alpha = .7,
           color = 'black',
           size = .5) +
-  ggtitle('Recovery rate of Municipalities in Greater\nToronto Area, March 1 - April 25 (2023 versus 2019)') +
-  scale_fill_manual(values = pal, name = 'Recovery rate') +
+  ggtitle('Recovery rate of Municipalities in Greater\nToronto Area, January 1 - April 25 (2023 versus 2019)') +
+  scale_fill_manual(values = pal_gta, name = 'Recovery rate') +
   guides(fill = guide_legend(barwidth = 0.5, barheight = 10,
                              ticks = F, byrow = T)) +
-  geom_text(data = gta_final_new, size = 9,
-            aes(x = X, y = Y), label = gta_final_new$municipality) +
+  geom_text(size = 2,
+            data = gta_final_new,
+            aes(x = X, y = Y), 
+            label = gta_final_new$municipality_new
+            ) +
   theme(
     panel.border = element_blank(),
     panel.grid.major = element_blank(),
