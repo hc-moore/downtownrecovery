@@ -10,7 +10,7 @@
 
 source('~/git/timathomas/functions/functions.r')
 ipak(c('tidyverse', 'ggplot2', 'sf', 'lubridate', 'plotly', 'zoo', 
-       'htmlwidgets', 'BAMMtools', 'leaflet'))
+       'htmlwidgets', 'BAMMtools', 'leaflet', 'ggmap'))
 
 #-----------------------------------------
 # Load DA data from Spectus
@@ -38,10 +38,38 @@ da2 <- read_delim(
   mutate(date = as.Date(as.character(date), format = "%Y%m%d")) %>%
   data.frame()
 
-da0 <- rbind(da1, da2)
+da0 <- rbind(da1, da2) %>% mutate(normalized = n_devices/userbase)
 
 summary(da0)
 head(da0)
+
+#-----------------------------------------
+# Determine which provider to use
+#-----------------------------------------
+
+# # Which provider to use? Plot each one over time
+# da_plot <- da0 %>%
+#   ggplot(aes(x = date, y = normalized, group = provider, color = provider,
+#              alpha = .8)) +
+#   geom_line() +
+#   theme_bw()
+# 
+# da_plot
+
+da <- da0 %>%
+  filter((provider == '700199' & date < as.Date('2021-05-17')) | ### CHANGE DATES IF NEEDED
+           (provider == '190199' & date >= as.Date('2021-05-17'))) %>%
+  select(-provider) %>%
+  # Determine week and year # for each date
+  mutate(
+    date_range_start = floor_date(
+      date,
+      unit = "week",
+      week_start = getOption("lubridate.week.start", 1)),
+    week_num = isoweek(date_range_start),
+    year = year(date_range_start))
+
+head(da)
 
 #-----------------------------------------
 # Load DA shapefile
@@ -69,11 +97,8 @@ muni <- read_sf(
   select(municipality = OFFICIAL_MUNICIPAL_NAME)
 
 muni$municipality
-
 n_distinct(muni$municipality)
-
 muni %>% group_by(municipality) %>% count() %>% arrange(desc(n))
-
 muni %>% filter(municipality == 'CITY OF TORONTO') # 3 rows, each with different geography
 
 #-----------------------------------------
@@ -196,44 +221,23 @@ muni_map2
 nrow(muni2)
 nrow(da_sf)
 
-da_muni <- st_join(muni2 %>% st_make_valid(), da_sf %>% st_make_valid())
+da_muni_sf <- 
+  st_join(muni2 %>% st_make_valid(), da_sf %>% st_make_valid()) 
 
-nrow(da_muni)
-
-da <- da_muni %>% left_join(da0) %>% mutate(normalized = n_devices/userbase)
-
+nrow(da_muni_sf)
 nrow(da)
 
-#-----------------------------------------
-# Determine which provider to use
-#-----------------------------------------
+da_muni <- da_muni_sf %>% left_join(da)
 
-# Which provider to use? Plot each one over time
-da_plot <- da %>%
-  ggplot(aes(x = date, y = normalized, group = provider, color = provider,
-             alpha = .8)) +
-  geom_line() +
-  theme_bw()
-
-one_prov <- da %>%
-  filter((provider == '700199' & date < as.Date('2021-05-17')) | ### CHANGE DATES IF NEEDED
-           (provider == '190199' & date >= as.Date('2021-05-17'))) %>%
-  select(-provider) %>%
-  # Determine week and year # for each date
-  mutate(
-    date_range_start = floor_date(
-      date,
-      unit = "week",
-      week_start = getOption("lubridate.week.start", 1)),
-    week_num = isoweek(date_range_start),
-    year = year(date_range_start))
+nrow(da_muni)
+head(da_muni %>% data.frame())
 
 #-----------------------------------------
 # Map DA recovery rates in Pickering
 #-----------------------------------------
 
 pickering <-
-  one_prov %>%
+  da_muni %>%
   filter(municipality == 'CITY OF PICKERING') %>%
   # Calculate # of devices by DA, week and year
   group_by(da, year, week_num) %>%
@@ -248,38 +252,35 @@ pickering <-
 only_23_pick <-
   pickering %>%
   filter((year == 2023 & week >= as.Date('2023-03-01') &
-            week <= as.Date('2023-05-19'))) ## THESE DATES WILL NEED TO CHANGE
+            week <= as.Date('2023-04-25')))
 
 only_19_pick <-
   pickering %>%
   filter((year == 2019 & week >= as.Date('2019-03-01') &
-            week <= as.Date('2019-05-19'))) ## THESE DATES WILL NEED TO CHANGE
+            week <= as.Date('2019-04-25')))
 
-nrow(only_23)
-n_distinct(only_23$week_num)
-
-nrow(only_19)
-n_distinct(only_19$week_num) # yes :)
+n_distinct(only_23_pick$week_num)
+n_distinct(only_19_pick$week_num) # yes :)
 
 pickering1 <-
   pickering %>%
-  ### NEED TO CHANGE THESE DATES!!!
   filter((year == 2023 & week >= as.Date('2023-03-01') &
-            week <= as.Date('2023-05-19')) |
+            week <= as.Date('2023-04-25')) |
            (year == 2019 & week >= as.Date('2019-03-01') &
-              week <= as.Date('2019-05-19'))) %>%
+              week <= as.Date('2019-04-25'))) %>%
   group_by(da, year) %>%
   summarize(n_devices = sum(n_devices, na.rm = T),
             userbase = sum(userbase, na.rm = T)) %>%
+  ungroup() %>%
   mutate(normalized = n_devices/userbase) %>%
   select(-c(n_devices, userbase)) %>%
   pivot_wider(
-    names_from = year,
+    names_from = 'year',
     names_prefix = 'normalized_',
-    values_from = normalized
+    values_from = 'normalized'
   ) %>%
   mutate(rate = normalized_2023/normalized_2019) %>%
-  filter(!is.na(bia)) %>%
+  filter(!is.na(da)) %>%
   data.frame()
 
 head(pickering1)
@@ -292,19 +293,23 @@ nrow(pickering1)
 summary(pickering1$rate)
 getJenksBreaks(pickering1$rate, 7)
 
+nrow(da_sf)
+nrow(pickering1)
+
 pickering_final <-
-  left_join(da_sf, pickering1) %>%
+  left_join(da_sf, pickering1 %>% st_drop_geometry(), by = 'da') %>%
   mutate(
-    rate_cat = factor(case_when( ### CHANGE THESE LABELS
-      rate < .8 ~ '50 - 79%',
-      rate < 1 ~ '80 - 99%',
-      rate < 1.2 ~ '100 - 119%',
-      rate < 1.5 ~ '120 - 149%',
-      rate < 1.8 ~ '150 - 179%',
-      TRUE ~ '180 - 240%'
+    rate_cat = factor(case_when(
+      rate < .65 ~ '12 - 64%',
+      rate < 1 ~ '65 - 99%',
+      rate < 1.5 ~ '100 - 149%',
+      rate < 2.3 ~ '150 - 229%',
+      rate < 3 ~ '230 - 299%',
+      TRUE ~ '300 - 463%'
     ),
-    levels = c('50 - 79%', '80 - 99%', '100 - 119%', '120 - 149%', '150 - 179%',
-               '180 - 240%')))
+    levels = c('12 - 64%', '65 - 99%', '100 - 149%', '150 - 229%', '230 - 299%',
+               '300 - 463%'))) %>%
+  filter(!is.na(rate))
 
 nrow(pickering_final)
 head(pickering_final)
@@ -320,16 +325,16 @@ pal <- c(
 
 basemap_p <-
   get_stamenmap(
-    bbox = c(left = -79.58, ## CHANGE THESE COORDINATES
-             bottom = 43.59,
-             right = -79.2,
-             top = 43.81),
+    bbox = c(left = -79.32,
+             bottom = 43.77,
+             right = -78.92,
+             top = 44.1),
     zoom = 11,
     maptype = "terrain-lines") # https://r-graph-gallery.com/324-map-background-with-the-ggmap-library.html
 
-basemap_attributes <- attributes(basemap_p)
+basemap_attributes_p <- attributes(basemap_p)
 
-basemap_transparent_p <- matrix(adjustcolor(basemap_p, alpha.f = 0.2),
+basemap_transparent_p <- matrix(adjustcolor(basemap_p, alpha.f = 0.4),
                               nrow = nrow(basemap_p))
 
 attributes(basemap_transparent_p) <- basemap_attributes_p
@@ -339,9 +344,10 @@ pickering_map <-
   geom_sf(data = pickering_final,
           aes(fill = rate_cat),
           inherit.aes = FALSE,
-          # alpha = .9,
-          color = NA) +
-  ggtitle('Recovery rate of Dissemination Areas in\nPickering, [DATE to DATE] (2023 versus 2019)') +
+          alpha = .7,
+          color = 'black',
+          size = .5) +
+  ggtitle('Recovery rate of Dissemination Areas in\nPickering, March 1 - April 25 (2023 versus 2019)') +
   scale_fill_manual(values = pal, name = 'Recovery rate') +
   guides(fill = guide_legend(barwidth = 0.5, barheight = 10,
                              ticks = F, byrow = T)) +
@@ -368,7 +374,7 @@ pickering_map
 #-----------------------------------------
 
 gta <-
-  one_prov %>%
+  da_muni %>%
   st_drop_geometry() %>%
   group_by(municipality, year, week_num) %>%
   summarize(n_devices = sum(n_devices, na.rm = T),
@@ -382,40 +388,39 @@ gta <-
 only_23_gta <-
   gta %>%
   filter((year == 2023 & week >= as.Date('2023-03-01') &
-            week <= as.Date('2023-05-19'))) ### CHANGE THESE DATES
+            week <= as.Date('2023-04-25')))
 
 only_19_gta <-
   gta %>%
   filter((year == 2019 & week >= as.Date('2019-03-01') &
-            week <= as.Date('2019-05-19'))) ### CHANGE THESE DATES
+            week <= as.Date('2019-04-25')))
 
-nrow(only_23_gta)
 n_distinct(only_23_gta$week_num)
-
-nrow(only_19_gta)
-n_distinct(only_19_gta$week_num)
+n_distinct(only_19_gta$week_num) # yes :)
 
 gta1 <-
   gta %>%
-  filter((year == 2023 & week >= as.Date('2023-03-01') & ### CHANGE DATES
-            week <= as.Date('2023-05-19')) |
+  filter((year == 2023 & week >= as.Date('2023-03-01') &
+            week <= as.Date('2023-04-25')) |
            (year == 2019 & week >= as.Date('2019-03-01') &
-              week <= as.Date('2019-05-19'))) %>%
+              week <= as.Date('2019-04-25'))) %>%
   group_by(municipality, year) %>%
   summarize(n_devices = sum(n_devices, na.rm = T),
             userbase = sum(userbase, na.rm = T)) %>%
   mutate(normalized = n_devices/userbase) %>%
   select(-c(n_devices, userbase)) %>%
+  ungroup() %>%
   pivot_wider(
-    names_from = year,
+    names_from = 'year',
     names_prefix = 'normalized_',
-    values_from = normalized
+    values_from = 'normalized'
   ) %>%
   mutate(rate = normalized_2023/normalized_2019) %>%
-  filter(!is.na(bia)) %>%
+  filter(!is.na(municipality)) %>%
   data.frame()
 
 head(gta1)
+summary(gta1)
 
 # Join spatial data with device count data.
 
@@ -428,15 +433,15 @@ getJenksBreaks(gta1$rate, 7)
 gta_final <-
   left_join(muni2, gta1) %>%
   mutate(
-    rate_cat = factor(case_when( ### CHANGE LABELS
-      rate < .8 ~ '50 - 79%',
-      rate < 1 ~ '80 - 99%',
+    rate_cat = factor(case_when(
+      rate < .95 ~ '89 - 94%',
+      rate < 1 ~ '95 - 99%',
       rate < 1.2 ~ '100 - 119%',
       rate < 1.5 ~ '120 - 149%',
       rate < 1.8 ~ '150 - 179%',
       TRUE ~ '180 - 240%'
     ),
-    levels = c('50 - 79%', '80 - 99%', '100 - 119%', '120 - 149%', '150 - 179%',
+    levels = c('89 - 94%', '95 - 99%', '100 - 119%', '120 - 149%', '150 - 179%',
                '180 - 240%')))
 
 nrow(gta_final)
@@ -444,31 +449,39 @@ head(gta_final)
 
 basemap_gta <-
   get_stamenmap(
-    bbox = c(left = -79.58, ### CHANGE COORDINATES
-             bottom = 43.59,
-             right = -79.2,
-             top = 43.81),
+    bbox = c(left = -80.2,
+             bottom = 43.25,
+             right = -78.35,
+             top = 44.52),
     zoom = 11,
     maptype = "terrain-lines") # https://r-graph-gallery.com/324-map-background-with-the-ggmap-library.html
 
 basemap_attributes_gta <- attributes(basemap_gta)
 
-basemap_transparent_gta <- matrix(adjustcolor(basemap_gta, alpha.f = 0.2),
+basemap_transparent_gta <- matrix(adjustcolor(basemap_gta, alpha.f = 0.6),
                               nrow = nrow(basemap_gta))
 
 attributes(basemap_transparent_gta) <- basemap_attributes_gta
 
+gta_final_new <- cbind(gta_final, 
+                       st_coordinates(st_centroid(gta_final)) %>% data.frame()) 
+
+head(gta_final_new)
+
 gta_map <-
   ggmap(basemap_transparent_gta) +
-  geom_sf(data = gta_final,
+  geom_sf(data = gta_final_new,
           aes(fill = rate_cat),
           inherit.aes = FALSE,
-          # alpha = .9,
-          color = NA) +
-  ggtitle('Recovery rate of Municipalities in\nGreater Toronto Area, [DATE to DATE] (2023 versus 2019)') +
+          alpha = .7,
+          color = 'black',
+          size = .5) +
+  ggtitle('Recovery rate of Municipalities in Greater\nToronto Area, March 1 - April 25 (2023 versus 2019)') +
   scale_fill_manual(values = pal, name = 'Recovery rate') +
   guides(fill = guide_legend(barwidth = 0.5, barheight = 10,
                              ticks = F, byrow = T)) +
+  geom_text(data = gta_final_new,
+            aes(x = X, y = Y), label = gta_final_new$municipality) +
   theme(
     panel.border = element_blank(),
     panel.grid.major = element_blank(),
