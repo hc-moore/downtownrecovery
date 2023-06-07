@@ -57,7 +57,7 @@ head(da0)
 # da_plot
 
 da <- da0 %>%
-  filter((provider == '700199' & date < as.Date('2021-05-17')) | ### CHANGE DATES IF NEEDED
+  filter((provider == '700199' & date < as.Date('2021-05-17')) | 
            (provider == '190199' & date >= as.Date('2021-05-17'))) %>%
   select(-provider) %>%
   # Determine week and year # for each date
@@ -222,7 +222,8 @@ nrow(muni2)
 nrow(da_sf)
 
 da_muni_sf <- 
-  st_join(muni2 %>% st_make_valid(), da_sf %>% st_make_valid()) 
+  st_join(muni2 %>% st_make_valid(), da_sf %>% st_make_valid(),
+          join = st_contains) 
 
 nrow(da_muni_sf)
 nrow(da)
@@ -238,6 +239,7 @@ head(da_muni %>% data.frame())
 
 pickering <-
   da_muni %>%
+  st_drop_geometry() %>%
   filter(municipality == 'CITY OF PICKERING') %>%
   # Calculate # of devices by DA, week and year
   group_by(da, year, week_num) %>%
@@ -251,22 +253,43 @@ pickering <-
 # Make sure I'm comparing the same number of weeks:
 only_23_pick <-
   pickering %>%
-  filter((year == 2023 & week >= as.Date('2023-03-01') &
+  filter((year == 2023 & week >= as.Date('2023-01-07') & # changed to Jan 7 to have same # of weeks
             week <= as.Date('2023-04-25')))
 
 only_19_pick <-
   pickering %>%
-  filter((year == 2019 & week >= as.Date('2019-03-01') &
+  filter((year == 2019 & week >= as.Date('2019-01-01') &
             week <= as.Date('2019-04-25')))
 
 n_distinct(only_23_pick$week_num)
 n_distinct(only_19_pick$week_num) # yes :)
 
+# # Which provider to use? Plot each one over time
+# da_plot <- da0 %>%
+#   filter(da %in% pickering$da) %>%
+#   ggplot(aes(x = date, y = normalized, group = provider, color = provider,
+#              alpha = .8)) +
+#   geom_line() +
+#   theme_bw()
+# 
+# ggplotly(da_plot)
+
+# Look at DAs individually
+da_plot2 <- pickering %>%
+  filter(week >= as.Date('2019-01-01')) %>%
+  mutate(normalized = n_devices/userbase) %>%
+  ggplot(aes(x = week, y = normalized, group = da, color = da,
+             alpha = .8)) +
+  geom_line() +
+  theme_bw()
+
+ggplotly(da_plot2)
+
 pickering1 <-
   pickering %>%
-  filter((year == 2023 & week >= as.Date('2023-03-01') &
+  filter((year == 2023 & week >= as.Date('2023-01-07') &
             week <= as.Date('2023-04-25')) |
-           (year == 2019 & week >= as.Date('2019-03-01') &
+           (year == 2019 & week >= as.Date('2019-01-01') &
               week <= as.Date('2019-04-25'))) %>%
   group_by(da, year) %>%
   summarize(n_devices = sum(n_devices, na.rm = T),
@@ -291,7 +314,7 @@ nrow(da_sf)
 nrow(pickering1)
 
 summary(pickering1$rate)
-getJenksBreaks(pickering1$rate, 7)
+# getJenksBreaks(pickering1$rate, 7)
 
 nrow(da_sf)
 nrow(pickering1)
@@ -300,15 +323,13 @@ pickering_final <-
   left_join(da_sf, pickering1 %>% st_drop_geometry(), by = 'da') %>%
   mutate(
     rate_cat = factor(case_when(
-      rate < .65 ~ '12 - 64%',
-      rate < 1 ~ '65 - 99%',
+      rate < .5 ~ '<50%',
+      rate < 1 ~ '50 - 99%',
       rate < 1.5 ~ '100 - 149%',
-      rate < 2.3 ~ '150 - 229%',
-      rate < 3 ~ '230 - 299%',
-      TRUE ~ '300 - 463%'
+      rate < 2 ~ '150 - 199%',
+      TRUE ~ '200%+'
     ),
-    levels = c('12 - 64%', '65 - 99%', '100 - 149%', '150 - 229%', '230 - 299%',
-               '300 - 463%'))) %>%
+    levels = c('<50%', '50 - 99%', '100 - 149%', '150 - 199%', '200%+'))) %>%
   filter(!is.na(rate))
 
 nrow(pickering_final)
@@ -319,8 +340,7 @@ pal <- c(
   "#faa09d",
   "#5bc4fb",
   "#2c92d7",
-  "#0362b0",
-  "#033384"
+  "#0362b0"
 )
 
 basemap_p <-
@@ -387,12 +407,12 @@ gta <-
 # Make sure I'm comparing the same number of weeks:
 only_23_gta <-
   gta %>%
-  filter((year == 2023 & week >= as.Date('2023-03-01') &
+  filter((year == 2023 & week >= as.Date('2023-01-07') &
             week <= as.Date('2023-04-25')))
 
 only_19_gta <-
   gta %>%
-  filter((year == 2019 & week >= as.Date('2019-03-01') &
+  filter((year == 2019 & week >= as.Date('2019-01-01') &
             week <= as.Date('2019-04-25')))
 
 n_distinct(only_23_gta$week_num)
@@ -400,9 +420,9 @@ n_distinct(only_19_gta$week_num) # yes :)
 
 gta1 <-
   gta %>%
-  filter((year == 2023 & week >= as.Date('2023-03-01') &
+  filter((year == 2023 & week >= as.Date('2023-01-07') &
             week <= as.Date('2023-04-25')) |
-           (year == 2019 & week >= as.Date('2019-03-01') &
+           (year == 2019 & week >= as.Date('2019-01-01') &
               week <= as.Date('2019-04-25'))) %>%
   group_by(municipality, year) %>%
   summarize(n_devices = sum(n_devices, na.rm = T),
@@ -428,21 +448,19 @@ nrow(muni2)
 nrow(gta1)
 
 summary(gta1$rate)
-getJenksBreaks(gta1$rate, 7)
+# getJenksBreaks(gta1$rate, 7)
 
 gta_final <-
   left_join(muni2, gta1) %>%
   mutate(
     rate_cat = factor(case_when(
-      rate < .95 ~ '89 - 94%',
-      rate < 1 ~ '95 - 99%',
-      rate < 1.2 ~ '100 - 119%',
-      rate < 1.5 ~ '120 - 149%',
-      rate < 1.8 ~ '150 - 179%',
-      TRUE ~ '180 - 240%'
+      rate < .5 ~ '<50%',
+      rate < 1 ~ '50 - 99%',
+      rate < 1.5 ~ '100 - 149%',
+      rate < 2 ~ '150 - 199%',
+      TRUE ~ '200%+'
     ),
-    levels = c('89 - 94%', '95 - 99%', '100 - 119%', '120 - 149%', '150 - 179%',
-               '180 - 240%')))
+    levels = c('<50%', '50 - 99%', '100 - 149%', '150 - 199%', '200%+')))
 
 nrow(gta_final)
 head(gta_final)
@@ -480,7 +498,7 @@ gta_map <-
   scale_fill_manual(values = pal, name = 'Recovery rate') +
   guides(fill = guide_legend(barwidth = 0.5, barheight = 10,
                              ticks = F, byrow = T)) +
-  geom_text(data = gta_final_new,
+  geom_text(data = gta_final_new, size = 9,
             aes(x = X, y = Y), label = gta_final_new$municipality) +
   theme(
     panel.border = element_blank(),
