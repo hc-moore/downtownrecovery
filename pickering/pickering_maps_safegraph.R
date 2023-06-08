@@ -45,12 +45,29 @@ da0 <- rbind(da1, da2) %>% mutate(normalized = n_devices/userbase) %>%
 summary(da0)
 head(da0)
 
-safegraph <- 
+minmax_normalizer <- function(x, min_x, max_x) {
+  return((x- min_x) /(max_x-min_x))
+}
+
+safegraph0 <- 
   qread(paste0(filepath, "spectus_exports/DAs/pickering_subset.qs")) %>% 
   mutate(date_range_start = as.Date(date_range_start)) %>%
   filter(da %in% da0$da & date_range_start < as.Date('2020-01-01')) %>%
-  select(-c(n_devices, normalized_visits_by_state_scaling))
+  select(-c(n_devices, normalized_visits_by_state_scaling)) 
 
+min_val = min(safegraph0$normalized, na.rm = TRUE)
+max_val = max(safegraph0$normalized, na.rm = TRUE)
+
+min_val
+max_val
+
+safegraph <- safegraph0 %>%
+  mutate(min_val = 0.0000002729914, 
+         max_val = 0.01222641,
+         minmax_scaled = minmax_normalizer(normalized, min_val, max_val))
+
+glimpse(safegraph)
+summary(safegraph)
 summary(safegraph)
 
 #-----------------------------------------
@@ -82,19 +99,34 @@ da1 <- da0 %>%
 
 head(da1)
 
-da <- rbind(da1, safegraph) %>%
+min_val_d = min(da1$normalized, na.rm = TRUE)
+max_val_d = max(da1$normalized, na.rm = TRUE)
+
+min_val_d
+max_val_d
+
+da2 <- da1 %>%
+  mutate(min_val = 0.000002416743, 
+         max_val = 0.012176,
+         minmax_scaled = minmax_normalizer(normalized, min_val, max_val))
+
+# Stack Safegraph (2019) & Spectus (post-2019)
+da <- rbind(da2, safegraph) %>%
   mutate(
     week_num = isoweek(date_range_start),
     year = year(date_range_start)    
-  )
+  ) %>%
+  select(da, date_range_start, week_num, year, normalized = minmax_scaled)
 
+head(da)
+summary(da)
 
 #-----------------------------------------
 # Load DA shapefile
 #-----------------------------------------
 
-da_sf <- read_sf(paste0(filepath, 'DAs/gtha-da-21_simplified.geojson')) %>%
-  rename(da = DAUID)
+da_sf <- read_sf(paste0(filepath, 'shapefiles/DAs/gtha-da-21_simplified.geojson')) %>%
+  dplyr::rename(da = DAUID)
 
 head(da_sf)
 
@@ -257,6 +289,10 @@ head(da_muni %>% data.frame())
 pickering <-
   da_muni %>%
   st_drop_geometry() %>%
+  # mutate(
+  #   week_num = isoweek(date_range_start),
+  #   year = year(date_range_start)
+  # ) %>%
   filter(municipality == 'CITY OF PICKERING' &
            !da %in% c(
              '35180548',
@@ -284,9 +320,8 @@ pickering <-
              '35203736'
            )) %>%
   # Calculate # of devices by DA, week and year
-  group_by(da, year, week_num) %>%
-  summarize(n_devices = sum(n_devices, na.rm = T),
-            userbase = sum(userbase, na.rm = T)) %>%
+  dplyr::group_by(da, year, week_num) %>%
+  dplyr::summarize(normalized = mean(normalized, na.rm = T)) %>%
   ungroup() %>%
   mutate(week = as.Date(
     paste(as.character(year), as.character(week_num), 1, sep = '_'),
@@ -319,7 +354,7 @@ n_distinct(only_19_pick$week_num) # yes :)
 # Look at DAs individually
 da_plot2 <- pickering %>%
   filter(week >= as.Date('2019-01-01')) %>%
-  mutate(normalized = n_devices/userbase) %>%
+  # mutate(normalized = n_devices/userbase) %>%
   ggplot(aes(x = week, y = normalized, group = da, color = da,
              alpha = .8)) +
   geom_line() +
@@ -333,12 +368,11 @@ pickering1 <-
             week <= as.Date('2023-04-25')) |
            (year == 2019 & week >= as.Date('2019-01-01') &
               week <= as.Date('2019-04-25'))) %>%
-  group_by(da, year) %>%
-  summarize(n_devices = sum(n_devices, na.rm = T),
-            userbase = sum(userbase, na.rm = T)) %>%
+  dplyr::group_by(da, year) %>%
+  dplyr::summarize(normalized = mean(normalized, na.rm = T)) %>%
   ungroup() %>%
-  mutate(normalized = n_devices/userbase) %>%
-  select(-c(n_devices, userbase)) %>%
+  # mutate(normalized = n_devices/userbase) %>%
+  # select(-c(n_devices, userbase)) %>%
   pivot_wider(
     names_from = 'year',
     names_prefix = 'normalized_',
@@ -438,9 +472,10 @@ pickering_map
 gta <-
   da_muni %>%
   st_drop_geometry() %>%
-  group_by(municipality, year, week_num) %>%
-  summarize(n_devices = sum(n_devices, na.rm = T),
-            userbase = sum(userbase, na.rm = T)) %>%
+  mutate(year = year(date_range_start),
+         week_num = isoweek(date_range_start),) %>%
+  dplyr::group_by(municipality, year, week_num) %>%
+  dplyr::summarize(normalized = mean(normalized, na.rm = T)) %>%
   ungroup() %>%
   mutate(week = as.Date(
     paste(as.character(year), as.character(week_num), 1, sep = '_'),
@@ -466,11 +501,10 @@ gta1 <-
             week <= as.Date('2023-04-25')) |
            (year == 2019 & week >= as.Date('2019-01-01') &
               week <= as.Date('2019-04-25'))) %>%
-  group_by(municipality, year) %>%
-  summarize(n_devices = sum(n_devices, na.rm = T),
-            userbase = sum(userbase, na.rm = T)) %>%
-  mutate(normalized = n_devices/userbase) %>%
-  select(-c(n_devices, userbase)) %>%
+  dplyr::group_by(municipality, year) %>%
+  dplyr::summarize(normalized = mean(normalized, na.rm = T)) %>%
+  # mutate(normalized = n_devices/userbase) %>%
+  # select(-c(n_devices, userbase)) %>%
   ungroup() %>%
   pivot_wider(
     names_from = 'year',
