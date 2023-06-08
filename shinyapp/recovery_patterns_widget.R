@@ -1,3 +1,5 @@
+setwd("~/git/downtownrecovery/shinyapp")
+
 source("load_data.R")
 source("dtra_functions.R")
 
@@ -23,9 +25,16 @@ recovery_patterns_plot(na.omit(plot_data %>%
 
 plot_data %>% glimpse()
 
+# omit the NAs:
+
+plot_data_svelte <- na.omit(plot_data) %>%
+                      select(week:region)
+
 plot_data %>% group_by(city) %>% count()
 
 summary(plot_data)
 
+jsonlite::toJSON(plot_data %>% distinct(city, display_title, region, color))
 
-write.csv(plot_data, "../docs/all_weekly_metrics_plot_cuebiq_update.csv")
+
+write.csv(plot_data_svelte, "../docs/all_weekly_metrics_plot_cuebiq_update_svelte.csv")

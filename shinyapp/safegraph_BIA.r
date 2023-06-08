@@ -40,7 +40,7 @@ geocoded_visits %>% glimpse()
 # now turn this into a sf object
 
 geocoded_visits_sf <- geocoded_visits %>%
-                        st_as_sf(coords = c("Y", "X"), crs = 4326)
+                        st_as_sf(coords = c("X", "Y"), crs = 4326)
 
 geocoded_visits_sf %>% glimpse()
 
@@ -50,13 +50,19 @@ bia_shapefile %>% glimpse()
 
 # now get the subset of placekeys that are in the bia and to which one they belong
 
-geocoded_visits_bia_sf <- st_within(x = geocoded_visits_sf %>%
-                                      distinct(placekey, .keep_all = TRUE),
-                                    y = bia_shapefile, 
-                                    prepared = TRUE)
+geocoded_visits_bia_sf <- read.csv("~/data/downtownrecovery/safegraph/placekey_BIA_st_join.csv")
                             
+geocoded_visits_bia_placekey <- geocoded_visits_bia_sf %>% filter(!is.na(X_id1))
 
+bia_safegraph <- ontario_device_count_0317 %>%
+                  select(-X) %>%
+                  inner_join(geocoded_visits_bia_placekey %>% select(-X) %>% distinct(placekey, .keep_all = TRUE), by = 'placekey') %>%
+                  select(placekey:score, Addr_type, DisplayX, DisplayY, X_id1:OBJECTI10) %>%
+                  distinct()
 
+bia_safegraph %>% glimpse()
+
+write.csv(bia_safegraph, "~/data/downtownrecovery/safegraph_toronto_BIA.csv")
 # details the minor cleaning and transformations of csvs downloaded from databricks 
 # for the sake of recordkeeping and reproducability
 
