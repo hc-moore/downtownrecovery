@@ -740,9 +740,9 @@ nrow(bia_final)
 head(bia_final)
 
 pal <- c(
-  "#e41822",
-  "#faa09d",
-  "#5bc4fb",
+  "#f30303", 
+  "#ff6e65",
+  "#fdb0b0",
   "#2c92d7",
   "#0362b0",
   "#033384"
