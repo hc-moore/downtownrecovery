@@ -20,18 +20,32 @@ ipak(c('tidyverse', 'ggplot2', 'sf', 'lubridate', 'plotly', 'zoo',
 
 filepath_sf <- "C:/Users/jpg23/data/downtownrecovery/shapefiles/"
 
-## Shapefile of BIAs
+## Shapefile of Toronto BIAs
 
-bia_sf <- read_sf(paste0(filepath_sf, "business_improvement_areas_simplified.geojson")) %>%
+bia_sf_tor <- read_sf(paste0(filepath_sf, "BIAs/toronto/business_improvement_areas_simplified.geojson")) %>%
   select(bia = AREA_NAME)
 
-head(bia_sf)
+head(bia_sf_tor)
+class(bia_sf_tor)
+n_distinct(bia_sf_tor$bia) # there are 85 BIAs
+
+## Shapefile of Mississauga BIAs
+
+bia_sf_miss <- read_sf(paste0(filepath_sf, "BIAs/mississauga/SIMPLIFIED_Mississauga_Business_Improvement_Associations_(BIA).geojson")) %>%
+  select(bia = BIA_NAME)
+
+head(bia_sf_miss)
+class(bia_sf_miss)
+n_distinct(bia_sf_miss$bia) # there are 4 BIAs (but 6 polygons)
+
+## Combine Toronto & Mississauga shapefiles
+
+bia_sf <- rbind(bia_sf_tor, bia_sf_miss)
 class(bia_sf)
-n_distinct(bia_sf$bia) # there are 85 BIAs
 
 ## Study area downtowns filtered to Toronto ('inner core')
 
-core <- read_sf(paste0(filepath_sf, "study_area_downtowns.shp")) %>%
+core <- read_sf(paste0(filepath_sf, "downtowns/study_area_downtowns.shp")) %>%
   filter(city == 'Toronto')
 
 core
@@ -49,7 +63,7 @@ inner_ring <- read_sf(paste0(filepath_sf, "Former_Municipality_Boundaries.geojso
 head(inner_ring)
 plot(inner_ring$geometry)
 
-## 1/1/2019 - 4/25/2023 (userbase + BIAs)
+## 1/1/2019 - 4/25/2023 (userbase + Toronto BIAs)
 
 filepath <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/BIAs/'
 
@@ -77,9 +91,9 @@ userbase <-
   mutate(date = as.Date(as.character(date), format = "%Y%m%d")) %>%
   arrange(date)
 
-## 5/15/2023 - 5/19/2023 (BIAs)
+## 5/15/2023 - 5/19/2023 (Toronto BIAs)
 
-bia <-
+bia_tor <-
   list.files(path = paste0(filepath, 'bia')) %>% 
   map_df(~read_delim(
     paste0(filepath, 'bia/', .),
@@ -91,6 +105,20 @@ bia <-
   mutate(date = as.Date(as.character(date), format = "%Y%m%d")) %>%
   arrange(date)
 
+## Mississauga BIAs
+
+bia_miss <-
+  list.files(path = paste0(filepath, 'mississauga_bia')) %>% 
+  map_df(~read_delim(
+    paste0(filepath, 'mississauga_bia/', .),
+    delim = '\001',
+    col_names = c('bia', 'provider', 'n_devices', 'date'),
+    col_types = c('ccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(date), format = "%Y%m%d")) %>%
+  arrange(date) 
+
 head(both)
 glimpse(both)
 summary(both)
@@ -99,13 +127,37 @@ head(userbase)
 glimpse(userbase)
 summary(userbase)
 
-head(bia)
-glimpse(bia)
-summary(bia)
+head(bia_tor)
+glimpse(bia_tor)
+summary(bia_tor)
+
+head(bia_miss)
+glimpse(bia_miss)
+summary(bia_miss)
 
 range(both$date)
 range(userbase$date)
-range(bia$date)
+range(bia_tor$date)
+range(bia_miss$date)
+
+# Add Mississauga to 'both'
+both_miss <-
+  both %>%
+  rbind(
+    bia_miss %>%
+      filter(date <= as.Date('2023-04-25')) %>%
+      left_join(both %>% select(provider, date, userbase), 
+                by = c('provider', 'date'))
+  )
+
+# Combine Toronto & Mississauga BIAs
+bia <- 
+  bia_tor %>%
+  rbind(
+    bia_miss %>%
+      filter(date >= as.Date('2023-04-25') & date <= as.Date('2023-05-19')))
+
+table(bia$bia)
 
 # Combine them
 b <-
@@ -114,7 +166,7 @@ b <-
   select(-province) %>%
   left_join(bia, by = c('provider', 'date')) %>%
   filter(date > as.Date('2023-04-25')) %>%
-  rbind(both)
+  rbind(both_miss)
 
 head(b)
 summary(b)
@@ -698,8 +750,8 @@ pal <- c(
 
 basemap <-
   get_stamenmap(
-    bbox = c(left = -79.58,
-             bottom = 43.59,
+    bbox = c(left = -79.8,
+             bottom = 43.47,
              right = -79.2,
              top = 43.81),
     zoom = 11,
@@ -719,7 +771,7 @@ bia_map <-
           inherit.aes = FALSE,
           # alpha = .9, 
           color = NA) +
-  ggtitle('Recovery rate of Business Improvement Areas in\nToronto, March 1 - May 19 (2023 versus 2019)') +
+  ggtitle('Recovery rate of Business Improvement Areas in Toronto\nand Mississauga, March 1 - May 19 (2023 versus 2019)') +
   scale_fill_manual(values = pal, name = 'Recovery rate') +
   guides(fill = guide_legend(barwidth = 0.5, barheight = 10, 
                              ticks = F, byrow = T)) +
