@@ -81,11 +81,11 @@ region2 <-
   arrange(date) %>%
   select(-event_date)
 
-# City-wide: 1/1/19 - ?
-city <-
-  list.files(path = paste0(filepath, 'city')) %>%
+# City-wide: 1/1/19 - 8/12/22
+city1 <-
+  list.files(path = paste0(filepath, 'city_20190101_20220812')) %>%
   map_df(~read_delim(
-    paste0(filepath, 'city/', .),
+    paste0(filepath, 'city_20190101_20220812/', .),
     delim = '\001',
     col_names = c('small_area', 'big_area', 'provider_id', 
                   'approx_distinct_devices_count', 'event_date'),
@@ -96,8 +96,20 @@ city <-
   arrange(date) %>%
   select(-c(event_date, geography_name))
 
-head(city)
-range(city$date)
+# City-wide: 8/12/22 - ?
+city2 <-
+  list.files(path = paste0(filepath, 'city_20220812_??')) %>%
+  map_df(~read_delim(
+    paste0(filepath, 'city_20220812_??/', .),
+    delim = '\001',
+    col_names = c('small_area', 'big_area', 'provider_id', 
+                  'approx_distinct_devices_count', 'event_date'),
+    col_types = c('cccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
+  arrange(date) %>%
+  select(-c(event_date, geography_name))
 
 #-----------------------------------------
 # Combine userbase data
@@ -133,6 +145,23 @@ region <-
   filter(date <= as.Date('2023-06-18')) # stop at 6/18/23 (when userbase ends)
 
 range(region$date)
+
+#-----------------------------------------
+# Combine city-wide data
+#-----------------------------------------
+
+head(city1)
+head(city2)
+
+range(city1$date)
+range(city2$date)
+
+city <- 
+  city1 %>% 
+  filter(date < as.Date('2022-08-12')) %>%
+  rbind(city2)
+
+range(city$date)
 
 #-----------------------------------------
 # Combine city & region-wide data
