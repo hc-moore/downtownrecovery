@@ -1,9 +1,6 @@
 library(ggplot2)
-library(gsignal)
 library(readxl)
-library(lmtest)
 library(stringr)
-library(forecast)
 library(arrow)
 library(lubridate)
 library(tidyverse)
@@ -11,31 +8,54 @@ library(broom)
 library(dplyr)
 library(scales)
 library(plotly)
-library(astsa)
 
 rm(list=ls())
 gc()
 
 
-# updated cuebiq query
+# 2023-04 cuebiq query
 cuebiq_data_stoppers <- read.csv("~/data/downtownrecovery/update_2023/stoppers_query_20230413.csv") %>%
   mutate(
     event_date = str_extract(event_date, "\\d+$"),
     as_datetime = as.Date(as.character(event_date), format = "%Y%m%d"),
-    source = "stoppers_hll",
-    userbase = as.numeric(userbase))%>%
+    userbase = as.numeric(userbase),
+    source = 'cuebiq')%>%
   select(-X)
 
-cuebiq_stops_uplevelled <- read.csv("~/data/downtownrecovery/counts/cuebiq_daily_agg.csv")
-
 cuebiq_data_stoppers %>% glimpse()
+
+summary(cuebiq_data_stoppers)
+
+cuebiq_update <- read.csv("~/data/downtownrecovery/spectus_exports/downtown_userbase_20230410_20230618.csv") %>%
+    mutate(as_datetime = as.Date(as.character(date), format = "%Y-%m-%d"),
+           source = 'cuebiq') %>%
+    rename(geography_name = state, n_devices = downtown_devices)
+
+cuebiq_update %>% glimpse()
+
+summary(cuebiq_update)
+
+# they are identical on the overlap date
+cuebiq_data_stoppers %>%
+  filter(as_datetime == "2023-04-10") %>%
+  select(city, n_devices, userbase) %>%
+  left_join(cuebiq_update %>%
+              filter(as_datetime == "2023-04-10")%>%
+              select(city, n_devices, userbase), by = 'city') %>%
+  arrange(city)
+
+all_cuebiq <- rbind(cuebiq_data_stoppers %>% select(city, geography_name, n_devices, userbase, as_datetime),
+                    cuebiq_update %>% select(city, geography_name, n_devices, userbase, as_datetime)) %>%
+              distinct() %>%
+              mutate(source = 'cuebiq')
+
+
 
 # read in safegraph raw device counts
 safegraph_data <- read_parquet("~/data/downtownrecovery/counts/safegraph_dt_recovery.pq") %>%
   mutate(city = str_replace(city, "é", "e")) %>%
-  left_join(cuebiq_stops_uplevelled %>% distinct(city, country_code)) %>%
-  select(-country, -postal_code, -is_downtown, -normalized_visits_by_state_scaling) %>%
-  group_by(date_range_start, city, country_code) %>%
+  select(-postal_code, -is_downtown, -normalized_visits_by_state_scaling) %>%
+  group_by(date_range_start, city) %>%
   summarise(raw_visit_counts = sum(raw_visit_counts),
             normalized_visits_by_total_visits = sum(normalized_visits_by_total_visits)) %>%
   mutate(source = "safegraph")
@@ -43,7 +63,7 @@ safegraph_data <- read_parquet("~/data/downtownrecovery/counts/safegraph_dt_reco
 safegraph_data %>% glimpse()
 
 
-cuebiq_stoppers_agg <- cuebiq_data_stoppers %>%
+cuebiq_stoppers_agg <- all_cuebiq %>%
   # day, state, city, country, and source are the columns to index by
   group_by(as_datetime, geography_name, city, source) %>%
   summarise(raw_visit_counts = n_devices,
@@ -138,7 +158,7 @@ safegraph_data_subset <- safegraph_data %>%
   )
 
 cuebiq_ts_sclaed <- comparisons_df %>%
-  dplyr::filter(source == 'stoppers_hll') %>%
+  dplyr::filter(source == 'cuebiq') %>%
   pivot_wider(id_cols = 'date_range_start', names_from = 'city', values_from = 'normalized_visits_by_total_visits') %>%
   ungroup() %>%
   arrange(date_range_start)
@@ -164,7 +184,7 @@ for (cities in cuebiq_data_stoppers %>% distinct(city) %>% arrange(city) %>% pul
     as.vector()
   
   HLL <- comparisons_df %>%
-    dplyr::filter((source == 'stoppers_hll') & (city == cities)) %>%
+    dplyr::filter((source == 'cuebiq') & (city == cities)) %>%
     arrange(date_range_start) %>%
     pull(minmax_scaled) %>%
     as.vector()
@@ -201,7 +221,7 @@ comparisons_with_diff <- comparisons_df %>%
   arrange(date_range_start) %>%
   group_by(city) %>%
   mutate(
-    normalized_safegraph_cuebiq_diff = stoppers_hll - safegraph
+    normalized_safegraph_cuebiq_diff = cuebiq - safegraph
   )
 
 comparisons_df %>% glimpse()
@@ -212,67 +232,6 @@ p0 <- comparisons_with_diff %>%
   geom_density()
 
 p0
-
-# t test for all observations - fails for all cities over all time periods
-t.test(x = comparisons_with_diff %>%
-         pull(normalized_safegraph_cuebiq_diff)
-)
-
-qqnorm(comparisons_with_diff$normalized_safegraph_cuebiq_diff)
-
-# granger test by city
-comparisons_with_diff %>% glimpse()
-
-
-granger_test_city <- lapply(split(comparisons_with_diff, factor(comparisons_with_diff$city)), function(x) {lmtest::grangertest(x$safegraph, x$stoppers_hll, 1)})
-
-granger_test_sheet <- as.data.frame(do.call(rbind, granger_test_city))
-granger_test_sheet$city <- row.names(granger_test_sheet)
-granger_test_sheet %>% glimpse()
-t_test_sheet_df <- t_test_sheet %>%
-  unnest_wider(conf.int, names_sep = '_') %>%
-  unnest(statistic:data.name) %>% as.data.frame()
-
-t_test_sheet_df %>%
-  select(statistic, p.value, city) %>%
-  #dplyr::filter(p.value >= .05) %>%
-  arrange(-p.value)
-
-
-
-
-
-write.xlsx2(t_test_sheet_df %>% select(city, statistic:data.name),
-            file = "data/downtownrecovery/t_tests/t_tests.xlsx",
-            sheetName = "Prepandemic",
-            col.names = TRUE,
-            row.names = TRUE,
-            append = FALSE)
-
-all_seasons <- comparisons_df %>% pull(Season) %>% unique()
-all_seasons
-
-for (seasons in all_seasons[-1]) {
-  season_df <- comparisons_df %>% dplyr::filter(Season == seasons)
-  t_test_city_seasons <- lapply(split(season_df, factor(season_df$city)), function(x) {t.test(x$normalized_safegraph_cuebiq_diff)})
-  t_test_sheet <- as.data.frame(do.call(rbind, t_test_city_seasons))
-  t_test_sheet$city <- row.names(t_test_sheet)
-  t_test_sheet_df <- t_test_sheet %>%
-    unnest_wider(conf.int, names_sep = '_') %>%
-    unnest(statistic:data.name) %>% as.data.frame()
-  
-  write.xlsx2(t_test_sheet_df %>% select(city, statistic:data.name),
-              "data/downtownrecovery/t_tests/t_tests.xlsx",
-              sheetName = seasons,
-              col.names = TRUE,
-              row.names = TRUE,
-              append = TRUE)
-}
-
-# bind each separate list to into a data frame
-t_test_df <- as.data.frame(do.call(rbind, t_test_list))
-
-t_test_df %>% glimpse()
 
 
 normalized_cuebiq <-  cuebiq_stoppers_agg %>%
@@ -285,7 +244,7 @@ normalized_cuebiq <-  cuebiq_stoppers_agg %>%
               summarise(
                 #' on average, what would cuebiq's normalized visits have to be multiplied by to
                 #' get safegraph's normalized visits for the last ___? 
-                ratio = mean(safegraph / stoppers_hll)) %>% 
+                ratio = mean(safegraph / cuebiq)) %>% 
               dplyr::filter(!is.na(ratio)) %>%
               distinct()
   ) %>%
@@ -322,7 +281,7 @@ ntv_full_ts <- rbind(safegraph_data %>%
   distinct() %>%
   arrange(date_range_start)
 
-write.csv(ntv_full_ts, "~/data/downtownrecovery/full_ntv.csv")
+write.csv(ntv_full_ts, "~/data/downtownrecovery/full_ntv_update.csv")
 
 ntv_full_ts %>% glimpse()
 pd <- position_dodge(0.78)
@@ -362,10 +321,11 @@ downtown_rq_cuebiq <- rbind(safegraph_data %>%
 
 downtown_rq_cuebiq %>% glimpse()
 
-downtown_rq_safegraph <- read.csv("git/downtownrecovery/shinyapp/input_data/all_weekly_metrics.csv") %>%
+downtown_rq_safegraph <- read.csv("git/downtownrecovery/shinyapp/input_data/all_weekly_metrics_cuebiq_update_hll.csv") %>%
   dplyr::filter(city != "Hamilton") %>%
   filter(!is.na(normalized_visits_by_total_visits) & (week < min(downtown_rq_cuebiq$week))) %>%
-  distinct()
+  distinct() %>%
+  select(-X)
 
 
 downtown_rq_safegraph %>% glimpse()
@@ -379,7 +339,7 @@ min(downtown_rq_cuebiq$week)
 downtown_rq <- rbind(downtown_rq_cuebiq %>%
                        left_join(downtown_rq_safegraph %>%
                                    select(city, region, metro_size, display_title) %>% distinct()) %>%
-                       select(-ntv_2019,  -ntv_2022, -ntv_2023, -week_num, -year) %>%
+                       select(-ntv_2019, -ntv_2020, -ntv_2021, -ntv_2022, -ntv_2023, -week_num, -year) %>%
                        mutate(source = 'normalized_cuebiq'),
                      downtown_rq_safegraph %>%
                        mutate(source = 'safegraph') %>%
@@ -485,13 +445,16 @@ recovery_patterns_plot <- function(df, metric, n) {
 
 recovery_patterns_plot(downtown_rq %>%
                          dplyr::filter((week >= "2022-01-01") &
-                                         (metric == "downtown") &
-                                         (display_title %in% plot_cities)), "downtown", 0)
-
+                                         (metric == "downtown")), "downtown", 0)
+# hamilton is an outlier
+downtown_rq %>%
+  group_by(city) %>%
+  count() %>%
+  arrange(n)
 
 # this will become all_weekly_metrics.csv, minus the Season column
 
-write.csv(downtown_rq %>% select(-source), "~/git/downtownrecovery/shinyapp/input_data/all_weekly_metrics_cuebiq_update_hll.csv")
+write.csv(downtown_rq %>% select(-source) %>% filter(city != "Hamilton"), "~/git/downtownrecovery/shinyapp/input_data/all_weekly_metrics_20230701.csv")
 
 
 
@@ -508,6 +471,7 @@ downtown_rq[(downtown_rq$week >= base::as.Date("2022-03-07")) & (downtown_rq$wee
 downtown_rq[(downtown_rq$week >= base::as.Date("2022-06-13")) & (downtown_rq$week < base::as.Date("2022-08-29")), "Season"] = "Season_10"
 downtown_rq[(downtown_rq$week >= base::as.Date("2022-08-29")) & (downtown_rq$week < base::as.Date("2022-12-05")), "Season"] = "Season_11"
 downtown_rq[(downtown_rq$week >= base::as.Date("2022-12-05")) & (downtown_rq$week < base::as.Date("2023-03-07")), "Season"] = "Season_12"
+downtown_rq[(downtown_rq$week >= base::as.Date("2023-03-07")) & (downtown_rq$week < base::as.Date("2023-07-03")), "Season"] = "Season_13"
 
 downtown_rq %>%
   dplyr::filter((city %in% c("Washington DC", "Salt Lake City", "New York","San Francisco",
@@ -520,14 +484,15 @@ downtown_rq %>%
   facet_wrap(.~city) +
   geom_vline(xintercept = as.Date("2022-05-02"), color = "purple")
 
-ranking_df_safegraph <- read.csv("~/git/downtownrecovery/shinyapp/input_data/all_seasonal_metrics.csv") %>%
-  dplyr::filter(city != "Hamilton")
+ranking_df_safegraph <- read.csv("~/git/downtownrecovery/shinyapp/input_data/all_seasonal_metrics_cuebiq_update_hll.csv") %>%
+  dplyr::filter(city != "Hamilton") %>%
+  select(-X)
 
 ranking_df_safegraph %>% glimpse()
 
 seasonal_rq <- downtown_rq %>%
   select(-source) %>%
-  dplyr::filter(Season %in% c("Season_10", "Season_11", "Season_12")) %>%
+  dplyr::filter(Season %in% c("Season_10", "Season_11", "Season_12", "Season_13")) %>%
   group_by(city, Season) %>%
   mutate(seasonal_average = mean(normalized_visits_by_total_visits, na.rm = TRUE)) %>%
   select(-week, -normalized_visits_by_total_visits) %>%
@@ -546,49 +511,4 @@ ranking_df <- rbind(seasonal_rq,
 
 ranking_df %>% glimpse()
 
-ranking_df_prev <- read.csv("~/git/downtownrecovery/shinyapp/input_data/all_seasonal_metrics_cuebiq_update.csv")
-
-ranking_df_prev %>% glimpse()
-
-write.csv(ranking_df, "~/git/downtownrecovery/shinyapp/input_data/all_seasonal_metrics_cuebiq_update_hll.csv")
-
-
-
-comparison_rankings <- rbind(ranking_df %>%
-                               dplyr::filter(Season %in% c("Season_10", "Season_11")) %>%
-                               mutate(source = "stoppers_hll"),
-                             ranking_df_prev %>%
-                               select(-X) %>%
-                               dplyr::filter(Season %in% c("Season_10", "Season_11")) %>%
-                               mutate(source = 'stops_uplevelled')
-) %>%
-  pivot_wider(names_from = 'source', values_from = c('seasonal_average', 'lq_rank')) %>%
-  mutate(lq_rank_change = lq_rank_stoppers_hll - lq_rank_stops_uplevelled,
-         seasonal_average_change = seasonal_average_stoppers_hll - seasonal_average_stops_uplevelled) %>%
-  left_join(
-    ranking_df %>%
-      dplyr::filter(Season == "Season_12") %>%
-      mutate(source = 'stoppers_hll') %>%
-      pivot_wider(names_from = 'Season', values_from = c('seasonal_average', 'lq_rank')) %>%
-      select(-source)) %>%
-  arrange(city, Season)
-
-comparison_rankings %>% glimpse()
-
-
-
-comparison_rankings %>%
-  select(city, Season, seasonal_average_stoppers_hll:seasonal_average_change) %>%
-  arrange(-abs(seasonal_average_change))
-
-comparison_rankings %>%
-  select(city, Season, seasonal_average_stoppers_hll:seasonal_average_change) %>%
-  arrange(-abs(lq_rank_change))
-
-comparison_rankings %>%
-  group_by(Season, lq_rank_change) %>%
-  count() %>%
-  arrange(Season, -n) %>%
-  print(n = Inf)
-
-write.csv(comparison_rankings, "~/data/downtownrecovery/comparisons/seasonal_metrics_stops_hll.csv")
+write.csv(ranking_df, "~/git/downtownrecovery/shinyapp/input_data/all_seasonal_metrics_20230701.csv")
