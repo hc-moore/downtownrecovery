@@ -35,7 +35,7 @@ library(spdep)
 library(plotly)
 library(geojsonio)
 #setwd("~/git/downtownrecovery/shinyapp")
-explanatory_vars <- read.csv("input_data/all_model_features_1015_weather.csv")
+explanatory_vars <- read.csv("~/data/downtownrecovery/curated_data/model_data_20230705.csv")
 
 # 2022-07-15: updates: anything pertaining to single city map tab has been removed
 # this is a 'policy brief only' version of the app
@@ -50,10 +50,10 @@ region_colors <- c("Canada" = "#DC4633",
 
 
 
-all_weekly_metrics <- read.csv("input_data/all_weekly_metrics_cuebiq_update_hll.csv")
+all_weekly_metrics <- read.csv("input_data/all_weekly_metrics_20230701.csv")
 all_weekly_metrics$metric <- str_replace(all_weekly_metrics$metric, "metro", "city")
 all_city_coords <- read.csv("input_data/all_city_coords.csv")
-all_seasonal_metrics <- read.csv("input_data/all_seasonal_metrics_cuebiq_update_hll.csv")
+all_seasonal_metrics <- read.csv("input_data/all_seasonal_metrics_20230701.csv")
 
 # to automatically apply the shinytheme to all ggplots for consistency's sake
 # thematic_shiny()
@@ -118,7 +118,7 @@ all_city_coords <- all_city_coords %>%
   dplyr::select(lat, long, city)
 
 all_seasonal_metrics <- all_seasonal_metrics %>%
-  inner_join(all_city_coords, by = "city") %>%
+ # inner_join(all_city_coords, by = "city") %>%
   mutate(metro_size = case_when(
     city %in% largest_n_cities$city ~ "large",!(city %in% largest_n_cities$city) ~ "medium"
   ))
@@ -230,7 +230,8 @@ named_periods <- c(
   "Spring: Mar 2022 - May 2022" = "Season_9",
   "Summer: June 2022 - Aug 2022" = "Season_10",
   "Fall: Sept 2022 - Nov 2022" = "Season_11",
-  "Winter: Dec 2022 - Feb 2023" = "Season_12"
+  "Winter: Dec 2022 - Feb 2023" = "Season_12",
+  "Spring: Mar 2023 - May 2023"
   
 )
 
@@ -307,6 +308,6 @@ all_shapefile <-
   st_transform(all_shapefile, st_crs("+proj=longlat +datum=WGS84"))
 colnames(all_shapefile) <- c("postal_code", "geometry")
 
-all_city_index <- read.csv("input_data/all_city_index.csv")
+all_city_index <- read.csv("input_data/all_city_index.csv") %>% select(-X, -country) %>% distinct()
 
 all_shapefile <- inner_join(all_shapefile, all_city_index, by = "postal_code")

@@ -35,16 +35,22 @@ cuebiq_update %>% glimpse()
 
 summary(cuebiq_update)
 
-# they are identical on the overlap date
+# they are identical on the overlap date for the cities they both have
 cuebiq_data_stoppers %>%
   filter(as_datetime == "2023-04-10") %>%
   select(city, n_devices, userbase) %>%
   left_join(cuebiq_update %>%
               filter(as_datetime == "2023-04-10")%>%
               select(city, n_devices, userbase), by = 'city') %>%
+  mutate(devices_change = n_devices.y - n_devices.x, 
+         userbase_change = userbase.y - userbase.x) %>%
   arrange(city)
 
-all_cuebiq <- rbind(cuebiq_data_stoppers %>% select(city, geography_name, n_devices, userbase, as_datetime),
+all((cuebiq_data_stoppers$city %>% unique()) %in% (
+  cuebiq_update$city %>% unique()))
+
+
+all_cuebiq <- rbind(cuebiq_data_stoppers %>% select(city, geography_name, n_devices, userbase, as_datetime) %>% filter(as_datetime < min(cuebiq_update$as_datetime)),
                     cuebiq_update %>% select(city, geography_name, n_devices, userbase, as_datetime)) %>%
               distinct() %>%
               mutate(source = 'cuebiq')
@@ -284,18 +290,6 @@ ntv_full_ts <- rbind(safegraph_data %>%
 write.csv(ntv_full_ts, "~/data/downtownrecovery/full_ntv_update.csv")
 
 ntv_full_ts %>% glimpse()
-pd <- position_dodge(0.78)
-
-ntv_full_ts %>%
-  ggplot(aes(x = covid_era, y = mean)) +
-  #draws the means
-  geom_point(position=pd) +
-  #draws the CI error bars
-  geom_errorbar(aes(ymin=mean-2*se, ymax=mean+2*se, 
-                                color=covid_era), width=.1, position=pd) +
-  facet_wrap(.~city)
-
-
 
 
 downtown_rq_cuebiq <- rbind(safegraph_data %>%
@@ -317,11 +311,11 @@ downtown_rq_cuebiq <- rbind(safegraph_data %>%
   mutate(year = substr(year, 5, 9),
          week = as.Date(paste(year, week_num, 1, sep = "_"), format = "%Y_%W_%w"),
          metric = "downtown") %>%
-  dplyr::filter(!is.na(normalized_visits_by_total_visits))
+  dplyr::filter(!is.na(normalized_visits_by_total_visits) &  (city != "Hamilton"))
 
 downtown_rq_cuebiq %>% glimpse()
 
-downtown_rq_safegraph <- read.csv("git/downtownrecovery/shinyapp/input_data/all_weekly_metrics_cuebiq_update_hll.csv") %>%
+downtown_rq_safegraph <- read.csv("~/git/downtownrecovery/shinyapp/input_data/all_weekly_metrics_cuebiq_update_hll.csv") %>%
   dplyr::filter(city != "Hamilton") %>%
   filter(!is.na(normalized_visits_by_total_visits) & (week < min(downtown_rq_cuebiq$week))) %>%
   distinct() %>%
@@ -492,7 +486,7 @@ ranking_df_safegraph %>% glimpse()
 
 seasonal_rq <- downtown_rq %>%
   select(-source) %>%
-  dplyr::filter(Season %in% c("Season_10", "Season_11", "Season_12", "Season_13")) %>%
+  dplyr::filter(Season %in% c( "Season_13")) %>%
   group_by(city, Season) %>%
   mutate(seasonal_average = mean(normalized_visits_by_total_visits, na.rm = TRUE)) %>%
   select(-week, -normalized_visits_by_total_visits) %>%

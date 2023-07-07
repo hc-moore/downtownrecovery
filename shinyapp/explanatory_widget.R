@@ -1,11 +1,16 @@
 source("load_data.R")
 source("dtra_functions.R")
 
-plot_x_vars <- named_factors
-plot_data <- create_model_df(unname(plot_x_vars))
+original_var_data <- read.csv('~/git/downtown-recovery/static/variables_data.csv')
 
-plot_data %>% glimpse()
 
+explanatory_vars <- read.csv('~/data/downtownrecovery/curated_data/one_week_metrics_canada_usa_revised_cuebiq_update_hll_region_health_crime_april2023.csv')
+
+new_var_data <- explanatory_vars %>% select(city, contains('density'))
+
+original_var_data %>%
+  select(-contains('density')) %>%
+  left_join(new_var_data)
 
 write.csv(plot_data, "../docs/model_data_full_cuebiq_update.csv")
 

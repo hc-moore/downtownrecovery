@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # COMMAND ----------
-original_model_data = pd.read_csv('~/data/downtownrecovery/curated_data/one_week_metrics_cuebiq_update_hll_region_health__crime_april2023.csv')
+original_model_data = pd.read_csv('~/data/downtownrecovery/curated_data/one_week_metrics_canada_usa_revised_cuebiq_update_hll_region_health_crime_april2023.csv')
 
 us_densities = pd.read_csv('~/data/downtownrecovery/curated_data/fixed_us_density.csv')
 # the densities are in km2
@@ -49,18 +49,28 @@ original_model_data_updated = original_model_data.drop(columns = ['population_de
 
 original_model_data_updated.columns
 
-original_model_data_updated[['city',
-                              #'population_density_downtown', 'population_density_downtown_km2',
-                              'population_density_city',  'population_density_city_km2',
-                              #'housing_density_downtown','housing_density_downtown_km2',
-                              #'housing_density_city', 'housing_density_city_km2'
-                              #'employment_density_downtown', 'employment_density_downtown_km2'
-                              ]]
+original_model_data_updated_subset = original_model_data_updated.drop(columns = ['normalized_visits_by_total_visits', 'week', 'metric', 'normalized Violent crimes based on population', 'Violent crimes per 100,000 people'])
 
+original_model_data_updated_subset[['population_density_downtown',
 
+                                                                  'population_density_city',
+                                                                  'housing_density_downtown',
+                                                                  'housing_density_city',
+                                                                  'employment_density_downtown']] = original_model_data_updated_subset[['population_density_downtown',
 
+                                                                  'population_density_city',
+                                                                  'housing_density_downtown',
+                                                                  'housing_density_city',
+                                                                  'employment_density_downtown']] / 1000000
 
-original_model_data_updated.to_csv('~/data/downtownrecovery/curated_data/model_data_20230705.csv')
+original_model_data_updated_subset[['population_density_downtown',
+
+                                                                  'population_density_city',
+                                                                  'housing_density_downtown',
+                                                                  'housing_density_city',
+                                                                  'employment_density_downtown']]
+
+original_model_data_updated_subset.to_csv('~/data/downtownrecovery/curated_data/model_features_20230707.csv')
 
 
 
