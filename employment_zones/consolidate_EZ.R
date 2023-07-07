@@ -51,26 +51,41 @@ userbase2 <-
   arrange(date) %>%
   select(-c(event_date, geography_name))
 
-# Region-wide: 1/1/19 - 7/7/21
-region1 <-
-  list.files(path = paste0(filepath, 'region_20190101_20210707')) %>% 
-  map_df(~read_delim(
-    paste0(filepath, 'region_20190101_20210707/', .),
-    delim = '\001',
-    col_names = c('ez', 'provider_id', 'approx_distinct_devices_count', 
-                  'event_date'),
-    col_types = c('ccii')
-  )) %>%
-  data.frame() %>%
-  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
-  arrange(date) %>%
-  select(-event_date)
+# # Region-wide: 1/1/19 - 7/7/21
+# region1 <-
+#   list.files(path = paste0(filepath, 'region_20190101_20210707')) %>% 
+#   map_df(~read_delim(
+#     paste0(filepath, 'region_20190101_20210707/', .),
+#     delim = '\001',
+#     col_names = c('ez', 'provider_id', 'approx_distinct_devices_count', 
+#                   'event_date'),
+#     col_types = c('ccii')
+#   )) %>%
+#   data.frame() %>%
+#   mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
+#   arrange(date) %>%
+#   select(-event_date)
+# 
+# # Region-wide: 7/7/21 - 6/27/23
+# region2 <-
+#   list.files(path = paste0(filepath, 'region_20210707_20230627')) %>% 
+#   map_df(~read_delim(
+#     paste0(filepath, 'region_20210707_20230627/', .),
+#     delim = '\001',
+#     col_names = c('ez', 'provider_id', 'approx_distinct_devices_count', 
+#                   'event_date'),
+#     col_types = c('ccii')
+#   )) %>%
+#   data.frame() %>%
+#   mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
+#   arrange(date) %>%
+#   select(-event_date)
 
-# Region-wide: 7/7/21 - 6/27/23
-region2 <-
-  list.files(path = paste0(filepath, 'region_20210707_20230627')) %>% 
+# Region-wide: 1/1/19 - 6/18/23
+region <-
+  list.files(path = paste0(filepath, 'region_20190101_20230618')) %>% 
   map_df(~read_delim(
-    paste0(filepath, 'region_20210707_20230627/', .),
+    paste0(filepath, 'region_20190101_20230618/', .),
     delim = '\001',
     col_names = c('ez', 'provider_id', 'approx_distinct_devices_count', 
                   'event_date'),
@@ -134,31 +149,31 @@ userbase <-
 head(userbase)
 range(userbase$date)
 
-#-----------------------------------------
-# Combine region-wide data
-#-----------------------------------------
-
-head(region1)
-head(region2)
-
-range(region1$date)
-range(region2$date)
-
-region <-
-  region1 %>%
-  filter(date < as.Date('2021-07-07')) %>%
-  rbind(region2) %>%
-  filter(date < as.Date('2023-06-01') & # through end of May
-           # change providers at 5/17/21
-           ((provider_id == '700199' & date < as.Date('2021-05-17')) | 
-              (provider_id == '190199' & date >= as.Date('2021-05-17')))) %>%
-  mutate(ez = as.character(round(as.integer(ez), 0))) %>%
-  select(-provider_id) %>%
-  rename(n_devices = approx_distinct_devices_count) %>%
-  left_join(userbase) # add userbase
-
-head(region)
-range(region$date)
+# #-----------------------------------------
+# # Combine region-wide data
+# #-----------------------------------------
+# 
+# head(region1)
+# head(region2)
+# 
+# range(region1$date)
+# range(region2$date)
+# 
+# region <-
+#   region1 %>%
+#   filter(date < as.Date('2021-07-07')) %>%
+#   rbind(region2) %>%
+#   filter(date < as.Date('2023-06-01') & # through end of May
+#            # change providers at 5/17/21
+#            ((provider_id == '700199' & date < as.Date('2021-05-17')) | 
+#               (provider_id == '190199' & date >= as.Date('2021-05-17')))) %>%
+#   mutate(ez = as.character(round(as.integer(ez), 0))) %>%
+#   select(-provider_id) %>%
+#   rename(n_devices = approx_distinct_devices_count) %>%
+#   left_join(userbase) # add userbase
+# 
+# head(region)
+# range(region$date)
 
 #-----------------------------------------
 # Combine city-wide data
@@ -446,7 +461,9 @@ city_sf <- st_read("C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_l
 head(city_sf)
 
 # Load region shapefile
-region_sf <- st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/Provincially_Significant_Employment_Zones.shp') %>%
+region_sf <- 
+  # st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/Provincially_Significant_Employment_Zones.shp') %>%
+  st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/region_clipped.geojson') %>%
   select(ez = PSEZ_ID, municipality = MUNICIPALI, geometry) %>%
   mutate(
     label = paste0(ez, ': ', municipality),
@@ -539,83 +556,6 @@ interactive_region <-
   )
 
 interactive_region
-
-#-----------------------------------------
-# Crop city & region shapefiles
-#-----------------------------------------
-
-# # Crop city shapefiles to within boundary
-# city_crop <- st_intersection(city_sf %>% st_make_valid(), 
-#                              toronto %>% st_make_valid())
-#
-# # Crop region shapefiles to outside city shapefiles
-# region_crop <- st_difference(region_sf %>% st_make_valid(),
-#                              city_sf %>% st_make_valid())
-# 
-# interactive_crop <-
-#   leaflet(
-#     options = leafletOptions(minZoom = 7, maxZoom = 18, zoomControl = FALSE)
-#   ) %>%
-#   # setView(lat = 28.72, lng = -81.97, zoom = 7) %>%
-#   addMapPane(name = "munic", zIndex = 410) %>%
-#   addMapPane(name = "polygons", zIndex = 420) %>%
-#   addProviderTiles("CartoDB.PositronNoLabels") %>%
-#   addProviderTiles("Stamen.TonerLines",
-#                    options = providerTileOptions(opacity = 0.3),
-#                    group = "Roads"
-#   ) %>%
-#   addPolygons(
-#     data = region_crop,
-#     label = ~label,
-#     labelOptions = labelOptions(textsize = "12px"),
-#     fillOpacity = .6,
-#     stroke = TRUE,
-#     color = ~region_pal(in_tor),
-#     weight = 2,
-#     opacity = 1,
-#     highlightOptions =
-#       highlightOptions(
-#         color = "black",
-#         weight = 3,
-#         bringToFront = TRUE),
-#     options = pathOptions(pane = "polygons")
-#   ) %>%
-#   addPolygons(
-#     data = city_sf,
-#     label = ~ez,
-#     labelOptions = labelOptions(textsize = "12px"),
-#     fillOpacity = .6,
-#     stroke = TRUE,
-#     weight = 2,
-#     opacity = 1,
-#     color = "orange",
-#     highlightOptions =
-#       highlightOptions(
-#         color = "black",
-#         weight = 3,
-#         bringToFront = TRUE),
-#     options = pathOptions(pane = "polygons")
-#   ) %>%
-#   addPolygons(
-#     data = toronto,
-#     fillOpacity = 0,
-#     stroke = TRUE,
-#     weight = 1,
-#     opacity = 1,
-#     color = "black",
-#     highlightOptions =
-#       highlightOptions(
-#         color = "black",
-#         weight = 3,
-#         bringToFront = TRUE),
-#     options = pathOptions(pane = "munic")
-#   )
-# 
-# interactive_crop
-
-### NOTE: I CAN'T CROP A SHAPEFILE AND THEN SAY THERE WERE X DEVICES ASSOCIATED
-### WITH THE CROPPED SHAPEFILE. I WOULD HAVE TO RE-QUERY THE DATA FOR THAT
-### EXACT GEOGRAPHY. NEED TO FIGURE OUT A WAY TO DISPLAY ALL THE DATA TOGETHER.
 
 #-----------------------------------------
 # Map city EZ recovery rates (static): 
