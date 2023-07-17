@@ -11,7 +11,8 @@
 #-----------------------------------------
 
 source('~/git/timathomas/functions/functions.r')
-ipak(c('tidyverse', 'lubridate', 'ggplot2', 'plotly', 'cancensus', 'ggmap'))
+ipak(c('tidyverse', 'lubridate', 'ggplot2', 'plotly', 'cancensus', 'ggmap', 
+       'sf', 'leaflet', 'BAMMtools'))
 
 #-----------------------------------------
 # Load data
@@ -82,7 +83,7 @@ userbase2 <-
 #   select(-event_date)
 
 # Region-wide: 1/1/19 - 6/18/23
-region <-
+region0 <-
   list.files(path = paste0(filepath, 'region_20190101_20230618')) %>% 
   map_df(~read_delim(
     paste0(filepath, 'region_20190101_20230618/', .),
@@ -149,6 +150,27 @@ userbase <-
 head(userbase)
 range(userbase$date)
 
+#-----------------------------------------
+# Choose provider for region-wide data
+#-----------------------------------------
+
+head(region)
+range(region$date)
+
+region <-
+  region0 %>%
+  filter(date < as.Date('2023-06-01') & # through end of May
+           # change providers at 5/17/21
+           ((provider_id == '700199' & date < as.Date('2021-05-17')) |
+              (provider_id == '190199' & date >= as.Date('2021-05-17')))) %>%
+  mutate(ez = as.character(round(as.integer(ez), 0))) %>%
+  select(-provider_id) %>%
+  rename(n_devices = approx_distinct_devices_count) %>%
+  left_join(userbase) # add userbase
+
+head(region)
+range(region$date)
+
 # #-----------------------------------------
 # # Combine region-wide data
 # #-----------------------------------------
@@ -158,7 +180,6 @@ range(userbase$date)
 # 
 # range(region1$date)
 # range(region2$date)
-# 
 # region <-
 #   region1 %>%
 #   filter(date < as.Date('2021-07-07')) %>%
@@ -191,8 +212,8 @@ city0 <-
   rbind(city2) %>%
   filter(date < as.Date('2023-06-01') & # through end of May
            # change providers at 5/17/21
-           (provider_id == '700199' & date < as.Date('2021-05-17')) | 
-           (provider_id == '190199' & date >= as.Date('2021-05-17'))) %>%
+           ((provider_id == '700199' & date < as.Date('2021-05-17')) | 
+           (provider_id == '190199' & date >= as.Date('2021-05-17')))) %>%
   select(-provider_id) %>%
   mutate(
     ez = big_area,
@@ -327,8 +348,8 @@ all_city_for_plot <-
   mutate(year = substr(year, 4, 7),
          week = as.Date(paste(year, week_num, 1, sep = '_'),
                         format = '%Y_%W_%w')) %>% # Monday of week
-  filter(!(year == 2023 & week_num > 22)) %>%
   arrange(year, week_num) %>%
+  filter(!(year == 2023 & week_num > 22)) %>%
   mutate(rq_rolling = zoo::rollmean(rq, k = 11, fill = NA, align = 'right')) %>%
   ungroup() %>%
   data.frame() %>%
