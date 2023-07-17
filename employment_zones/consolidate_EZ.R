@@ -301,6 +301,19 @@ all_plotly <-
 all_plotly
 
 #-----------------------------------------
+# Combine city- and region-wide data
+#-----------------------------------------
+
+nrow(city)
+nrow(region)
+
+cr <- rbind(city, region)
+
+nrow(cr)
+head(cr)
+tail(cr)
+
+#-----------------------------------------
 # Add year & week_num to city data
 #-----------------------------------------
 
@@ -820,7 +833,7 @@ summary(for_maps_23_21$rate)
 getJenksBreaks(for_maps_23_21$rate, 7)
 
 ez_final_23_21 <-
-  left_join(city_sf, for_maps) %>%
+  left_join(city_sf, for_maps_23_21) %>%
   mutate(
     rate_cat = factor(case_when(
       rate < .8 ~ '48 - 79%',
