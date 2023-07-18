@@ -12,7 +12,7 @@
 
 source('~/git/timathomas/functions/functions.r')
 ipak(c('tidyverse', 'lubridate', 'ggplot2', 'plotly', 'cancensus', 'ggmap', 
-       'sf', 'leaflet', 'BAMMtools'))
+       'sf', 'leaflet', 'BAMMtools', 'gtools'))
 
 #-----------------------------------------
 # Load data
@@ -154,8 +154,8 @@ range(userbase$date)
 # Choose provider for region-wide data
 #-----------------------------------------
 
-head(region)
-range(region$date)
+head(region0)
+range(region0$date)
 
 region <-
   region0 %>%
@@ -166,6 +166,7 @@ region <-
   mutate(ez = as.character(round(as.integer(ez), 0))) %>%
   select(-provider_id) %>%
   rename(n_devices = approx_distinct_devices_count) %>%
+  filter(!ez %in% c('8', '5')) %>% # remove EZs
   left_join(userbase) # add userbase
 
 head(region)
@@ -301,24 +302,143 @@ all_plotly <-
 all_plotly
 
 #-----------------------------------------
+# Add spatial data
+#-----------------------------------------
+
+# Load city shapefile
+city_sf <- st_read("C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/final_city_sf_dissolved.geojson") %>%
+  left_join(city0 %>% select(big_area, ez) %>% distinct(), by = c('big_area')) %>%
+  select(ez, geometry)
+
+head(city_sf)
+
+# Load region shapefile
+region_sf <- 
+  st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/region_clipped.geojson') %>% 
+  mutate(ez = paste0(MUNICIPALI, ': ', PSEZ_ID)) %>%
+  st_transform(st_crs(city_sf)) %>%
+  filter(!ez %in% c('8: TORONTO', '5: TORONTO'))
+
+head(region_sf)
+
+cr_sf <- rbind(city_sf, region_sf %>% select(ez, geometry))
+
+head(cr_sf)
+unique(cr_sf$ez)
+plot(cr_sf$geometry)
+
+# Load Toronto city boundary
+toronto <- get_census(
+  dataset='CA21', regions=list(CMA="35535"),
+  level='CSD', quiet = TRUE, 
+  geo_format = 'sf', labels = 'short') %>%
+  filter(str_detect(name, 'Toronto')) %>%
+  select(geometry)
+
+# st_write(
+#   toronto,
+#   'C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/toronto.geojson')
+
+# pal <- c("turquoise", "purple")
+#
+# region_pal <- colorFactor(
+#   pal,
+#   domain = region_sf$in_tor,
+#   na.color = 'transparent'
+# )
+# 
+# interactive_region <-
+#   leaflet(
+#     options = leafletOptions(minZoom = 7, maxZoom = 18, zoomControl = FALSE)
+#   ) %>%
+#   # setView(lat = 28.72, lng = -81.97, zoom = 7) %>%
+#   addMapPane(name = "munic", zIndex = 410) %>%
+#   addMapPane(name = "polygons", zIndex = 420) %>%
+#   addProviderTiles("CartoDB.PositronNoLabels") %>%
+#   addProviderTiles("Stamen.TonerLines",
+#                    options = providerTileOptions(opacity = 0.3),
+#                    group = "Roads"
+#   ) %>%
+#   addPolygons(
+#     data = region_sf,
+#     label = ~label,
+#     labelOptions = labelOptions(textsize = "12px"),
+#     fillOpacity = .6,
+#     stroke = TRUE,
+#     color = ~region_pal(in_tor),
+#     weight = 2,
+#     opacity = 1,
+#     highlightOptions =
+#       highlightOptions(
+#         color = "black",
+#         weight = 3,
+#         bringToFront = TRUE),
+#     options = pathOptions(pane = "polygons")
+#   ) %>%
+#   addPolygons(
+#     data = city_sf,
+#     label = ~ez,
+#     labelOptions = labelOptions(textsize = "12px"),
+#     fillOpacity = .6,
+#     stroke = TRUE,
+#     weight = 2,
+#     opacity = 1,
+#     color = "orange",
+#     highlightOptions =
+#       highlightOptions(
+#         color = "black",
+#         weight = 3,
+#         bringToFront = TRUE),
+#     options = pathOptions(pane = "polygons")
+#   ) %>%
+#   addPolygons(
+#     data = toronto,
+#     fillOpacity = 0,
+#     stroke = TRUE,
+#     weight = 1,
+#     opacity = 1,
+#     color = "black",
+#     highlightOptions =
+#       highlightOptions(
+#         color = "black",
+#         weight = 3,
+#         bringToFront = TRUE),
+#     options = pathOptions(pane = "munic")
+#   )
+# 
+# interactive_region
+
+#-----------------------------------------
 # Combine city- and region-wide data
 #-----------------------------------------
 
 nrow(city)
 nrow(region)
 
-cr <- rbind(city, region)
+cr <- rbind(
+  city, 
+  region %>%
+    left_join(
+      region_sf %>% 
+        st_drop_geometry() %>% 
+        rename(new_ez = ez) %>%
+        mutate(ez = as.character(PSEZ_ID)) %>%
+        select(ez, new_ez)
+    ) %>%
+    select(ez = new_ez, n_devices, date, userbase)
+  )
 
 nrow(cr)
 head(cr)
 tail(cr)
+unique(cr$ez)
 
 #-----------------------------------------
-# Add year & week_num to city data
+# Create plots
 #-----------------------------------------
 
-rec_rate_city <-
-  city %>%
+rec_rate_cr <-
+  cr %>%
   # Determine week and year # for each date
   mutate(
     date_range_start = floor_date(
@@ -333,10 +453,10 @@ rec_rate_city <-
             userbase = sum(userbase, na.rm = T)) %>%
   dplyr::ungroup() 
 
-head(rec_rate_city)
+head(rec_rate_cr)
 
-all_city_for_plot <-
-  rec_rate_city %>%
+all_cr_for_plot <-
+  rec_rate_cr %>%
   filter(year > 2018) %>%
   dplyr::group_by(year, week_num) %>%
   dplyr::summarize(n_devices = sum(n_devices, na.rm = T),
@@ -368,14 +488,14 @@ all_city_for_plot <-
   data.frame() %>%
   filter(!(year == 2020 & week_num < 12))
 
-head(all_city_for_plot)
-tail(all_city_for_plot)
+head(all_cr_for_plot)
+tail(all_cr_for_plot)
 
-all_city_plot <-
-  all_city_for_plot %>%
+all_cr_plot <-
+  all_cr_for_plot %>%
   ggplot(aes(x = week, y = rq_rolling)) +
   geom_line(size = .8) +
-  ggtitle('Recovery rate for all Employment Zones in City of Toronto (11 week rolling average)') +
+  ggtitle('Recovery rate for all employment zones in Toronto region (11 week rolling average)') +
   scale_x_date(date_breaks = "4 month", date_labels = "%b %Y") +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1),
                      limits = c(0.5, 1.3),
@@ -395,11 +515,11 @@ all_city_plot <-
     axis.title.x = element_text(margin = margin(t = 15))
   )
 
-all_city_plot
+all_cr_plot
 
 # Now by employment zone
-each_city_for_plot <-
-  rec_rate_city %>%
+each_cr_for_plot <-
+  rec_rate_cr %>%
   filter(year > 2018) %>%
   dplyr::group_by(year, week_num, ez) %>%
   dplyr::summarize(n_devices = sum(n_devices, na.rm = T),
@@ -434,175 +554,93 @@ each_city_for_plot <-
   filter(!is.na(ez)) %>%
   mutate(
     mytext = paste0(ez, '<br>Week of ', week, ': ',
-                    scales::percent(rq_rolling, accuracy = 2)))
+                    scales::percent(rq_rolling, accuracy = 2)),
+    in_city = case_when(
+      !is.na(as.numeric(str_replace(ez, '.*: ', ''))) ~ 'no',
+      TRUE ~ 'yes'
+    ))
 
-head(each_city_for_plot)
+head(each_cr_for_plot)
+table(each_cr_for_plot$in_city)
+
+# Within city
+e_in <- each_cr_for_plot %>% filter(in_city == 'yes') %>% arrange(ez)
+  
+# Outside city
+# mixedrank = function(x) order(gtools::mixedorder(x))
+
+e_out <- 
+  each_cr_for_plot %>% 
+  filter(in_city == 'no') # %>%
+  # arrange(mixedrank(ez))
+  # mutate(ez_num0 = str_replace(ez, ':.*', ''),
+  #        ez_num = factor(ez_num0,
+  #                        levels = str_sort(unique(ez_num0), numeric = T))) %>%
+  # arrange(ez_num)
 
 # Plotly
-each_city_plotly <-
+each_cr_plotly <-
   plot_ly() %>%
-  add_lines(data = each_city_for_plot,
+  add_lines(data = e_in,
             x = ~week, y = ~rq_rolling,
             split = ~ez,
             name = ~ez,
             text = ~mytext,
             hoverinfo = 'text',
-            opacity = .3,
+            opacity = .5,
             line = list(shape = "linear", color = '#8c0a03')) %>%
-  layout(title = "Recovery rate for all Employment Zones in City of Toronto (11 week rolling average)",
+  add_lines(data = e_out,
+            x = ~week, y = ~rq_rolling,
+            split = ~ez,
+            name = ~ez,
+            text = ~mytext,
+            hoverinfo = 'text',
+            opacity = .5,
+            line = list(shape = "linear", color = '#DB9703')) %>%
+  layout(title = "Recovery rate for employment zones in Toronto region (11 week rolling average)",
          xaxis = list(title = "Week", zerolinecolor = "#ffff",
                       tickformat = "%b %Y"),
          yaxis = list(title = "Recovery rate", zerolinecolor = "#ffff",
                       tickformat = ".0%", ticksuffix = "  "))
 
-each_city_plotly
+each_cr_plotly
+
+# #-----------------------------------------
+# # Add year and week_num to region data
+# #-----------------------------------------
+# 
+# rec_rate_region <-
+#   region %>%
+#   # Determine week and year # for each date
+#   mutate(
+#     date_range_start = floor_date(
+#       date,
+#       unit = "week",
+#       week_start = getOption("lubridate.week.start", 1)),
+#     week_num = isoweek(date_range_start),
+#     year = year(date_range_start)) %>%
+#   # Calculate # of devices by big_area, week and year
+#   dplyr::group_by(ez, year, week_num) %>%
+#   dplyr::summarize(n_devices = sum(n_devices, na.rm = T),
+#                    userbase = sum(userbase, na.rm = T)) %>%
+#   dplyr::ungroup() 
+# 
+# head(rec_rate_region)
 
 #-----------------------------------------
-# Add year and week_num to region data
-#-----------------------------------------
-
-rec_rate_region <-
-  region %>%
-  # Determine week and year # for each date
-  mutate(
-    date_range_start = floor_date(
-      date,
-      unit = "week",
-      week_start = getOption("lubridate.week.start", 1)),
-    week_num = isoweek(date_range_start),
-    year = year(date_range_start)) %>%
-  # Calculate # of devices by big_area, week and year
-  dplyr::group_by(ez, year, week_num) %>%
-  dplyr::summarize(n_devices = sum(n_devices, na.rm = T),
-                   userbase = sum(userbase, na.rm = T)) %>%
-  dplyr::ungroup() 
-
-head(rec_rate_region)
-
-#-----------------------------------------
-# Add spatial data
-#-----------------------------------------
-
-# Load city shapefile
-city_sf <- st_read("C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/final_city_sf_dissolved.geojson") %>%
-  left_join(city0 %>% select(big_area, ez) %>% distinct(), by = c('big_area')) %>%
-  select(-big_area)
-
-# city_sf <- st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/big_city_areas.shp') %>%
-#   left_join(city0 %>% select(big_area, ez) %>% distinct(), by = c('big_area')) %>%
-#   select(-big_area)
-
-head(city_sf)
-
-# Load region shapefile
-region_sf <- 
-  # st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/Provincially_Significant_Employment_Zones.shp') %>%
-  st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/region_clipped.geojson') %>%
-  select(ez = PSEZ_ID, municipality = MUNICIPALI, geometry) %>%
-  mutate(
-    label = paste0(ez, ': ', municipality),
-    in_tor = case_when(
-      str_detect(municipality, 'TORONTO') ~ TRUE,
-      TRUE ~ FALSE
-  )) %>%
-  st_transform(st_crs(city_sf))
-
-head(region_sf)
-table(region_sf$in_tor)
-
-# Load Toronto city boundary
-toronto <- get_census(
-  dataset='CA21', regions=list(CMA="35535"),
-  level='CSD', quiet = TRUE, 
-  geo_format = 'sf', labels = 'short') %>%
-  filter(str_detect(name, 'Toronto')) %>%
-  select(geometry)
-
-st_write(
-  toronto,
-  'C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/toronto.geojson')
-
-pal <- c("turquoise", "purple")
-
-region_pal <- colorFactor(
-  pal,
-  domain = region_sf$in_tor,
-  na.color = 'transparent'
-)
-
-interactive_region <-
-  leaflet(
-    options = leafletOptions(minZoom = 7, maxZoom = 18, zoomControl = FALSE)
-  ) %>%
-  # setView(lat = 28.72, lng = -81.97, zoom = 7) %>%
-  addMapPane(name = "munic", zIndex = 410) %>%
-  addMapPane(name = "polygons", zIndex = 420) %>%
-  addProviderTiles("CartoDB.PositronNoLabels") %>%
-  addProviderTiles("Stamen.TonerLines",
-                   options = providerTileOptions(opacity = 0.3),
-                   group = "Roads"
-  ) %>%
-  addPolygons(
-    data = region_sf,
-    label = ~label,
-    labelOptions = labelOptions(textsize = "12px"),
-    fillOpacity = .6,
-    stroke = TRUE,
-    color = ~region_pal(in_tor),
-    weight = 2,
-    opacity = 1,
-    highlightOptions =
-      highlightOptions(
-        color = "black",
-        weight = 3,
-        bringToFront = TRUE),
-    options = pathOptions(pane = "polygons")
-  ) %>%
-  addPolygons(
-    data = city_sf,
-    label = ~ez,
-    labelOptions = labelOptions(textsize = "12px"),
-    fillOpacity = .6,
-    stroke = TRUE,
-    weight = 2,
-    opacity = 1,
-    color = "orange",
-    highlightOptions =
-      highlightOptions(
-        color = "black",
-        weight = 3,
-        bringToFront = TRUE),
-    options = pathOptions(pane = "polygons")
-  ) %>%
-  addPolygons(
-    data = toronto,
-    fillOpacity = 0,
-    stroke = TRUE,
-    weight = 1,
-    opacity = 1,
-    color = "black",
-    highlightOptions =
-      highlightOptions(
-        color = "black",
-        weight = 3,
-        bringToFront = TRUE),
-    options = pathOptions(pane = "munic")
-  )
-
-interactive_region
-
-#-----------------------------------------
-# Map city EZ recovery rates (static): 
+# Map EZ recovery rates (static): 
 # 2023 vs 2019
 #-----------------------------------------
 
-head(rec_rate_city)
+head(rec_rate_cr)
 
 for_maps0 <-
-  rec_rate_city %>%
-  mutate(week = as.Date(
-    paste(as.character(year), as.character(week_num), 1, sep = '_'),
-    format = '%Y_%W_%w'))
+  rec_rate_cr %>%
+  mutate(
+    week = as.Date(
+      paste(as.character(year), as.character(week_num), 1, sep = '_'),
+      format = '%Y_%W_%w')) %>%
+  select(-new_ez)
 
 # Make sure I'm comparing the same number of weeks:
 only_23_19 <- 
@@ -644,17 +682,17 @@ summary(for_maps_23_19$rate)
 
 # Join spatial data with device count data.
 
-nrow(city_sf)
+nrow(cr_sf)
 nrow(for_maps_23_19)
 
 n_distinct(for_maps_23_19$ez)
-n_distinct(city_sf$ez)
+n_distinct(cr_sf$ez)
 
 summary(for_maps_23_19$rate)
 getJenksBreaks(for_maps_23_19$rate, 7)
 
-ez_final_23_19 <- 
-  left_join(city_sf, for_maps_23_19) %>%
+ez_final_23_19 <-
+  left_join(cr_sf, for_maps_23_19) %>%
   mutate(
     rate_cat = factor(case_when(
       rate < .7 ~ '50 - 69%',
@@ -662,10 +700,10 @@ ez_final_23_19 <-
       rate < 1.2 ~ '100 - 119%',
       rate < 1.4 ~ '120 - 139%',
       rate < 1.6 ~ '140 - 159%',
-      TRUE ~ '160 - 192%'
+      TRUE ~ '160 - 208%'
     ),
     levels = c('50 - 69%', '70 - 99%', '100 - 119%', '120 - 139%', '140 - 159%',
-               '160 - 192%')))
+               '160 - 208%')))
 
 nrow(ez_final_23_19)
 head(ez_final_23_19)
@@ -681,10 +719,10 @@ pal <- c(
 
 basemap <-
   get_stamenmap(
-    bbox = c(left = -79.65,
-             bottom = 43.57,
-             right = -79.12,
-             top = 43.85),
+    bbox = c(left = -80.57,
+             bottom = 42.75,
+             right = -78.65,
+             top = 44.21),
     zoom = 11,
     maptype = "terrain-lines") # https://r-graph-gallery.com/324-map-background-with-the-ggmap-library.html
 
@@ -702,7 +740,7 @@ ez_map_23_19 <-
           inherit.aes = FALSE,
           # alpha = .9, 
           color = NA) +
-  ggtitle('Recovery rate for all Employment Zones in City of Toronto,\nJanuary - May (2023 versus 2019)') +
+  ggtitle('Recovery rate for all employment zones in Toronto region,\nJanuary - May (2023 versus 2019)') +
   scale_fill_manual(values = pal, name = 'Recovery rate') +
   guides(fill = guide_legend(barwidth = 0.5, barheight = 10, 
                              ticks = F, byrow = T)) +
@@ -725,7 +763,7 @@ ez_map_23_19 <-
 ez_map_23_19
 
 #-----------------------------------------
-# Map city EZ recovery rates (interactive): 
+# Map EZ recovery rates (interactive): 
 # 2023 vs 2019
 #-----------------------------------------
 
@@ -779,7 +817,7 @@ interactive_23_19 <-
 interactive_23_19
 
 #-----------------------------------------
-# Map city EZ recovery rates (static): 
+# Map EZ recovery rates (static): 
 # 2023 vs 2021
 #-----------------------------------------
 
@@ -823,17 +861,17 @@ summary(for_maps_23_21$rate)
 
 # Join spatial data with device count data.
 
-nrow(city_sf)
+nrow(cr_sf)
 nrow(for_maps_23_21)
 
 n_distinct(for_maps_23_21$ez)
-n_distinct(city_sf$ez)
+n_distinct(cr_sf$ez)
 
 summary(for_maps_23_21$rate)
 getJenksBreaks(for_maps_23_21$rate, 7)
 
 ez_final_23_21 <-
-  left_join(city_sf, for_maps_23_21) %>%
+  left_join(cr_sf, for_maps_23_21) %>%
   mutate(
     rate_cat = factor(case_when(
       rate < .8 ~ '48 - 79%',
@@ -841,10 +879,10 @@ ez_final_23_21 <-
       rate < 1.2 ~ '100 - 119%',
       rate < 1.5 ~ '120 - 149%',
       rate < 1.9 ~ '150 - 189%',
-      TRUE ~ '190 - 231%'
+      TRUE ~ '190 - 234%'
     ),
     levels = c('48 - 79%', '80 - 99%', '100 - 119%', '120 - 149%', '150 - 189%',
-               '190 - 231%')))
+               '190 - 234%')))
 
 nrow(ez_final_23_21)
 head(ez_final_23_21)
@@ -856,7 +894,7 @@ ez_map_23_21 <-
           inherit.aes = FALSE,
           # alpha = .9, 
           color = NA) +
-  ggtitle('Recovery rate for all Employment Zones in City of Toronto,\nJanuary - May (2023 versus 2021)') +
+  ggtitle('Recovery rate for all employment zones in Toronto region,\nJanuary - May (2023 versus 2021)') +
   scale_fill_manual(values = pal, name = 'Recovery rate') +
   guides(fill = guide_legend(barwidth = 0.5, barheight = 10, 
                              ticks = F, byrow = T)) +
@@ -879,7 +917,7 @@ ez_map_23_21 <-
 ez_map_23_21
 
 #-----------------------------------------
-# Map city EZ recovery rates (interactive): 
+# Map EZ recovery rates (interactive): 
 # 2023 vs 2021
 #-----------------------------------------
 
@@ -933,7 +971,7 @@ interactive_23_21 <-
 interactive_23_21
 
 #-----------------------------------------
-# Map city EZ recovery rates (static): 
+# Map EZ recovery rates (static): 
 # 2021 vs 2019
 #-----------------------------------------
 
@@ -977,38 +1015,38 @@ summary(for_maps_21_19$rate)
 
 # Join spatial data with device count data.
 
-nrow(city_sf)
+nrow(cr_sf)
 nrow(for_maps_21_19)
 
 n_distinct(for_maps_21_19$ez)
-n_distinct(city_sf$ez)
+n_distinct(cr_sf$ez)
 
 summary(for_maps_21_19$rate)
 getJenksBreaks(for_maps_21_19$rate, 7)
 
 ez_final_21_19 <-
-  left_join(city_sf, for_maps_21_19) %>%
+  left_join(cr_sf, for_maps_21_19) %>%
   mutate(
     rate_cat = factor(case_when(
       rate < .4 ~ '27 - 39%',
       rate < .7 ~ '40 - 69%',
-      rate < .9 ~ '70 - 89%',
-      rate < 1 ~ '90 - 99%',
-      rate < 1.2 ~ '100 - 119%',
-      TRUE ~ '120 - 180%'
+      rate < 1 ~ '70 - 99%',
+      rate < 1.3 ~ '100 - 129%',
+      rate < 1.8 ~ '130 - 179%',
+      TRUE ~ '180 - 215%'
     ),
-    levels = c('27 - 39%', '40 - 69%', '70 - 89%', '90 - 99%', '100 - 119%',
-               '120 - 180%')))
+    levels = c('27 - 39%', '40 - 69%', '70 - 99%', '100 - 129%', '130 - 179%',
+               '180 - 215%')))
 
 nrow(ez_final_21_19)
 head(ez_final_21_19)
 
 pal_21_19 <- c(
   "#e41822",
-  "#f0534d",
-  "#f87b75",
+  "#f46861",
   "#faa09d",
   "#5bc4fb",
+  "#167ac4",
   "#033384"
 )
 
@@ -1019,7 +1057,7 @@ ez_map_21_19 <-
           inherit.aes = FALSE,
           # alpha = .9, 
           color = NA) +
-  ggtitle('Recovery rate for all Employment Zones in City of Toronto,\nJanuary - May (2021 versus 2019)') +
+  ggtitle('Recovery rate for all employment zones in Toronto region,\nJanuary - May (2021 versus 2019)') +
   scale_fill_manual(values = pal_21_19, name = 'Recovery rate') +
   guides(fill = guide_legend(barwidth = 0.5, barheight = 10, 
                              ticks = F, byrow = T)) +
@@ -1042,7 +1080,7 @@ ez_map_21_19 <-
 ez_map_21_19
 
 #-----------------------------------------
-# Map city EZ recovery rates (interactive): 
+# Map EZ recovery rates (interactive): 
 # 2021 vs 2019
 #-----------------------------------------
 
