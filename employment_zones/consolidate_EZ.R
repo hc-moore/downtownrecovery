@@ -312,6 +312,8 @@ city_sf <- st_read("C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_l
 
 head(city_sf)
 
+# st_write(city_sf, "C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/city_sf.shp")
+
 # Load region shapefile
 region_sf <- 
   st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/region_clipped.geojson') %>% 
