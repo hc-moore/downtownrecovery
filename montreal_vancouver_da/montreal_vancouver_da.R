@@ -117,7 +117,7 @@ da_new <- da %>%
       week_start = getOption("lubridate.week.start", 1)),
     week_num = isoweek(date_range_start),
     year = year(date_range_start)) %>%
-  # Calculate # of devices by province, week and year
+  # Calculate # of devices by city, week and year
   group_by(city, provider_id, year, week_num) %>%
   summarize(n_devices = sum(approx_distinct_devices_count, na.rm = T)) %>%
   ungroup() %>%
@@ -226,6 +226,55 @@ montreal_plotly <-
                       ticksuffix = "  "))
 
 montreal_plotly
+
+#-----------------------------------------
+# Look at individual DAs over time
+#-----------------------------------------
+
+# Montreal
+
+each_da <- da %>%
+  filter(date >= as.Date('2019-01-01')) %>%
+  mutate(
+    date_range_start = floor_date(
+      date,
+      unit = "week",
+      week_start = getOption("lubridate.week.start", 1))) %>%
+  # Calculate # of devices by DA, provider & week
+  group_by(city, da, provider_id, date_range_start) %>%
+  summarize(n_devices = sum(approx_distinct_devices_count, na.rm = T)) %>%
+  ungroup() %>%
+  mutate(mytext = paste0('<br>Week of ', date_range_start, ': ', n_devices))
+
+m_da_plotly <- 
+  plot_ly() %>%
+  add_lines(data = each_da %>% filter(city == 'montreal' & provider_id == '700199'),
+            x = ~date_range_start, y = ~n_devices, split = ~da,
+            name = "Montreal DAs - 700199",
+            opacity = .5,
+            text = ~mytext,
+            line = list(shape = "linear", color = 'red')) %>%
+  add_lines(data = each_da %>% filter(city == 'montreal' & provider_id == '190199'),
+            x = ~date_range_start, y = ~n_devices, split = ~da,
+            name = "Montreal DAs - 190199",
+            opacity = .8,
+            text = ~mytext,
+            line = list(shape = "linear", color = 'lightblue')) %>%
+  add_lines(data = each_da %>% filter(city == 'montreal' & provider_id == '230599'),
+            x = ~date_range_start, y = ~n_devices, split = ~da,
+            name = "Montreal DAs - 230599",
+            opacity = .8,
+            text = ~mytext,
+            line = list(shape = "linear", color = 'orange')) %>%
+  layout(title = "Montreal / Quebec DAs",
+         xaxis = list(title = "Date", zerolinecolor = "#ffff", 
+                      tickformat = "%b %Y"),
+         yaxis = list(title = "Devices", zerolinecolor = "#ffff",
+                      ticksuffix = "  "))
+
+m_da_plotly
+
+# Vancouver
 
 #-----------------------------------------
 # Join DA & userbase

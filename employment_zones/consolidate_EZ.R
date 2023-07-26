@@ -12,7 +12,7 @@
 
 source('~/git/timathomas/functions/functions.r')
 ipak(c('tidyverse', 'lubridate', 'ggplot2', 'plotly', 'cancensus', 'ggmap', 
-       'sf', 'leaflet', 'BAMMtools', 'gtools'))
+       'sf', 'leaflet', 'BAMMtools', 'gtools', 'htmlwidgets'))
 
 #-----------------------------------------
 # Load data
@@ -82,11 +82,26 @@ userbase2 <-
 #   arrange(date) %>%
 #   select(-event_date)
 
-# Region-wide: 1/1/19 - 6/18/23
+# # Region-wide: 1/1/19 - 6/18/23
+# region0 <-
+#   list.files(path = paste0(filepath, 'region_20190101_20230618')) %>% 
+#   map_df(~read_delim(
+#     paste0(filepath, 'region_20190101_20230618/', .),
+#     delim = '\001',
+#     col_names = c('ez', 'provider_id', 'approx_distinct_devices_count', 
+#                   'event_date'),
+#     col_types = c('ccii')
+#   )) %>%
+#   data.frame() %>%
+#   mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
+#   arrange(date) %>%
+#   select(-event_date)
+
+# Region-wide (outside city): 1/1/2019 - 5/31/2023
 region0 <-
-  list.files(path = paste0(filepath, 'region_20190101_20230618')) %>% 
+  list.files(path = paste0(filepath, 'laura_region')) %>% 
   map_df(~read_delim(
-    paste0(filepath, 'region_20190101_20230618/', .),
+    paste0(filepath, 'laura_region/', .),
     delim = '\001',
     col_names = c('ez', 'provider_id', 'approx_distinct_devices_count', 
                   'event_date'),
@@ -156,6 +171,61 @@ range(userbase$date)
 
 head(region0)
 range(region0$date)
+unique(region0$provider_id)
+
+r7 <- region0 %>% filter(provider_id == '700199')
+r1 <- region0 %>% filter(provider_id == '190199')
+r2 <- region0 %>% filter(provider_id == '230599')
+
+range(r7$date)
+range(r1$date)
+range(r2$date)
+
+rnew <- region0 %>%
+  mutate(
+    date_range_start = floor_date(
+      date,
+      unit = "week",
+      week_start = getOption("lubridate.week.start", 1))) %>%
+  # Calculate # of devices by week and provider
+  group_by(date_range_start, provider_id) %>%
+  summarize(n_devices = sum(approx_distinct_devices_count, na.rm = T)) %>%
+  ungroup() %>%
+  mutate(mytext = paste0('<br>Week of ', date_range_start, ': ', n_devices))
+
+plot_ly() %>%
+  add_lines(data = rnew %>% filter(provider_id == '700199'),
+            x = ~date_range_start, y = ~n_devices,
+            name = "700199",
+            opacity = .9,
+            text = ~mytext,
+            line = list(shape = "linear", color = 'purple')) %>%
+  add_lines(data = rnew %>% filter(provider_id == '190199'),
+            x = ~date_range_start, y = ~n_devices,
+            name = "190199",
+            opacity = .8,
+            text = ~mytext,
+            line = list(shape = "linear", color = 'darkgreen')) %>%
+  add_lines(data = rnew %>% filter(provider_id == '230599'),
+            x = ~date_range_start, y = ~n_devices,
+            name = "230599",
+            opacity = .9,
+            text = ~mytext,
+            line = list(shape = "linear", color = 'orange'))
+
+r1may <- r1 %>% 
+  filter(date >= as.Date('2023-05-01')) %>% 
+  group_by(date) %>%
+  summarize(n_devices = sum(approx_distinct_devices_count, na.rm = T))
+
+head(r1may)
+
+plot_ly() %>%
+  add_lines(data = r1may,
+            x = ~date, y = ~n_devices,
+            name = "190199",
+            opacity = .9,
+            line = list(shape = "linear", color = 'darkgreen'))
 
 region <-
   region0 %>%
@@ -166,11 +236,12 @@ region <-
   mutate(ez = as.character(round(as.integer(ez), 0))) %>%
   select(-provider_id) %>%
   rename(n_devices = approx_distinct_devices_count) %>%
-  filter(!ez %in% c('8', '5')) %>% # remove EZs
+  # filter(!ez %in% c('8', '5')) %>% # remove EZs
   left_join(userbase) # add userbase
 
 head(region)
 range(region$date)
+n_distinct(region$ez)
 
 # #-----------------------------------------
 # # Combine region-wide data
@@ -315,15 +386,28 @@ head(city_sf)
 # st_write(city_sf, "C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/city_sf.shp")
 
 # Load region shapefile
-region_sf <- 
-  st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/region_clipped.geojson') %>% 
-  mutate(ez = paste0(MUNICIPALI, ': ', PSEZ_ID)) %>%
-  st_transform(st_crs(city_sf)) %>%
-  filter(!ez %in% c('8: TORONTO', '5: TORONTO'))
+region_sf0 <- st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/PSEZ_with_ID.geojson') %>%
+  st_transform(st_crs(city_sf))
+
+# region_sf <- 
+#   st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/region_clipped.geojson') %>% 
+#   mutate(ez = paste0(MUNICIPALI, ': ', PSEZ_ID)) %>%
+#   st_transform(st_crs(city_sf)) %>%
+#   filter(!ez %in% c('8: TORONTO', '5: TORONTO'))
+
+head(region_sf0)
+n_distinct(region_sf0$Precinct)
+
+outside <- region_sf0 %>% filter(Precinct == 'Outside GTHA study area')
+outside
+plot(outside$geometry)
+
+region_sf <- region_sf0 %>% filter(Precinct != 'Outside GTHA study area')
 
 head(region_sf)
+n_distinct(region_sf$Precinct)
 
-cr_sf <- rbind(city_sf, region_sf %>% select(ez, geometry))
+cr_sf <- rbind(city_sf, region_sf %>% select(ez = Precinct))
 
 head(cr_sf)
 unique(cr_sf$ez)
@@ -419,21 +503,33 @@ nrow(region)
 
 cr <- rbind(
   city, 
-  region %>%
-    left_join(
-      region_sf %>% 
-        st_drop_geometry() %>% 
-        rename(new_ez = ez) %>%
-        mutate(ez = as.character(PSEZ_ID)) %>%
-        select(ez, new_ez)
-    ) %>%
-    select(ez = new_ez, n_devices, date, userbase)
-  )
+  region_sf %>%
+    mutate(ez = as.character(ez)) %>%
+    st_drop_geometry() %>%
+    select(ez, Precinct) %>%
+    left_join(region) %>%
+    select(ez = Precinct, date, n_devices, userbase)
+)
+
+# cr <- rbind(
+#   city, 
+#   region %>%
+#     left_join(
+#       region_sf %>% 
+#         st_drop_geometry() %>% 
+#         rename(new_ez = ez) %>%
+#         mutate(ez = as.character(PSEZ_ID)) %>%
+#         select(ez, new_ez)
+#     ) %>%
+#     select(ez = new_ez, n_devices, date, userbase)
+#   )
 
 nrow(cr)
 head(cr)
 tail(cr)
 unique(cr$ez)
+
+cr %>% filter(ez == 'Outside GTHA study area') # should be none
 
 #-----------------------------------------
 # Create plots
@@ -557,8 +653,11 @@ each_cr_for_plot <-
   mutate(
     mytext = paste0(ez, '<br>Week of ', week, ': ',
                     scales::percent(rq_rolling, accuracy = 2)),
+    # in_city = case_when(
+    #   !is.na(as.numeric(str_replace(ez, '.*: ', ''))) ~ 'no',
+    #   TRUE ~ 'yes'
     in_city = case_when(
-      !is.na(as.numeric(str_replace(ez, '.*: ', ''))) ~ 'no',
+      ez %in% region_sf$Precinct ~ 'no',
       TRUE ~ 'yes'
     ))
 
@@ -607,6 +706,10 @@ each_cr_plotly <-
 
 each_cr_plotly
 
+saveWidget(
+  each_cr_plotly,
+  'C:/Users/jpg23/UDP/downtown_recovery/employment_zones/trends_by_EZ.html')
+
 # #-----------------------------------------
 # # Add year and week_num to region data
 # #-----------------------------------------
@@ -641,8 +744,7 @@ for_maps0 <-
   mutate(
     week = as.Date(
       paste(as.character(year), as.character(week_num), 1, sep = '_'),
-      format = '%Y_%W_%w')) %>%
-  select(-new_ez)
+      format = '%Y_%W_%w'))
 
 # Make sure I'm comparing the same number of weeks:
 only_23_19 <- 
@@ -690,22 +792,27 @@ nrow(for_maps_23_19)
 n_distinct(for_maps_23_19$ez)
 n_distinct(cr_sf$ez)
 
+setdiff(cr_sf$ez, for_maps_23_19$ez) # North Leslie
+for_maps0 %>% filter(ez == 'North Leslie') # only available week of 2020-01-20
+
 summary(for_maps_23_19$rate)
 getJenksBreaks(for_maps_23_19$rate, 7)
+hist(for_maps_23_19$rate, breaks = 50)
 
 ez_final_23_19 <-
   left_join(cr_sf, for_maps_23_19) %>%
+  filter(!is.na(rate)) %>%
   mutate(
     rate_cat = factor(case_when(
       rate < .7 ~ '50 - 69%',
       rate < 1 ~ '70 - 99%',
-      rate < 1.2 ~ '100 - 119%',
-      rate < 1.4 ~ '120 - 139%',
-      rate < 1.6 ~ '140 - 159%',
-      TRUE ~ '160 - 208%'
+      rate < 1.5 ~ '100 - 149%',
+      rate < 2 ~ '150 - 199%',
+      rate < 4 ~ '200 - 399%',
+      TRUE ~ '400 - 1,451%'
     ),
-    levels = c('50 - 69%', '70 - 99%', '100 - 119%', '120 - 139%', '140 - 159%',
-               '160 - 208%')))
+    levels = c('50 - 69%', '70 - 99%', '100 - 149%', '150 - 199%', '200 - 399%',
+               '400 - 1,451%')))
 
 nrow(ez_final_23_19)
 head(ez_final_23_19)
@@ -721,10 +828,10 @@ pal <- c(
 
 basemap <-
   get_stamenmap(
-    bbox = c(left = -80.57,
-             bottom = 42.75,
+    bbox = c(left = -80,
+             bottom = 43.14,
              right = -78.65,
-             top = 44.21),
+             top = 43.95),
     zoom = 11,
     maptype = "terrain-lines") # https://r-graph-gallery.com/324-map-background-with-the-ggmap-library.html
 
@@ -763,6 +870,11 @@ ez_map_23_19 <-
       margin = margin(b = 10)))
 
 ez_map_23_19
+
+ggsave('C:/Users/jpg23/UDP/downtown_recovery/employment_zones/static_map_23v19.png',
+       plot = ez_map_23_19, 
+       width = 15,
+       height = 7)
 
 #-----------------------------------------
 # Map EZ recovery rates (interactive): 
@@ -817,6 +929,10 @@ interactive_23_19 <-
   )
 
 interactive_23_19
+
+saveWidget(
+  interactive_23_19,
+  'C:/Users/jpg23/UDP/downtown_recovery/employment_zones/interactive_map_23v19.html')
 
 #-----------------------------------------
 # Map EZ recovery rates (static): 
@@ -874,17 +990,18 @@ getJenksBreaks(for_maps_23_21$rate, 7)
 
 ez_final_23_21 <-
   left_join(cr_sf, for_maps_23_21) %>%
+  filter(!is.na(rate)) %>%
   mutate(
     rate_cat = factor(case_when(
-      rate < .8 ~ '48 - 79%',
+      rate < .8 ~ '47 - 79%',
       rate < 1 ~ '80 - 99%',
       rate < 1.2 ~ '100 - 119%',
       rate < 1.5 ~ '120 - 149%',
-      rate < 1.9 ~ '150 - 189%',
-      TRUE ~ '190 - 234%'
+      rate < 2 ~ '150 - 199%',
+      TRUE ~ '200 - 964%'
     ),
-    levels = c('48 - 79%', '80 - 99%', '100 - 119%', '120 - 149%', '150 - 189%',
-               '190 - 234%')))
+    levels = c('47 - 79%', '80 - 99%', '100 - 119%', '120 - 149%', '150 - 199%',
+               '200 - 964%')))
 
 nrow(ez_final_23_21)
 head(ez_final_23_21)
@@ -917,6 +1034,11 @@ ez_map_23_21 <-
       margin = margin(b = 10)))
 
 ez_map_23_21
+
+ggsave('C:/Users/jpg23/UDP/downtown_recovery/employment_zones/static_map_23v21.png',
+       plot = ez_map_23_21, 
+       width = 15,
+       height = 7)
 
 #-----------------------------------------
 # Map EZ recovery rates (interactive): 
@@ -971,6 +1093,10 @@ interactive_23_21 <-
   )
 
 interactive_23_21
+
+saveWidget(
+  interactive_23_21,
+  'C:/Users/jpg23/UDP/downtown_recovery/employment_zones/interactive_map_23v21.html')
 
 #-----------------------------------------
 # Map EZ recovery rates (static): 
@@ -1028,6 +1154,7 @@ getJenksBreaks(for_maps_21_19$rate, 7)
 
 ez_final_21_19 <-
   left_join(cr_sf, for_maps_21_19) %>%
+  filter(!is.na(rate)) %>%
   mutate(
     rate_cat = factor(case_when(
       rate < .4 ~ '27 - 39%',
@@ -1035,10 +1162,10 @@ ez_final_21_19 <-
       rate < 1 ~ '70 - 99%',
       rate < 1.3 ~ '100 - 129%',
       rate < 1.8 ~ '130 - 179%',
-      TRUE ~ '180 - 215%'
+      TRUE ~ '180 - 357%'
     ),
     levels = c('27 - 39%', '40 - 69%', '70 - 99%', '100 - 129%', '130 - 179%',
-               '180 - 215%')))
+               '180 - 357%')))
 
 nrow(ez_final_21_19)
 head(ez_final_21_19)
@@ -1080,6 +1207,11 @@ ez_map_21_19 <-
       margin = margin(b = 10)))
 
 ez_map_21_19
+
+ggsave('C:/Users/jpg23/UDP/downtown_recovery/employment_zones/static_map_21v19.png',
+       plot = ez_map_21_19, 
+       width = 15,
+       height = 7)
 
 #-----------------------------------------
 # Map EZ recovery rates (interactive): 
@@ -1134,3 +1266,7 @@ interactive_21_19 <-
   )
 
 interactive_21_19
+
+saveWidget(
+  interactive_21_19,
+  'C:/Users/jpg23/UDP/downtown_recovery/employment_zones/interactive_map_21v19.html')
