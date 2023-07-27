@@ -128,71 +128,71 @@ pal <-
   domain = sf$jobs_cat,
   na.color = 'transparent'
   )
-
-sf_map <-
-  leaflet(
-    options = leafletOptions(minZoom = 6, maxZoom = 16)
-  ) %>%
-  addMapPane(name = "lehd_pane", zIndex = 410) %>%
-  addMapPane(name = "current_pane", zIndex = 420) %>%
-  addMapPane(name = "maplabels", zIndex = 430) %>%
-  addProviderTiles("CartoDB.PositronNoLabels") %>%
-  addProviderTiles("Stamen.TonerLines",
-                   options = providerTileOptions(opacity = 0.3),
-                   group = "Roads"
-  ) %>%
-  addProviderTiles("CartoDB.PositronOnlyLabels",
-                   options = leafletOptions(pane = "maplabels")
-  ) %>%
-  addLayersControl(
-    position = "topright",
-    overlayGroups = c(
-      "lehd",
-      "current"),
-    options = layersControlOptions(collapsed = FALSE, maxHeight = 'auto')) %>%
-  addPolygons(
-    data = sf,
-    group = "lehd",
-    label = ~jobs_lab,
-    labelOptions = labelOptions(textsize = "12px"),
-    fillOpacity = .6,
-    color = ~pal(jobs_cat),
-    stroke = TRUE,
-    weight = 1,
-    opacity = .3,
-    highlightOptions =
-      highlightOptions(
-        color = "black",
-        weight = 3,
-        bringToFront = TRUE),
-    options = pathOptions(pane = "lehd_pane")
-  )  %>%
-  addLegend(
-    data = sf,
-    position = "bottomright",
-    pal = pal,
-    values = ~jobs_cat,
-    group = "lehd",
-    title = "LEHD (2019)",
-    className = 'info legend lehd'
-  ) %>%
-  addPolylines(
-    data = dp_sf,
-    group = "current",
-    fillOpacity = 0,
-    stroke = TRUE,
-    weight = 4,
-    opacity = .8,
-    color = 'black',
-    highlightOptions =
-      highlightOptions(
-        color = "white",
-        weight = 5,
-        bringToFront = TRUE),
-    options = pathOptions(pane = "current_pane")
-  )
-
-sf_map
+# 
+# sf_map <-
+#   leaflet(
+#     options = leafletOptions(minZoom = 6, maxZoom = 16)
+#   ) %>%
+#   addMapPane(name = "lehd_pane", zIndex = 410) %>%
+#   addMapPane(name = "current_pane", zIndex = 420) %>%
+#   addMapPane(name = "maplabels", zIndex = 430) %>%
+#   addProviderTiles("CartoDB.PositronNoLabels") %>%
+#   addProviderTiles("Stamen.TonerLines",
+#                    options = providerTileOptions(opacity = 0.3),
+#                    group = "Roads"
+#   ) %>%
+#   addProviderTiles("CartoDB.PositronOnlyLabels",
+#                    options = leafletOptions(pane = "maplabels")
+#   ) %>%
+#   addLayersControl(
+#     position = "topright",
+#     overlayGroups = c(
+#       "lehd",
+#       "current"),
+#     options = layersControlOptions(collapsed = FALSE, maxHeight = 'auto')) %>%
+#   addPolygons(
+#     data = sf,
+#     group = "lehd",
+#     label = ~jobs_lab,
+#     labelOptions = labelOptions(textsize = "12px"),
+#     fillOpacity = .6,
+#     color = ~pal(jobs_cat),
+#     stroke = TRUE,
+#     weight = 1,
+#     opacity = .3,
+#     highlightOptions =
+#       highlightOptions(
+#         color = "black",
+#         weight = 3,
+#         bringToFront = TRUE),
+#     options = pathOptions(pane = "lehd_pane")
+#   )  %>%
+#   addLegend(
+#     data = sf,
+#     position = "bottomright",
+#     pal = pal,
+#     values = ~jobs_cat,
+#     group = "lehd",
+#     title = "LEHD (2019)",
+#     className = 'info legend lehd'
+#   ) %>%
+#   addPolylines(
+#     data = dp_sf,
+#     group = "current",
+#     fillOpacity = 0,
+#     stroke = TRUE,
+#     weight = 4,
+#     opacity = .8,
+#     color = 'black',
+#     highlightOptions =
+#       highlightOptions(
+#         color = "white",
+#         weight = 5,
+#         bringToFront = TRUE),
+#     options = pathOptions(pane = "current_pane")
+#   )
+# 
+# sf_map
 
 # Create new clusters
 #=====================================
@@ -237,4 +237,100 @@ plot(as_Spatial(sf_simp), add=TRUE)
 clus10 <- skater(edges = sf_mst[,1:2], data = sf_scale[,-1], ncuts = 9)
 
 # Map the clusters
-plot((sf_simp %>% mutate(clus = clus10$groups))['clus'], main = "10 clusters")
+#=====================================
+
+with_clust <- sf_simp %>% mutate(clus = clus10$groups)
+
+clustpal <-
+  colorFactor(c(
+    "#88e99a", "#277a35", "#99def9", "#19477d", "#df72ef", "#ad0599", "#7d9af7", 
+    "#6f3a93", "#11a0aa", "#cadba5"
+  ),
+  domain = with_clust$clus,
+  na.color = 'transparent'
+  )
+
+cluster_map <-
+  leaflet(
+    options = leafletOptions(minZoom = 6, maxZoom = 16)
+  ) %>%
+  addMapPane(name = "lehd_pane", zIndex = 410) %>%
+  addMapPane(name = "current_pane", zIndex = 420) %>%
+  addMapPane(name = "maplabels", zIndex = 430) %>%
+  addProviderTiles("CartoDB.PositronNoLabels") %>%
+  addProviderTiles("Stamen.TonerLines",
+                   options = providerTileOptions(opacity = 0.3),
+                   group = "Roads"
+  ) %>%
+  addProviderTiles("CartoDB.PositronOnlyLabels",
+                   options = leafletOptions(pane = "maplabels")
+  ) %>%
+  addLayersControl(
+    position = "topright",
+    baseGroups = c("lehd", "lehd_cluster"),
+    overlayGroups = c("current"),
+    options = layersControlOptions(collapsed = FALSE, maxHeight = 'auto')) %>%
+  addPolygons(
+    data = sf,
+    group = "lehd",
+    label = ~jobs_lab,
+    labelOptions = labelOptions(textsize = "12px"),
+    fillOpacity = .6,
+    color = ~pal(jobs_cat),
+    stroke = TRUE,
+    weight = 1,
+    opacity = .3,
+    highlightOptions =
+      highlightOptions(
+        color = "black",
+        weight = 3,
+        bringToFront = TRUE),
+    options = pathOptions(pane = "lehd_pane")
+  ) %>%
+  addLegend(
+    data = sf,
+    position = "bottomright",
+    pal = pal,
+    values = ~jobs_cat,
+    group = "lehd",
+    title = "LEHD (2019)",
+    className = 'info legend lehd'
+  ) %>%
+  addPolygons(
+    data = with_clust,
+    group = "lehd_cluster",
+    label = ~jobs,
+    labelOptions = labelOptions(textsize = "12px"),
+    fillOpacity = .8,
+    color = ~clustpal(clus),
+    stroke = TRUE,
+    weight = 1,
+    opacity = .3,
+    highlightOptions =
+      highlightOptions(
+        color = "black",
+        weight = 3,
+        bringToFront = TRUE),
+    options = pathOptions(pane = "lehd_pane")
+  )  %>%
+  addPolylines(
+    data = dp_sf,
+    group = "current",
+    fillOpacity = 0,
+    stroke = TRUE,
+    weight = 4,
+    opacity = .8,
+    color = 'black',
+    highlightOptions =
+      highlightOptions(
+        color = "white",
+        weight = 5,
+        bringToFront = TRUE),
+    options = pathOptions(pane = "current_pane")
+  )
+
+cluster_map
+
+saveWidget(
+  cluster_map,
+  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/lehd_clusters.html')
