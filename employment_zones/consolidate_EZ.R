@@ -142,6 +142,9 @@ city2 <-
   arrange(date) %>%
   select(-event_date)
 
+# Toronto downtown
+# LOAD DATA HERE!!!!!!!!!!!!!!!!!!!!!!
+
 #-----------------------------------------
 # Combine userbase data
 #-----------------------------------------
