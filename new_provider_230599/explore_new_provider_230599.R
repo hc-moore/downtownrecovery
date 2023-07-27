@@ -35,6 +35,8 @@ range(userbase$date)
 unique(userbase$provider_id)
 unique(userbase$geography_name)
 
+# LOAD DOWNTOWN DATA HERE!!!!!!!!!!!!
+
 # Aggregate by week
 #=====================================
 

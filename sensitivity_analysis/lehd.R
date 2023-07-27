@@ -11,7 +11,7 @@
 #=====================================
 
 source('~/git/timathomas/functions/functions.r')
-ipak(c('tidyverse', 'sf', 'data.table', 'tigris', 'leaflet'))
+ipak(c('tidyverse', 'sf', 'sp', 'data.table', 'tigris', 'leaflet', 'spdep'))
 
 # Load current downtown polygons
 #=====================================
@@ -85,8 +85,13 @@ glimpse(sf_agg)
 #                '600%+ of city avg.')),
 #     jobs_lab = paste0(jobs, ' jobs: ', 100*(round(jobs/jobs_avg, 2)), '% of avg.'))
 
-sf_blgr <- block_groups(state = 'CA', county = 'San Francisco', year = 2019) %>% 
-  select(blgr = GEOID)
+sf_blgr0 <- block_groups(state = 'CA', county = 'San Francisco', year = 2019) %>% 
+  select(blgr = GEOID) 
+
+sf_blgr <- sf_blgr0 %>%
+  cbind(st_coordinates(st_centroid(sf_blgr0$geometry))) %>%
+  filter(X != min(X)) %>% # get rid of outlying western block group
+  select(-c(X, Y))
 
 glimpse(sf_blgr)
 
@@ -188,3 +193,48 @@ sf_map <-
   )
 
 sf_map
+
+# Create new clusters
+#=====================================
+
+# See documentation on SKATER algorithm:
+# https://www.dshkol.com/post/spatially-constrained-clustering-and-regionalization/
+
+sf_simp <- sf %>% select(jobs) %>% filter(!is.na(jobs))
+
+head(sf_simp)
+
+sf_scale <- sf %>% 
+  select(blgr, jobs) %>% 
+  st_drop_geometry() %>%
+  mutate(jobs = scale(jobs)) %>%
+  filter(!is.na(jobs))
+
+class(sf_scale)
+head(sf_scale)
+
+sf_nb <- poly2nb(as_Spatial(sf_simp), queen = F)
+
+# Create adjacency neighbor structure
+plot(as_Spatial(sf_simp), main = "Neighbors (without queen)")
+plot(sf_nb, coords = coordinates(as_Spatial(sf_simp)), col="red", add = TRUE)
+
+# Calculate edge costs based on statistical distance between each node
+costs <- nbcosts(sf_nb, data = sf_scale[,-1])
+
+# Transform edge costs into spatial weights to supplement neighbor list
+sf_w <- nb2listw(sf_nb, costs, style = "B")
+
+# Create minimal spanning tree that turns adjacency graph into subgraph
+# with n nodes and n-1 edges
+sf_mst <- mstree(sf_w)
+
+# Plot minimal spanning tree
+plot(sf_mst, coordinates(as_Spatial(sf_simp)), col="blue", cex.lab = 0.5)
+plot(as_Spatial(sf_simp), add=TRUE)
+
+# Partition the minimal spanning tree to create 10 clusters
+clus10 <- skater(edges = sf_mst[,1:2], data = sf_scale[,-1], ncuts = 9)
+
+# Map the clusters
+plot((sf_simp %>% mutate(clus = clus10$groups))['clus'], main = "10 clusters")
