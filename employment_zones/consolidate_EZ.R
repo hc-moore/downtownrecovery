@@ -13,6 +13,7 @@
 source('~/git/timathomas/functions/functions.r')
 ipak(c('tidyverse', 'lubridate', 'ggplot2', 'plotly', 'cancensus', 'ggmap', 
        'sf', 'leaflet', 'BAMMtools', 'gtools', 'htmlwidgets'))
+ipak_gh(c("statnmap/HatchedPolygons"))
 
 #-----------------------------------------
 # Load data
@@ -143,7 +144,80 @@ city2 <-
   select(-event_date)
 
 # Toronto downtown
-# LOAD DATA HERE!!!!!!!!!!!!!!!!!!!!!!
+downtown0 <-
+  list.files(path = paste0(filepath, 'toronto_downtown')) %>%
+  map_df(~read_delim(
+    paste0(filepath, 'toronto_downtown/', .),
+    delim = '\001',
+    col_names = c('city', 'provider_id', 'approx_distinct_devices_count', 
+                  'event_date'),
+    col_types = c('ccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
+  arrange(date) %>%
+  select(-event_date)
+
+#-----------------------------------------
+# Load current downtown polygons
+#-----------------------------------------
+
+dp <- st_read("C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/current/study_area_downtowns.shp")
+
+head(dp)
+
+dpt <- dp %>% 
+  filter(city == 'Toronto') %>% 
+  mutate(ez = 'Downtown') %>% 
+  select(ez)
+
+dpt
+
+#-----------------------------------------
+# Calculate downtown recovery rate
+#-----------------------------------------
+
+dnew <- downtown0 %>%
+  mutate(
+    date_range_start = floor_date(
+      date,
+      unit = "week",
+      week_start = getOption("lubridate.week.start", 1))) %>%
+  # Calculate # of devices by week and provider
+  group_by(date_range_start, provider_id) %>%
+  summarize(n_devices = sum(approx_distinct_devices_count, na.rm = T)) %>%
+  ungroup() %>%
+  mutate(mytext = paste0('<br>Week of ', date_range_start, ': ', n_devices))
+
+plot_ly() %>%
+  add_lines(data = dnew %>% filter(provider_id == '700199'),
+            x = ~date_range_start, y = ~n_devices,
+            name = "700199",
+            opacity = .9,
+            text = ~mytext,
+            line = list(shape = "linear", color = 'purple')) %>%
+  add_lines(data = dnew %>% filter(provider_id == '190199'),
+            x = ~date_range_start, y = ~n_devices,
+            name = "190199",
+            opacity = .8,
+            text = ~mytext,
+            line = list(shape = "linear", color = 'darkgreen')) %>%
+  add_lines(data = dnew %>% filter(provider_id == '230599'),
+            x = ~date_range_start, y = ~n_devices,
+            name = "230599",
+            opacity = .9,
+            text = ~mytext,
+            line = list(shape = "linear", color = 'orange'))
+
+downtown <-
+  downtown0 %>%
+  filter(((provider_id == '700199' & date < as.Date('2021-05-17')) |
+            (provider_id == '190199' & date >= as.Date('2021-05-17')))) %>%
+  select(-c(provider_id, city)) %>%
+  rename(n_devices = approx_distinct_devices_count) %>%
+  left_join(userbase)
+
+head(downtown)
 
 #-----------------------------------------
 # Combine userbase data
@@ -382,7 +456,8 @@ all_plotly
 # Load city shapefile
 city_sf <- st_read("C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/final_city_sf_dissolved.geojson") %>%
   left_join(city0 %>% select(big_area, ez) %>% distinct(), by = c('big_area')) %>%
-  select(ez, geometry)
+  select(ez, geometry) %>%
+  st_transform(st_crs(dpt))
 
 head(city_sf)
 
@@ -390,7 +465,7 @@ head(city_sf)
 
 # Load region shapefile
 region_sf0 <- st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/PSEZ_with_ID.geojson') %>%
-  st_transform(st_crs(city_sf))
+  st_transform(st_crs(dpt))
 
 # region_sf <- 
 #   st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/region_clipped.geojson') %>% 
@@ -410,7 +485,7 @@ region_sf <- region_sf0 %>% filter(Precinct != 'Outside GTHA study area')
 head(region_sf)
 n_distinct(region_sf$Precinct)
 
-cr_sf <- rbind(city_sf, region_sf %>% select(ez = Precinct))
+cr_sf <- rbind(city_sf, region_sf %>% select(ez = Precinct), dpt)
 
 head(cr_sf)
 unique(cr_sf$ez)
@@ -422,7 +497,8 @@ toronto <- get_census(
   level='CSD', quiet = TRUE, 
   geo_format = 'sf', labels = 'short') %>%
   filter(str_detect(name, 'Toronto')) %>%
-  select(geometry)
+  select(geometry) %>%
+  st_transform(st_crs(dpt))
 
 # st_write(
 #   toronto,
@@ -511,7 +587,8 @@ cr <- rbind(
     st_drop_geometry() %>%
     select(ez, Precinct) %>%
     left_join(region) %>%
-    select(ez = Precinct, date, n_devices, userbase)
+    select(ez = Precinct, date, n_devices, userbase),
+  downtown
 )
 
 # cr <- rbind(
@@ -847,7 +924,7 @@ attributes(basemap_transparent) <- basemap_attributes
 
 ez_map_23_19 <-
   ggmap(basemap_transparent) +
-  geom_sf(data = ez_final_23_19, 
+  geom_sf(data = ez_final_23_19 %>% filter(ez != 'Downtown'), 
           aes(fill = rate_cat), 
           inherit.aes = FALSE,
           # alpha = .9, 
@@ -888,11 +965,18 @@ ez_label_23_19 <-
   ez_final_23_19 %>%
   mutate(label = paste0(ez, ": ", round(rate * 100), "%"))
 
-leaflet_pal <- colorFactor(
+leaflet_pal_23_19 <- colorFactor(
   pal,
   domain = ez_label_23_19$rate_cat,
   na.color = 'transparent'
 )
+
+# Hatched polygon (downtown)
+dt_hatch_23_19 <-
+  ez_label_23_19 %>%
+  filter(ez == 'Downtown') %>%
+  hatched.SpatialPolygons(density = 500, angle = 45, fillOddEven = TRUE) %>%
+  cbind(ez_label_23_19 %>% filter(ez == 'Downtown') %>% select(rate, rate_cat, label))
 
 interactive_23_19 <-
   leaflet(
@@ -908,11 +992,27 @@ interactive_23_19 <-
                    group = "Roads"
   ) %>%
   addPolygons(
-    data = ez_label_23_19,
+    data = ez_label_23_19 %>% filter(ez != 'Downtown'),
     label = ~label,
     labelOptions = labelOptions(textsize = "12px"),
     fillOpacity = .8,
-    color = ~leaflet_pal(rate_cat),
+    color = ~leaflet_pal_23_19(rate_cat),
+    stroke = TRUE,
+    weight = 1,
+    opacity = 1,
+    highlightOptions =
+      highlightOptions(
+        color = "black",
+        weight = 3,
+        bringToFront = TRUE),
+    options = pathOptions(pane = "polygons")
+  ) %>%
+  addPolygons(
+    data = dt_hatch_23_19,
+    label = ~label,
+    labelOptions = labelOptions(textsize = "12px"),
+    fillOpacity = .8,
+    color = ~leaflet_pal_23_19(rate_cat),
     stroke = TRUE,
     weight = 1,
     opacity = 1,
@@ -926,7 +1026,7 @@ interactive_23_19 <-
   leaflet::addLegend(
     data = ez_label_23_19,
     position = "bottomleft",
-    pal = leaflet_pal,
+    pal = leaflet_pal_23_19,
     values = ~rate_cat,
     title = 'Recovery rate<br>(January-May,<br>2023 vs 2019)'
   )
@@ -1011,7 +1111,7 @@ head(ez_final_23_21)
 
 ez_map_23_21 <-
   ggmap(basemap_transparent) +
-  geom_sf(data = ez_final_23_21, 
+  geom_sf(data = ez_final_23_21 %>% filter(ez != 'Downtown'), 
           aes(fill = rate_cat), 
           inherit.aes = FALSE,
           # alpha = .9, 
@@ -1052,11 +1152,18 @@ ez_label_23_21 <-
   ez_final_23_21 %>%
   mutate(label = paste0(ez, ": ", round(rate * 100), "%"))
 
-leaflet_pal <- colorFactor(
+leaflet_pal_23_21 <- colorFactor(
   pal,
   domain = ez_label_23_21$rate_cat,
   na.color = 'transparent'
 )
+
+# Hatched polygon (downtown)
+dt_hatch_23_21 <-
+  ez_label_23_21 %>%
+  filter(ez == 'Downtown') %>%
+  hatched.SpatialPolygons(density = 500, angle = 45, fillOddEven = TRUE) %>%
+  cbind(ez_label_23_21 %>% filter(ez == 'Downtown') %>% select(rate, rate_cat, label))
 
 interactive_23_21 <-
   leaflet(
@@ -1072,11 +1179,27 @@ interactive_23_21 <-
                    group = "Roads"
   ) %>%
   addPolygons(
-    data = ez_label_23_21,
+    data = ez_label_23_21 %>% filter(ez != 'Downtown'),
     label = ~label,
     labelOptions = labelOptions(textsize = "12px"),
     fillOpacity = .8,
-    color = ~leaflet_pal(rate_cat),
+    color = ~leaflet_pal_23_21(rate_cat),
+    stroke = TRUE,
+    weight = 1,
+    opacity = 1,
+    highlightOptions =
+      highlightOptions(
+        color = "black",
+        weight = 3,
+        bringToFront = TRUE),
+    options = pathOptions(pane = "polygons")
+  ) %>%
+  addPolygons(
+    data = dt_hatch_23_21,
+    label = ~label,
+    labelOptions = labelOptions(textsize = "12px"),
+    fillOpacity = .8,
+    color = ~leaflet_pal_23_21(rate_cat),
     stroke = TRUE,
     weight = 1,
     opacity = 1,
@@ -1090,7 +1213,7 @@ interactive_23_21 <-
   leaflet::addLegend(
     data = ez_label_23_21,
     position = "bottomleft",
-    pal = leaflet_pal,
+    pal = leaflet_pal_23_21,
     values = ~rate_cat,
     title = 'Recovery rate<br>(January-May,<br>2023 vs 2021)'
   )
@@ -1184,7 +1307,7 @@ pal_21_19 <- c(
 
 ez_map_21_19 <-
   ggmap(basemap_transparent) +
-  geom_sf(data = ez_final_21_19, 
+  geom_sf(data = ez_final_21_19 %>% filter(ez != 'Downtown'), 
           aes(fill = rate_cat), 
           inherit.aes = FALSE,
           # alpha = .9, 
@@ -1231,6 +1354,13 @@ leaflet_pal_21_19 <- colorFactor(
   na.color = 'transparent'
 )
 
+# Hatched polygon (downtown)
+dt_hatch_21_19 <-
+  ez_label_21_19 %>%
+  filter(ez == 'Downtown') %>%
+  hatched.SpatialPolygons(density = 500, angle = 45, fillOddEven = TRUE) %>%
+  cbind(ez_label_21_19 %>% filter(ez == 'Downtown') %>% select(rate, rate_cat, label))
+
 interactive_21_19 <-
   leaflet(
     options = leafletOptions(minZoom = 9, maxZoom = 18, zoomControl = FALSE)
@@ -1245,7 +1375,23 @@ interactive_21_19 <-
                    group = "Roads"
   ) %>%
   addPolygons(
-    data = ez_label_21_19,
+    data = ez_label_21_19 %>% filter(ez != 'Downtown'),
+    label = ~label,
+    labelOptions = labelOptions(textsize = "12px"),
+    fillOpacity = .8,
+    color = ~leaflet_pal_21_19(rate_cat),
+    stroke = TRUE,
+    weight = 1,
+    opacity = 1,
+    highlightOptions =
+      highlightOptions(
+        color = "black",
+        weight = 3,
+        bringToFront = TRUE),
+    options = pathOptions(pane = "polygons")
+  ) %>%
+  addPolygons(
+    data = dt_hatch_21_19,
     label = ~label,
     labelOptions = labelOptions(textsize = "12px"),
     fillOpacity = .8,

@@ -17,9 +17,9 @@ ipak(c('tidyverse', 'readr', 'ggplot2', 'plotly'))
 filepath <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/new_provider_230599/'
 
 userbase <-
-  list.files(path = filepath) %>% 
+  list.files(path = paste0(filepath, 'userbase')) %>% 
   map_df(~read_delim(
-    paste0(filepath, .),
+    paste0(filepath, 'userbase/', .),
     delim = '\001',
     col_names = c('geography_name', 'provider_id', 'userbase', 'event_date'),
     col_types = c('ccii')
@@ -35,7 +35,19 @@ range(userbase$date)
 unique(userbase$provider_id)
 unique(userbase$geography_name)
 
-# LOAD DOWNTOWN DATA HERE!!!!!!!!!!!!
+downtown <-
+  list.files(path = paste0(filepath, 'downtown')) %>% 
+  map_df(~read_delim(
+    paste0(filepath, 'downtown/', .),
+    delim = '\001',
+    col_names = c('city', 'provider_id', 'approx_distinct_devices_count', 
+                  'event_date'),
+    col_types = c('ccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
+  arrange(date) %>%
+  select(-event_date)
 
 # Aggregate by week
 #=====================================
