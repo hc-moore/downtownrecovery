@@ -11,7 +11,8 @@
 #=====================================
 
 source('~/git/timathomas/functions/functions.r')
-ipak(c('tidyverse', 'sf', 'sp', 'data.table', 'tigris', 'leaflet', 'spdep'))
+ipak(c('tidyverse', 'sf', 'sp', 'data.table', 'tigris', 'leaflet', 'spdep',
+       'htmlwidgets'))
 
 # Load current downtown polygons
 #=====================================
