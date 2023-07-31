@@ -897,6 +897,9 @@ ez_final_23_19 <-
 nrow(ez_final_23_19)
 head(ez_final_23_19)
 
+st_write(ez_final_23_19,
+         'C:/Users/jpg23/UDP/downtown_recovery/employment_zones/static_map_layers/ez_23_19.shp')
+
 pal <- c(
   "#e41822",
   "#faa09d",
@@ -1109,6 +1112,9 @@ ez_final_23_21 <-
 nrow(ez_final_23_21)
 head(ez_final_23_21)
 
+st_write(ez_final_23_21,
+         'C:/Users/jpg23/UDP/downtown_recovery/employment_zones/static_map_layers/ez_23_21.shp')
+
 ez_map_23_21 <-
   ggmap(basemap_transparent) +
   geom_sf(data = ez_final_23_21 %>% filter(ez != 'Downtown'), 
@@ -1295,6 +1301,9 @@ ez_final_21_19 <-
 
 nrow(ez_final_21_19)
 head(ez_final_21_19)
+
+st_write(ez_final_21_19,
+         'C:/Users/jpg23/UDP/downtown_recovery/employment_zones/static_map_layers/ez_21_19.shp')
 
 pal_21_19 <- c(
   "#e41822",
