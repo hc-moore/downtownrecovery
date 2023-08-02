@@ -179,6 +179,24 @@ with_clust10 <- c_simp %>%
   mutate(job_lab = paste0(format(job_dens, big.mark = ','), ' jobs per square mile'))
   # mutate(job_lab = paste0(format(jobs, big.mark = ','), ' jobs'))
 
+head(with_clust10)
+
+# Save new downtown polygon
+#-------------------------------------------------------------------------------
+
+new_downtown <- with_clust10 %>% filter(clus %in% c(3, 2, 5)) %>% select(geometry)
+
+head(new_downtown)
+plot(new_downtown)
+
+new_downtown_agg <- st_union(new_downtown, by_feature = FALSE)
+
+plot(new_downtown_agg)
+
+st_write(new_downtown_agg, ':/Users/jpg23/data/downtownrecovery/sensitivity_analysis/new_downtowns/cleveland_lehd_downtown.geojson')
+
+#-------------------------------------------------------------------------------
+
 clustpal10 <-
   colorFactor(c(
     "#88e99a", "#277a35", "#99def9", "#19477d", "#df72ef", "#ad0599", "#7d9af7", 

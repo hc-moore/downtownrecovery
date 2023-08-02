@@ -14,6 +14,8 @@ source('~/git/timathomas/functions/functions.r')
 ipak(c('tidyverse', 'sf', 'sp', 'data.table', 'tigris', 'leaflet', 'spdep',
        'htmlwidgets'))
 
+select <- dplyr::select
+
 # Load current downtown polygons
 #=====================================
 
@@ -176,6 +178,24 @@ with_clust10 <- slc_simp %>%
   mutate(job_lab = paste0(format(job_dens, big.mark = ','), ' jobs per square mile'))
   # mutate(job_lab = paste0(format(jobs, big.mark = ','), ' jobs'))
 
+# Save new downtown polygon
+#-------------------------------------------------------------------------------
+
+new_downtown <- with_clust10 %>% 
+  filter(clus==3) %>% 
+  select(geometry)
+
+head(new_downtown)
+plot(new_downtown)
+
+new_downtown_agg <- st_union(new_downtown, by_feature = FALSE)
+
+plot(new_downtown_agg)
+
+st_write(new_downtown_agg, 'C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/new_downtowns/slc_lehd_downtown.geojson')
+
+#-------------------------------------------------------------------------------
+
 clustpal10 <-
   colorFactor(c(
     "#88e99a", "#277a35", "#99def9", "#19477d", "#df72ef", "#ad0599", "#7d9af7", 
@@ -225,7 +245,7 @@ cluster_map10 <-
   addPolygons(
     data = with_clust10,
     group = "lehdcluster",
-    label = ~job_lab,
+    label = ~job_lab, # label = ~clus
     labelOptions = labelOptions(textsize = "12px"),
     fillOpacity = .8,
     color = ~clustpal10(clus),
