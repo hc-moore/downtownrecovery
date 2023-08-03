@@ -191,11 +191,11 @@ d_plot <-
   ggplot(aes(x = date_range_start, y = downtown_devices, 
              color = provider_id, group = provider_id)) +
   geom_line(linewidth = .8) +
-  scale_x_date(date_breaks = "1 year", date_labels = "%b %Y") +
+  scale_x_date(date_breaks = "1 year") + #, date_labels = waiver()) + # date_labels = "%b %Y") +
   xlab('Week') +
   ylab('# of unique devices') +
   theme(
-    axis.text.x = element_text(angle = 90),
+    axis.text.x = element_blank(),
     panel.grid.major = element_line(color = 'light gray',
                                     linewidth = .5,
                                     linetype = 1),
@@ -224,7 +224,7 @@ d1_plot <-
   xlab('Week') +
   ylab('# of unique devices') +
   theme(
-    axis.text.x = element_text(angle = 90),
+    axis.text.x = element_blank(),
     panel.grid.major = element_line(color = 'light gray',
                                     linewidth = .5,
                                     linetype = 1),
@@ -253,7 +253,7 @@ d2_plot <-
   xlab('Week') +
   ylab('# of unique devices') +
   theme(
-    axis.text.x = element_text(angle = 90),
+    axis.text.x = element_blank(),
     panel.grid.major = element_line(color = 'light gray',
                                     linewidth = .5,
                                     linetype = 1),
@@ -282,7 +282,7 @@ d3_plot <-
   xlab('Week') +
   ylab('# of unique devices') +
   theme(
-    axis.text.x = element_text(angle = 90),
+    axis.text.x = element_blank(),
     panel.grid.major = element_line(color = 'light gray',
                                     linewidth = .5,
                                     linetype = 1),
@@ -314,7 +314,7 @@ u_plot <-
   xlab('Week') +
   ylab('# of unique devices') +
   theme(
-    axis.text.x = element_text(angle = 90),
+    axis.text.x = element_blank(),
     panel.grid.major = element_line(color = 'light gray',
                                     linewidth = .5,
                                     linetype = 1),
@@ -343,7 +343,7 @@ u1_plot <-
   xlab('Week') +
   ylab('# of unique devices') +
   theme(
-    axis.text.x = element_text(angle = 90),
+    axis.text.x = element_blank(),
     panel.grid.major = element_line(color = 'light gray',
                                     linewidth = .5,
                                     linetype = 1),
@@ -372,7 +372,7 @@ u2_plot <-
   xlab('Week') +
   ylab('# of unique devices') +
   theme(
-    axis.text.x = element_text(angle = 90),
+    axis.text.x = element_blank(),
     panel.grid.major = element_line(color = 'light gray',
                                     linewidth = .5,
                                     linetype = 1),
@@ -401,7 +401,7 @@ u3_plot <-
   xlab('Week') +
   ylab('# of unique devices') +
   theme(
-    axis.text.x = element_text(angle = 90),
+    axis.text.x = element_blank(),
     panel.grid.major = element_line(color = 'light gray',
                                     linewidth = .5,
                                     linetype = 1),
@@ -433,7 +433,7 @@ n_plot <-
   xlab('Week') +
   ylab('# of unique devices') +
   theme(
-    axis.text.x = element_text(angle = 90),
+    axis.text.x = element_blank(),
     panel.grid.major = element_line(color = 'light gray',
                                     linewidth = .5,
                                     linetype = 1),
@@ -464,7 +464,7 @@ n1_plot <-
   xlab('Week') +
   ylab('# of unique devices') +
   theme(
-    axis.text.x = element_text(angle = 90),
+    axis.text.x = element_blank(),
     panel.grid.major = element_line(color = 'light gray',
                                     linewidth = .5,
                                     linetype = 1),
@@ -495,7 +495,7 @@ n2_plot <-
   xlab('Week') +
   ylab('# of unique devices') +
   theme(
-    axis.text.x = element_text(angle = 90),
+    axis.text.x = element_blank(),
     panel.grid.major = element_line(color = 'light gray',
                                     linewidth = .5,
                                     linetype = 1),
@@ -526,7 +526,7 @@ n3_plot <-
   xlab('Week') +
   ylab('# of unique devices') +
   theme(
-    axis.text.x = element_text(angle = 90),
+    axis.text.x = element_blank(),
     panel.grid.major = element_line(color = 'light gray',
                                     linewidth = .5,
                                     linetype = 1),
