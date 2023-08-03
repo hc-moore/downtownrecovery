@@ -183,50 +183,6 @@ by_week1 <- by_week %>% filter(city %in% unlist(chunks[1]))
 by_week2 <- by_week %>% filter(city %in% unlist(chunks[2]))
 by_week3 <- by_week %>% filter(city %in% unlist(chunks[3]))
 
-# make_plot <- function(df, y_var, plot_title, which_geo, file_name) {
-#   
-#   p0 <-
-#     df %>%
-#     ggplot(aes(x = date_range_start, y = y_var, 
-#                color = provider_id, group = provider_id)) +
-#     geom_line(linewidth = .8) +
-#     scale_x_date(date_breaks = "1 year", date_labels = "%b %Y") +
-#     xlab('Week') +
-#     ylab('# of unique devices') +
-#     theme(
-#       axis.text.x = element_text(angle = 90),
-#       panel.grid.major = element_line(color = 'light gray',
-#                                       linewidth = .5,
-#                                       linetype = 1),
-#       panel.grid.minor.x = element_blank(),
-#       panel.background = element_blank(),
-#       plot.title = element_text(hjust = .5),
-#       axis.ticks = element_blank(),
-#       axis.title.y = element_text(margin = margin(r = 15)),
-#       axis.title.x = element_text(margin = margin(t = 15))
-#     ) +
-#     ggtitle(plot_title) +
-#     facet_wrap(. ~ which_geo)
-#   
-#   p <- ggplotly(p0)
-#   
-#   saveWidget(
-#     p,
-#     paste0('C:/Users/jpg23/UDP/downtown_recovery/new_provider_230599/', 
-#            file_name, '_by_provider_2023.html'))  
-# }
-# 
-# make_plot(by_week1, downtown_devices, 'Downtown (2023)', city, 'downtown')
-
-
-
-
-
-
-
-
-
-
 # Plot downtowns
 #=====================================
 
@@ -251,7 +207,7 @@ d_plot <-
     axis.title.x = element_text(margin = margin(t = 15))
   ) +
   ggtitle('Downtown (2023)') +
-  facet_wrap(. ~ city)
+  facet_wrap(. ~ city, scales = "free")
 
 d <- ggplotly(d_plot)
 
@@ -280,7 +236,7 @@ d1_plot <-
     axis.title.x = element_text(margin = margin(t = 15))
   ) +
   ggtitle('Downtown (2023)') +
-  facet_wrap(. ~ city)
+  facet_wrap(. ~ city, scales = "free")
 
 d1 <- ggplotly(d1_plot)
 
@@ -309,7 +265,7 @@ d2_plot <-
     axis.title.x = element_text(margin = margin(t = 15))
   ) +
   ggtitle('Downtown (2023)') +
-  facet_wrap(. ~ city)
+  facet_wrap(. ~ city, scales = "free")
 
 d2 <- ggplotly(d2_plot)
 
@@ -338,7 +294,7 @@ d3_plot <-
     axis.title.x = element_text(margin = margin(t = 15))
   ) +
   ggtitle('Downtown (2023)') +
-  facet_wrap(. ~ city)
+  facet_wrap(. ~ city, scales = "free")
 
 d3 <- ggplotly(d3_plot)
 
@@ -370,7 +326,7 @@ u_plot <-
     axis.title.x = element_text(margin = margin(t = 15))
   ) +
   ggtitle('Userbase (2023)') +
-  facet_wrap(. ~ state)
+  facet_wrap(. ~ state, scales = "free")
 
 u <- ggplotly(u_plot)
 
@@ -399,7 +355,7 @@ u1_plot <-
     axis.title.x = element_text(margin = margin(t = 15))
   ) +
   ggtitle('Userbase (2023)') +
-  facet_wrap(. ~ state)
+  facet_wrap(. ~ state, scales = "free")
 
 u1 <- ggplotly(u1_plot)
 
@@ -428,7 +384,7 @@ u2_plot <-
     axis.title.x = element_text(margin = margin(t = 15))
   ) +
   ggtitle('Userbase (2023)') +
-  facet_wrap(. ~ state)
+  facet_wrap(. ~ state, scales = "free")
 
 u2 <- ggplotly(u2_plot)
 
@@ -457,7 +413,7 @@ u3_plot <-
     axis.title.x = element_text(margin = margin(t = 15))
   ) +
   ggtitle('Userbase (2023)') +
-  facet_wrap(. ~ state)
+  facet_wrap(. ~ state, scales = "free")
 
 u3 <- ggplotly(u3_plot)
 
@@ -489,7 +445,7 @@ n_plot <-
     axis.title.x = element_text(margin = margin(t = 15))
   ) +
   ggtitle('Normalized (2023)') +
-  facet_wrap(. ~ city)
+  facet_wrap(. ~ city, scales = "free")
 
 ggplotly(n_plot)
 
@@ -520,7 +476,7 @@ n1_plot <-
     axis.title.x = element_text(margin = margin(t = 15))
   ) +
   ggtitle('Normalized (2023)') +
-  facet_wrap(. ~ city)
+  facet_wrap(. ~ city, scales = "free")
 
 ggplotly(n_plot)
 
@@ -551,7 +507,7 @@ n2_plot <-
     axis.title.x = element_text(margin = margin(t = 15))
   ) +
   ggtitle('Normalized (2023)') +
-  facet_wrap(. ~ city)
+  facet_wrap(. ~ city, scales = "free")
 
 ggplotly(n2_plot)
 
@@ -582,7 +538,7 @@ n3_plot <-
     axis.title.x = element_text(margin = margin(t = 15))
   ) +
   ggtitle('Normalized (2023)') +
-  facet_wrap(. ~ city)
+  facet_wrap(. ~ city, scales = "free")
 
 ggplotly(n3_plot)
 
