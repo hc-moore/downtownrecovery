@@ -136,7 +136,7 @@ nrow(t_scale)
 # overlapmat <- st_overlaps(t_simp, sparse=FALSE)
 # ovnb <- mat2listw(overlapmat)
 # plot(t_simp$geom);plot(ovnb, st_coordinates(st_centroid(t_simp)),add=TRUE)
-# ovnb$neighbours
+# t_nb <- ovnb$neighbours
 
 
 # Create adjacency neighbor structure
