@@ -18,10 +18,10 @@ select <- dplyr::select
 
 filepath <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/new_provider_230599/'
 
-userbase <-
-  list.files(path = paste0(filepath, 'userbase')) %>% 
+userbase1 <-
+  list.files(path = paste0(filepath, 'userbase_20190101_20230721')) %>% 
   map_df(~read_delim(
-    paste0(filepath, 'userbase/', .),
+    paste0(filepath, 'userbase_20190101_20230721/', .),
     delim = '\001',
     col_names = c('geography_name', 'provider_id', 'userbase', 'event_date'),
     col_types = c('ccii')
@@ -31,16 +31,31 @@ userbase <-
   arrange(date) %>%
   select(-event_date)
 
+userbase2 <-
+  list.files(path = paste0(filepath, 'userbase_20230722_20230804')) %>% 
+  map_df(~read_delim(
+    paste0(filepath, 'userbase_20230722_20230804/', .),
+    delim = '\001',
+    col_names = c('geography_name', 'provider_id', 'userbase', 'event_date'),
+    col_types = c('ccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
+  arrange(date) %>%
+  select(-event_date)
+
+userbase <- rbind(userbase1, userbase2)
+
 head(userbase)
 glimpse(userbase)
 range(userbase$date)
 unique(userbase$provider_id)
 unique(userbase$geography_name)
 
-downtown <-
-  list.files(path = paste0(filepath, 'downtown')) %>% 
+downtown1 <-
+  list.files(path = paste0(filepath, 'downtown_20190101_20230721')) %>% 
   map_df(~read_delim(
-    paste0(filepath, 'downtown/', .),
+    paste0(filepath, 'downtown_20190101_20230721/', .),
     delim = '\001',
     col_names = c('city', 'provider_id', 'approx_distinct_devices_count', 
                   'event_date'),
@@ -51,6 +66,22 @@ downtown <-
   arrange(date) %>%
   select(-event_date) %>%
   filter(date <= as.Date('2023-07-21'))
+
+downtown2 <-
+  list.files(path = paste0(filepath, 'downtown_20230722_20230804')) %>% 
+  map_df(~read_delim(
+    paste0(filepath, 'downtown_20230722_20230804/', .),
+    delim = '\001',
+    col_names = c('city', 'provider_id', 'approx_distinct_devices_count', 
+                  'event_date'),
+    col_types = c('ccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
+  arrange(date) %>%
+  select(-event_date)
+
+downtown <- rbind(downtown1, downtown2)
 
 head(downtown)
 glimpse(downtown)
