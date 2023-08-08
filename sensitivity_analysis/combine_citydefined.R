@@ -41,4 +41,6 @@ for (subfolder in citydefined_subfolders) {
 # Combine all stacked shapefiles into a single sf object
 all_stacked_sf <- do.call(rbind, shp_list)
 
+unique(all_stacked_sf$city)
+
 st_write(all_stacked_sf, paste0(data_folder, '/all_citydefined.geojson'))
