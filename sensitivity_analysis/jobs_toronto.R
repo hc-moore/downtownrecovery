@@ -57,10 +57,15 @@ nrow(t_agg %>% filter(is.na(jobs)))/nrow(t_agg)
 # Join with shapefile
 #=====================================
 
-# Dissemination areas
-t_da0 <- st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/DAs/toronto/gtha-da-21_simplified.geojson') %>%
-  mutate(ALAND = as.numeric(st_area(st_make_valid(geometry))))
+# Dissemination areas - 2016 boundaries downloaded from
+# https://www12.statcan.gc.ca/census-recensement/2011/geo/bound-limit/bound-limit-eng.cfm
+t_da0 <- st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/DAs/all_canada/lda_000b16a_e.shp') %>%
+  filter(CCSNAME=='Toronto') %>%
+  mutate(ALAND = as.numeric(st_area(st_make_valid(geometry)))) %>%
+  select(DAUID, ALAND) %>%
+  st_transform(4326)
 
+plot(t_da0)
 glimpse(t_da0)
 t_da0 %>% filter(is.na(ALAND) | ALAND == 0) # any NAs or 0s in ALAND column?
 
@@ -106,25 +111,28 @@ table(t$jobs_cat)
 # See documentation on SKATER algorithm:
 # https://www.dshkol.com/post/spatially-constrained-clustering-and-regionalization/
 
-t_sub0 <- t %>% filter(!is.na(job_dens))
-# 
-# t_sub <- 
-#   tibble::rowid_to_column(t_sub0, "index") %>%
-#   filter(!index %in% c(45, 284, 407, 559, 579, 707, 717, 953, 1407, 1472, 1481,
-#                        1935, 2320, 2346, 2864, 2894, 2940, 3003, 3160, 3260,
-#                        3320, 3552, 3916, 3979, 4051, 4068, 4085, 4297, 4303,
-#                        4357, 4562, 4583, 4585, 4588, 4602, 4675, 4680, 4775,
-#                        4834, 4877, 5216, 5259, 5272, 5326, 5540, 5736))
-# 
-# t_simp <- t_sub %>% select(job_dens)
-t_simp <- t_sub0 %>% select(job_dens) %>% st_make_valid()
+t1 <- t %>% filter(!is.na(job_dens))
+
+t_simp <- t1 %>% select(DAUID, job_dens) %>% st_make_valid()
 
 head(t_simp)
 nrow(t_simp)
 
-# t_scale <- t_sub %>%
-t_scale <- t_sub0 %>%
-  select(DAUID, job_dens) %>% 
+# Create adjacency neighbor structure
+t_nb <- poly2nb(as_Spatial(t_simp), queen = F) # , snap = 1000
+
+# Check for empty neighbor sets
+# card() calculates number of neighbors for each polygon in the list
+# which() finds polygons with 0 neighbors
+empty_nb <- which(card(t_nb) == 0)
+empty_nb       
+
+# Remove polygons with empty neighbor sets from the data
+t_subset <- t_simp[-empty_nb, ]
+
+nrow(t_subset)/nrow(t_simp)
+
+t_scale <- t_subset %>%
   st_drop_geometry() %>%
   mutate(job_dens = scale(job_dens))
 
@@ -132,32 +140,26 @@ class(t_scale)
 head(t_scale)
 nrow(t_scale)
 
+# Recreate adjacency neighbor structure
+t_nb1 <- poly2nb(as_Spatial(t_subset), queen = F)
 
-# overlapmat <- st_overlaps(t_simp, sparse=FALSE)
-# ovnb <- mat2listw(overlapmat)
-# plot(t_simp$geom);plot(ovnb, st_coordinates(st_centroid(t_simp)),add=TRUE)
-# t_nb <- ovnb$neighbours
-
-
-# Create adjacency neighbor structure
-t_nb <- poly2nb(as_Spatial(t_simp), queen = F) # , snap = 1000
-
-plot(as_Spatial(t_simp), main = "Neighbors (without queen)")
-plot(t_nb, coords = coordinates(as_Spatial(t_simp)), col="red", add = TRUE)
+# Plot neighbors
+plot(as_Spatial(t_subset), main = "Neighbors (without queen)")
+plot(t_nb1, coords = coordinates(as_Spatial(t_subset)), col="red", add = TRUE)
 
 # Calculate edge costs based on statistical distance between each node
-costs <- nbcosts(t_nb, data = t_scale[,-1])
+costs <- nbcosts(t_nb1, data = t_scale[,-1])
 
 # Transform edge costs into spatial weights to supplement neighbor list
-t_w <- nb2listw(t_nb, costs, style = "B")
+t_w <- nb2listw(t_nb1, costs, style = "B")
 
 # Create minimal spanning tree that turns adjacency graph into subgraph
 # with n nodes and n-1 edges
 t_mst <- mstree(t_w)
 
 # Plot minimal spanning tree
-plot(t_mst, coordinates(as_Spatial(t_simp)), col="blue", cex.lab = 0.5)
-plot(as_Spatial(t_simp), add=TRUE)
+plot(t_mst, coordinates(as_Spatial(t_subset)), col="blue", cex.lab = 0.5)
+plot(as_Spatial(t_subset), add=TRUE)
 
 
 ################################################################################

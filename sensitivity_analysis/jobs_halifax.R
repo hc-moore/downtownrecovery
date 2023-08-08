@@ -1,18 +1,20 @@
 ################################################################################
-# Compare LEHD jobs concentration areas with downtown polygons currently used 
-# for Downtown Recovery website in St Louis. LEHD data downloaded at 
-# https://lehd.ces.census.gov/data/#lodes.
+# Compare jobs concentration areas with downtown polygons currently used 
+# for Downtown Recovery website in Halifax.
 #
 # Author: Julia Greenberg
-# Date: 8.3.23
+# Date: 8.4.23
 ################################################################################
 
 # Load packages
 #=====================================
 
 source('~/git/timathomas/functions/functions.r')
+
 ipak(c('tidyverse', 'sf', 'sp', 'data.table', 'tigris', 'leaflet', 'spdep',
-       'htmlwidgets'))
+       'htmlwidgets', 'cancensus'))
+
+set_cancensus_api_key('CensusMapper_bcd591107b93e609a0bb5415f58cb31b')
 
 select <- dplyr::select
 
@@ -23,59 +25,70 @@ dp <- st_read("C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/current
 
 head(dp)
 
-dp_stl <- dp %>% filter(city == 'St Louis')
+dp_t <- dp %>% filter(city == 'Halifax')
 
-dp_stl
+dp_t
 
-# Load LEHD data
+# Load jobs data
 #=====================================
 
-# See https://github.com/urban-displacement/edr-ca/blob/8de94d59dede0381c83e2631f71004ed70ac370a/code/d8_merge_model_data.R#L53
-# for code to load in data for multiple states at once.
+# Downloaded here (link from Jeff): 
+# http://odesi2.scholarsportal.info/documentation/CENSUS/2016/cen16labour.html
 
-stl_raw <- fread("C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/lehd/mo_wac_S000_JT00_2019.csv.gz") %>%
-  select(block = w_geocode, jobs = C000) %>%
-  mutate(block = as.character(block)) %>%
-  filter(substr(block, 1, 5) == '29510')
+# Employed Labour Force aged 15 years and over by Place of Work Census Divisions, 
+# Census subdivisions and Dissemination areas for Ontario showing Industrial 
+# sectors (NAICS 2012), 2016 Census, 25% sample.
 
-glimpse(stl_raw)
-table(nchar(stl_raw$block))
+h_raw <- read.csv("C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/halifax_jobs_2016.csv")
 
-# Aggregate to block group level
-#=====================================
+glimpse(h_raw)
+head(h_raw)
 
-stl_agg <- stl_raw %>% 
-  mutate(blgr = substr(block, 1, 12)) %>%
-  group_by(blgr) %>%
-  summarize(jobs = sum(jobs, na.rm = T)) %>% 
-  data.frame()
+# Delete the aggregate total jobs values in the 'CD'/'CSD' rows
+h_agg <- h_raw %>% 
+  filter(!str_detect(DAUID, '\\D')) %>% 
+  mutate(jobs = as.numeric(str_remove_all(total_jobs, ','))) %>% 
+  select(-total_jobs)
 
-glimpse(stl_agg)
+head(t_agg)
+nrow(t_agg)/nrow(t_raw)
+nrow(t_agg %>% filter(is.na(jobs)))/nrow(t_agg)
 
 # Join with shapefile
 #=====================================
 
-stl_blgr0 <- block_groups(state = 'MO', county = 'St. Louis city', year = 2019) %>% 
-  select(blgr = GEOID, ALAND) 
+# Dissemination areas - 2016 boundaries downloaded from
+# https://www12.statcan.gc.ca/census-recensement/2011/geo/bound-limit/bound-limit-eng.cfm
+h_da0 <- st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/DAs/all_canada/lda_000b16a_e.shp') %>%
+  filter(CCSNAME=='Halifax') %>%
+  mutate(ALAND = as.numeric(st_area(st_make_valid(geometry)))) %>%
+  select(DAUID, ALAND) %>%
+  st_transform(4326) %>%
+  filter(!DAUID %in% c('12090845', '12090814'))
 
-stl_blgr <- stl_blgr0 %>%
-  cbind(st_coordinates(st_centroid(stl_blgr0$geometry))) %>%
+glimpse(h_da0)
+h_da0 %>% filter(is.na(ALAND) | ALAND == 0) # any NAs or 0s in ALAND column?
+
+h_da <- h_da0 %>%
+  cbind(st_coordinates(st_centroid(st_make_valid(h_da0$geometry)))) %>%
   select(-c(X, Y))
 
-glimpse(stl_blgr)
+glimpse(h_da)
 
-# leaflet() %>%
-#   addPolygons(
-#     data = stl_blgr,
-#     label = ~blgr,
-#     labelOptions = labelOptions(textsize = "12px")
-#   )
+leaflet() %>%
+  addPolygons(
+    data = h_da,
+    label = ~DAUID,
+    labelOptions = labelOptions(textsize = "12px")
+  )
 
-stl0 <- stl_blgr %>% left_join(stl_agg) %>% mutate(job_dens = jobs/ALAND)
+h0 <- h_da %>% left_join(h_agg) %>% mutate(job_dens = jobs/ALAND)
 
-stl <- stl0 %>%
+head(h0)
+
+h <- h0 %>%
   mutate(
-    jobs_avg = mean(stl0$job_dens, na.rm = T),
+    jobs_avg = mean(h0$job_dens, na.rm = T),
     jobs_cat = factor(case_when(
       job_dens < jobs_avg ~ '<100% of city avg.',
       job_dens < 2*jobs_avg ~ '100 - 199% of city avg.',
@@ -89,24 +102,8 @@ stl <- stl0 %>%
                '1000%+ of city avg.')),
     jobs_lab = paste0(job_dens, ' jobs per square meters: ', 100*(round(job_dens/jobs_avg, 2)), '% of avg.'))
 
-# stl <- stl_blgr %>% 
-#   left_join(stl_agg) %>%
-  # mutate(
-  #   jobs_avg = mean(stl_agg$jobs, na.rm = T),
-  #   jobs_cat = factor(case_when(
-  #     jobs < jobs_avg ~ '<100% of city avg.',
-  #     jobs < 2*jobs_avg ~ '100 - 199% of city avg.',
-  #     jobs < 5*jobs_avg ~ '200 - 499% of city avg.',
-  #     jobs < 10*jobs_avg ~ '500 - 999% of city avg.',
-  #     jobs >= 10*jobs_avg ~ '1000%+ of city avg.',
-  #     TRUE ~ NA_character_
-  #   ),
-  #   levels = c('<100% of city avg.', '100 - 199% of city avg.', 
-  #              '200 - 499% of city avg.', '500 - 999% of city avg.', 
-  #              '1000%+ of city avg.')),
-  #   jobs_lab = paste0(jobs, ' jobs: ', 100*(round(jobs/jobs_avg, 2)), '% of avg.'))
-
-glimpse(stl)
+head(h)
+table(h$jobs_cat)
 
 # Create clusters
 #=====================================
@@ -114,46 +111,46 @@ glimpse(stl)
 # See documentation on SKATER algorithm:
 # https://www.dshkol.com/post/spatially-constrained-clustering-and-regionalization/
 
-stl_simp <- stl %>% 
-  select(job_dens) %>%
-  filter(!is.na(job_dens))
-  # select(jobs) %>% 
-  # filter(!is.na(jobs))
+h_sub0 <- h %>% filter(!is.na(job_dens))
 
-head(stl_simp)
+h_simp <- h_sub0 %>% select(job_dens) %>% st_make_valid()
 
-stl_scale <- stl %>%
-  select(blgr, job_dens) %>% 
+head(h_simp)
+nrow(h_simp)
+
+h_scale <- h_sub0 %>%
+  select(DAUID, job_dens) %>% 
   st_drop_geometry() %>%
-  mutate(job_dens = scale(job_dens)) %>%
-  filter(!is.na(job_dens))
-  # select(blgr, jobs) %>% 
-  # st_drop_geometry() %>%
-  # mutate(jobs = scale(jobs)) %>%
-  # filter(!is.na(jobs))
+  mutate(job_dens = scale(job_dens))
 
-class(stl_scale)
-head(stl_scale)
-
-stl_nb <- poly2nb(as_Spatial(stl_simp), queen = F) # , snap = 1000
+class(h_scale)
+head(h_scale)
+nrow(h_scale)
 
 # Create adjacency neighbor structure
-plot(as_Spatial(stl_simp), main = "Neighbors (without queen)")
-plot(stl_nb, coords = coordinates(as_Spatial(stl_simp)), col="red", add = TRUE)
+h_nb <- poly2nb(as_Spatial(h_simp), queen = F) # , snap = 1000
+
+plot(as_Spatial(h_simp), main = "Neighbors (without queen)")
+plot(h_nb, coords = coordinates(as_Spatial(h_simp)), col="red", add = TRUE)
 
 # Calculate edge costs based on statistical distance between each node
-costs <- nbcosts(stl_nb, data = stl_scale[,-1])
+costs <- nbcosts(h_nb, data = h_scale[,-1])
 
 # Transform edge costs into spatial weights to supplement neighbor list
-stl_w <- nb2listw(stl_nb, costs, style = "B")
+h_w <- nb2listw(h_nb, costs, style = "B")
 
 # Create minimal spanning tree that turns adjacency graph into subgraph
 # with n nodes and n-1 edges
-stl_mst <- mstree(stl_w)
+h_mst <- mstree(h_w)
 
 # Plot minimal spanning tree
-plot(stl_mst, coordinates(as_Spatial(stl_simp)), col="blue", cex.lab = 0.5)
-plot(as_Spatial(stl_simp), add=TRUE)
+plot(h_mst, coordinates(as_Spatial(h_simp)), col="blue", cex.lab = 0.5)
+plot(as_Spatial(h_simp), add=TRUE)
+
+
+################################################################################
+# EVERYTHING BELOW MUST BE ADJUSTED FOR HALIFAX
+
 
 pal <-
   colorFactor(c(
@@ -163,7 +160,7 @@ pal <-
     "#0077f7",
     "#0123d1"
   ),
-  domain = stl$jobs_cat,
+  domain = slc$jobs_cat,
   na.color = 'transparent'
   )
 
@@ -171,9 +168,9 @@ pal <-
 #=====================================
 
 # Partition the minimal spanning tree to create 10 clusters
-clus10 <- skater(edges = stl_mst[,1:2], data = stl_scale[,-1], ncuts = 9)
+clus10 <- skater(edges = slc_mst[,1:2], data = slc_scale[,-1], ncuts = 9)
 
-with_clust10 <- stl_simp %>% 
+with_clust10 <- slc_simp %>% 
   mutate(clus = clus10$groups) %>%
   mutate(job_lab = paste0(format(job_dens, big.mark = ','), ' jobs per square mile'))
   # mutate(job_lab = paste0(format(jobs, big.mark = ','), ' jobs'))
@@ -208,7 +205,7 @@ cluster_map10 <-
     overlayGroups = c("current"),
     options = layersControlOptions(collapsed = FALSE, maxHeight = 'auto')) %>%
   addPolygons(
-    data = stl,
+    data = slc,
     group = "lehd",
     label = ~jobs_lab,
     labelOptions = labelOptions(textsize = "12px"),
@@ -227,7 +224,7 @@ cluster_map10 <-
   addPolygons(
     data = with_clust10,
     group = "lehdcluster",
-    label = ~job_lab, # label = ~clus,
+    label = ~job_lab,
     labelOptions = labelOptions(textsize = "12px"),
     fillOpacity = .8,
     color = ~clustpal10(clus),
@@ -242,7 +239,7 @@ cluster_map10 <-
     options = pathOptions(pane = "lehd_pane")
   )  %>%
   addLegend(
-    data = stl,
+    data = slc,
     position = "bottomright",
     pal = pal,
     values = ~jobs_cat,
@@ -251,7 +248,7 @@ cluster_map10 <-
     className = 'info legend lehd'
   ) %>%
   addPolylines(
-    data = dp_stl,
+    data = dp_slc,
     group = "current",
     fillOpacity = 0,
     stroke = TRUE,
@@ -270,33 +267,15 @@ cluster_map10
 
 saveWidget(
   cluster_map10,
-  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/lehd_jobdensity_clusters_10_stl.html')
-
-# Save new downtown polygon
-#-------------------------------------------------------------------------------
-
-new_downtown <- with_clust10 %>% 
-  filter(clus %in% c(4, 5)) %>% 
-  select(geometry)
-
-head(new_downtown)
-plot(new_downtown)
-
-new_downtown_agg <- st_union(new_downtown, by_feature = FALSE)
-
-plot(new_downtown_agg)
-
-st_write(new_downtown_agg, 'C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/new_downtowns/stl_lehd_downtown.geojson')
-
-#-------------------------------------------------------------------------------
+  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/lehd_jobdensity_clusters_10_slc.html')
 
 # Map 4 clusters
 #=====================================
 
 # Partition the minimal spanning tree to create 10 clusters
-clus4 <- skater(edges = stl_mst[,1:2], data = stl_scale[,-1], ncuts = 3)
+clus4 <- skater(edges = slc_mst[,1:2], data = slc_scale[,-1], ncuts = 3)
 
-with_clust4 <- stl_simp %>% 
+with_clust4 <- slc_simp %>% 
   mutate(clus = clus4$groups) %>%
   mutate(job_lab = paste0(format(job_dens, big.mark = ','), ' jobs per square mile'))
   # mutate(job_lab = paste0(format(jobs, big.mark = ','), ' jobs'))
@@ -333,7 +312,7 @@ cluster_map4 <-
     overlayGroups = c("current"),
     options = layersControlOptions(collapsed = FALSE, maxHeight = 'auto')) %>%
   addPolygons(
-    data = stl,
+    data = slc,
     group = "lehd",
     label = ~jobs_lab,
     labelOptions = labelOptions(textsize = "12px"),
@@ -367,7 +346,7 @@ cluster_map4 <-
     options = pathOptions(pane = "lehd_pane")
   )  %>%
   addLegend(
-    data = stl,
+    data = slc,
     position = "bottomright",
     pal = pal,
     values = ~jobs_cat,
@@ -376,7 +355,7 @@ cluster_map4 <-
     className = 'info legend lehd'
   ) %>%
   addPolylines(
-    data = dp_stl,
+    data = dp_slc,
     group = "current",
     fillOpacity = 0,
     stroke = TRUE,
@@ -395,15 +374,15 @@ cluster_map4
 
 saveWidget(
   cluster_map4,
-  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/lehd_jobdensity_clusters_4_stl.html')
+  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/lehd_jobdensity_clusters_4_slc.html')
 
 # Map 6 clusters
 #=====================================
 
 # Partition the minimal spanning tree to create 10 clusters
-clus6 <- skater(edges = stl_mst[,1:2], data = stl_scale[,-1], ncuts = 5)
+clus6 <- skater(edges = slc_mst[,1:2], data = slc_scale[,-1], ncuts = 5)
 
-with_clust6 <- stl_simp %>% 
+with_clust6 <- slc_simp %>% 
   mutate(clus = clus6$groups) %>%
   mutate(job_lab = paste0(format(job_dens, big.mark = ','), ' jobs per square mile'))
 # mutate(job_lab = paste0(format(jobs, big.mark = ','), ' jobs'))
@@ -439,7 +418,7 @@ cluster_map6 <-
     overlayGroups = c("current"),
     options = layersControlOptions(collapsed = FALSE, maxHeight = 'auto')) %>%
   addPolygons(
-    data = stl,
+    data = slc,
     group = "lehd",
     label = ~jobs_lab,
     labelOptions = labelOptions(textsize = "12px"),
@@ -473,7 +452,7 @@ cluster_map6 <-
     options = pathOptions(pane = "lehd_pane")
   )  %>%
   addLegend(
-    data = stl,
+    data = slc,
     position = "bottomright",
     pal = pal,
     values = ~jobs_cat,
@@ -482,7 +461,7 @@ cluster_map6 <-
     className = 'info legend lehd'
   ) %>%
   addPolylines(
-    data = dp_stl,
+    data = dp_slc,
     group = "current",
     fillOpacity = 0,
     stroke = TRUE,
@@ -501,4 +480,4 @@ cluster_map6
 
 saveWidget(
   cluster_map6,
-  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/lehd_jobdensity_clusters_6_stl.html')
+  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/lehd_jobdensity_clusters_6_slc.html')

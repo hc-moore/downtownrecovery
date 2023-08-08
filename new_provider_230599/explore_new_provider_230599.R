@@ -196,7 +196,8 @@ by_week <-
             downtown_devices = sum(downtown_devices, na.rm = T)) %>%
   ungroup() %>%
   mutate(normalized = downtown_devices/userbase) %>%
-  filter(date_range_start >= as.Date('2023-01-01'))
+  filter(date_range_start >= as.Date('2023-01-01') & 
+           date_range_start <= as.Date('2023-07-24'))
 
 head(by_week)
 range(by_week$date_range_start)
