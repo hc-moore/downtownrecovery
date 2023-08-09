@@ -9,7 +9,7 @@
 #=====================================
 
 source('~/git/timathomas/functions/functions.r')
-ipak(c('tidyverse', 'readr', 'ggplot2', 'plotly'))
+ipak(c('tidyverse', 'readr', 'ggplot2', 'plotly', 'lubridate', 'htmlwidgets'))
 
 select <- dplyr::select
 
@@ -306,7 +306,7 @@ saveWidget(
   'C:/Users/jpg23/UDP/downtown_recovery/new_provider_230599/downtown2_by_provider_2023.html')
 
 d3_plot <-
-  by_week2 %>%
+  by_week3 %>%
   ggplot(aes(x = date_range_start, y = downtown_devices, 
              color = provider_id, group = provider_id)) +
   geom_line(linewidth = .8) +
