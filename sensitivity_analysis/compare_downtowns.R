@@ -168,6 +168,11 @@ city_defined <-
            TRUE ~ str_to_title(city)
          ))
 
+
+#### ADD NASHVILLE (downloaded from https://data.nashville.gov/Metro-Government/Neighborhood-Association-Boundaries-GIS-/qytv-2cu8)
+
+
+
 downtown <- rbind(orig_spec, lehd_portland, c_stl_sd, city_defined) %>%
   filter(date <= as.Date('2023-06-18') & # last date for provider 190199
            # change providers at 5/17/21
