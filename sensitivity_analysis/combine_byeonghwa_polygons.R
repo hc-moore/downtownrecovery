@@ -42,4 +42,4 @@ all_stacked_sf <- do.call(rbind, shp_list)
 
 unique(all_stacked_sf$city)
 
-st_write(all_stacked_sf, paste0(data_folder, '/all_byeonghwa.geojson'))
+st_write(all_stacked_sf, paste0(data_folder, '/byeonghwa_sf_cl_p_slc_t.geojson'))
