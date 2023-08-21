@@ -102,14 +102,6 @@ downtown <- rbind(orig_spec1, orig_spec2) %>%
             (provider_id == '190199' & date >= as.Date('2021-05-17'))) %>%
   select(-c(provider_id, cat))
 
-# Load Safegraph data
-#=====================================
-
-safe <- read_parquet("C:/Users/jpg23/Downloads/safegraph_dt_recovery.pq")
-
-
-# ?????
-
 
 # Join downtowns with userbase
 #=====================================
@@ -257,8 +249,10 @@ each_cr_for_plot <-
   filter(!(year == 2020 & week_num < 12) & !is.na(city) & week >= as.Date('2020-05-11')) %>%
   select(week, city, rq_rolling)
 
-# Now add data from website to compare (https://downtownrecovery.com/charts/patterns)
+# Now add data from website to compare
+#=====================================
 
+# https://downtownrecovery.com/charts/patterns
 original <- read.csv("C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/data_from_website.csv") %>%
   filter(metric == 'downtown') %>%
   mutate(week = as.Date(week)) %>%
@@ -369,3 +363,96 @@ rank_plot <- ggplot(rankings, aes(x = reorder(city, avg_rq),
         axis.title.y = element_blank())
 
 rank_plot
+
+# Compare Safegraph & Spectus 2019
+#=====================================
+
+safe0 <- read_parquet("C:/Users/jpg23/Downloads/safegraph_dt_recovery.pq")
+
+# How many zips per city?
+safe0 %>% 
+  group_by(city) %>% 
+  summarize(n_zip = n_distinct(postal_code)) %>% 
+  arrange(desc(n_zip)) %>% 
+  head()
+
+safe <- safe0 %>%
+  mutate(city = str_replace(city, "é", "e")) %>%
+  select(-postal_code, -is_downtown, -normalized_visits_by_state_scaling) %>%
+  group_by(date_range_start, city) %>%
+  summarise(counts_safegraph = sum(raw_visit_counts),
+            normalized_safegraph = sum(normalized_visits_by_total_visits))
+
+head(rec_rate_cr)
+head(safe)
+
+compare_2019 <- safe %>%
+  left_join(
+    rec_rate_cr %>%
+      mutate(normalized_spectus = downtown_devices/userbase,
+             date_range_start = as.Date(paste(year, week_num, 1, sep = '_'),
+                                        format = '%Y_%W_%w')) %>%
+      select(city, date_range_start, counts_spectus = downtown_devices,
+             normalized_spectus)
+  ) %>%
+  filter(date_range_start >= as.Date('2019-01-01') & 
+           date_range_start < as.Date('2019-12-30')) %>%
+  data.frame() %>%
+  pivot_longer(
+    cols = -c(date_range_start, city), 
+    names_to = c('type', 'provider'), 
+    names_pattern = '(counts|normalized)_(safegraph|spectus)'
+  )
+
+head(compare_2019)
+range(compare_2019$date_range_start)
+
+# Counts
+#-------------------
+
+compare_counts <- plot_ly() %>%
+  add_lines(data = compare_2019 %>% filter(type == 'counts'),
+            x = ~date_range_start, y = ~value,
+            split = ~city,
+            color = ~provider,
+            colors = c("#ffa600", "#bc5090"),
+            name = ~paste0(provider, ' - ', city),
+            text = ~paste0(provider, ' - ', city),
+            opacity = .7,
+            line = list(shape = "linear")) %>%
+  layout(title = "Downtown counts - Safegraph vs Spectus (2019)",
+         xaxis = list(title = "Week", zerolinecolor = "#ffff",
+                      tickformat = "%b %Y"),
+         yaxis = list(title = "Downtown raw counts", zerolinecolor = "#ffff",
+                      ticksuffix = "  "))
+
+compare_counts
+
+saveWidget(
+  compare_counts,
+  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/safegraph_spectus_2019_counts.html')
+
+# Normalized
+#-------------------
+
+compare_norm <- plot_ly() %>%
+  add_lines(data = compare_2019 %>% filter(type == 'normalized'),
+            x = ~date_range_start, y = ~value,
+            split = ~city,
+            color = ~provider,
+            colors = c("#ffa600", "#bc5090"),
+            name = ~paste0(provider, ' - ', city),
+            text = ~paste0(provider, ' - ', city),
+            opacity = .7,
+            line = list(shape = "linear")) %>%
+  layout(title = "Downtown normalized counts - Safegraph vs Spectus (2019)",
+         xaxis = list(title = "Week", zerolinecolor = "#ffff",
+                      tickformat = "%b %Y"),
+         yaxis = list(title = "Downtown normalized counts", zerolinecolor = "#ffff",
+                      ticksuffix = "  "))
+
+compare_norm
+
+saveWidget(
+  compare_norm,
+  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/safegraph_spectus_2019_norm.html')
