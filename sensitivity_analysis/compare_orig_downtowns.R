@@ -324,7 +324,7 @@ june_only <- ggplot(june_df, aes(x = reorder(city, desc(avg_diff)),
                                    y = avg_diff)) +
   geom_bar(stat="identity") +
   coord_flip() +
-  ggtitle("Average difference, entire time period: [spectus only] - [safegraph + spectus]") +
+  ggtitle("Average difference, June 2023: [spectus only] - [safegraph + spectus]") +
   scale_y_continuous(labels = scales::percent) +
   theme_bw() +
   theme(axis.title.x = element_blank(),
