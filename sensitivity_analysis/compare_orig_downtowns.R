@@ -96,7 +96,10 @@ head(orig_spec1)
 head(orig_spec2)
 
 # Combine pre-2023 and 2023 original downtowns
-downtown <- rbind(orig_spec1, orig_spec2)
+downtown <- rbind(orig_spec1, orig_spec2) %>%
+  filter((provider_id == '700199' & date < as.Date('2021-05-17')) | 
+            (provider_id == '190199' & date >= as.Date('2021-05-17'))) %>%
+  select(-c(provider_id, cat))
 
 # Join downtowns with userbase
 #=====================================
@@ -260,7 +263,10 @@ unique(original$city)
 range(each_cr_for_plot$week)
 range(original$week)
 
-final_df <- original %>%
+# Compare for entire time period
+#=====================================
+
+entire_pd <- original %>%
   left_join(each_cr_for_plot, by = c('week', 'city')) %>%
   mutate(diff = rq_rolling - rq_rolling_safegraph) %>%
   group_by(city) %>%
@@ -268,24 +274,64 @@ final_df <- original %>%
   data.frame() %>%
   arrange(desc(avg_diff))
 
-head(final_df)
-unique(final_df$city)
-summary(final_df$avg_diff)
+head(entire_pd)
+unique(entire_pd$city)
+summary(entire_pd$avg_diff)
 
 write.csv(
-  final_df,
-  "C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/avg_diff_orig_downtowns.csv",
+  entire_pd,
+  "C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/all_weeks_avg_diff_orig_downtowns.csv",
   row.names = F)
 
-ggplot(final_df, aes(x = reorder(city, desc(avg_diff)), y = avg_diff)) +
+all_weeks <- ggplot(entire_pd, aes(x = reorder(city, desc(avg_diff)), 
+                                  y = avg_diff)) +
   geom_bar(stat="identity") +
   coord_flip() +
-  ggtitle("Average difference: [spectus only] - [safegraph + spectus]") +
+  ggtitle("Average difference, entire time period: [spectus only] - [safegraph + spectus]") +
   scale_y_continuous(labels = scales::percent) +
   theme_bw() +
   theme(axis.title.x = element_blank(),
         axis.title.y = element_blank()) +
-  annotate("text", x = 44, y = .12, 
+  annotate("text", x = 44, y = .3, 
            label = "[spectus only] > [safegraph + spectus]") +
-  annotate("text", x = 44, y = -.16, 
-           label = "[safegraph + spectus] > [spectus only]")
+  annotate("text", x = 44, y = -.1, 
+           label = "[safegraph + spectus] >\n[spectus only]")
+
+all_weeks
+
+# Compare for June 2023 only
+#=====================================
+
+june_df <- original %>%
+  filter(week >= as.Date('2023-06-01')) %>%
+  left_join(each_cr_for_plot, by = c('week', 'city')) %>%
+  mutate(diff = rq_rolling - rq_rolling_safegraph) %>%
+  group_by(city) %>%
+  summarize(avg_diff = mean(diff, na.rm = T)) %>%
+  data.frame() %>%
+  arrange(desc(avg_diff))
+
+head(june_df)
+unique(june_df$city)
+summary(june_df$avg_diff)
+
+write.csv(
+  june_df,
+  "C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/june2023_avg_diff_orig_downtowns.csv",
+  row.names = F)
+
+june_only <- ggplot(june_df, aes(x = reorder(city, desc(avg_diff)), 
+                                   y = avg_diff)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  ggtitle("Average difference, entire time period: [spectus only] - [safegraph + spectus]") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_bw() +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank()) +
+  annotate("text", x = 44, y = .45, 
+           label = "[spectus only] > [safegraph + spectus]") +
+  annotate("text", x = 44, y = -.2, 
+           label = "[safegraph + spectus] >\n[spectus only]")
+
+june_only
