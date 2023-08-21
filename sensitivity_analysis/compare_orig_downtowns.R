@@ -7,7 +7,8 @@
 #=====================================
 
 source('~/git/timathomas/functions/functions.r')
-ipak(c('tidyverse', 'sf', 'lubridate', 'leaflet', 'plotly', 'htmlwidgets'))
+ipak(c('tidyverse', 'sf', 'lubridate', 'leaflet', 'plotly', 'htmlwidgets',
+       'arrow'))
 
 # Load userbase data
 #=====================================
@@ -100,6 +101,15 @@ downtown <- rbind(orig_spec1, orig_spec2) %>%
   filter((provider_id == '700199' & date < as.Date('2021-05-17')) | 
             (provider_id == '190199' & date >= as.Date('2021-05-17'))) %>%
   select(-c(provider_id, cat))
+
+# Load Safegraph data
+#=====================================
+
+safe <- read_parquet("C:/Users/jpg23/Downloads/safegraph_dt_recovery.pq")
+
+
+# ?????
+
 
 # Join downtowns with userbase
 #=====================================
@@ -335,3 +345,27 @@ june_only <- ggplot(june_df, aes(x = reorder(city, desc(avg_diff)),
            label = "[safegraph + spectus] >\n[spectus only]")
 
 june_only
+
+# Rankings for March - June 2023
+#=====================================
+
+rankings <- each_cr_for_plot %>%
+  filter(week >= as.Date('2023-03-07') & week < as.Date('2023-07-03')) %>%
+  group_by(city) %>%
+  summarize(avg_rq = mean(rq_rolling, na.rm = TRUE)) %>%
+  arrange(desc(avg_rq))
+
+head(rankings)
+unique(rankings$city)
+
+rank_plot <- ggplot(rankings, aes(x = reorder(city, avg_rq), 
+                                  y = avg_rq)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  ggtitle("Recovery quotient rankings for March - June 2023 (spectus only)") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_bw() +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank())
+
+rank_plot
