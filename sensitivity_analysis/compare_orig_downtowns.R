@@ -194,6 +194,13 @@ final_df <-
 
 head(final_df)
 
+final_2019 <- final_df %>% filter(date < as.Date('2020-01-01'))
+range(final_2019$date)
+
+write.csv(final_2019, 
+          'C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/spectus_2019.csv', 
+          row.names = F)
+
 unique(final_df$city)
 
 rec_rate_cr <-
