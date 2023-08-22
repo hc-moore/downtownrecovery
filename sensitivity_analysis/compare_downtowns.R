@@ -110,7 +110,8 @@ head(orig_spec2)
 # Combine pre-2023 and 2023 original downtowns
 orig_spec <- rbind(orig_spec1, orig_spec2) %>%
   filter(city %in% c('Cleveland', 'Halifax', 'Portland', 'Salt Lake City',
-                     'San Diego', 'San Francisco', 'St Louis', 'Toronto'))
+                     'San Diego', 'San Francisco', 'St Louis', 'Toronto',
+                     'Nashville'))
 
 # LEHD clusters (Cleveland + SLC + SF) & Will Hollingsworth's Portland
 lehd_portland <-
@@ -185,13 +186,25 @@ byeonghwa_retail_1 <-
   select(-event_date) %>%
   mutate(cat = 'byeonghwa_retail_1')
 
-
-#### ADD NASHVILLE (downloaded from https://data.nashville.gov/Metro-Government/Neighborhood-Association-Boundaries-GIS-/qytv-2cu8)
-
+# City-defined Nashville (based on Planning Department polygon sent by Crissy Cassetty)
+nash <-
+  list.files(path = paste0(downtown_filepath, 'nashville_citydefined')) %>%
+  map_df(~read_delim(
+    paste0(downtown_filepath, 'nashville_citydefined/', .),
+    delim = '\001',
+    col_names = c('city', 'provider_id', 'approx_distinct_devices_count',
+                  'event_date'),
+    col_types = c('ccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
+  arrange(date) %>%
+  select(-event_date) %>%
+  mutate(cat = 'nashville')
 
 # Combine them all
 downtown <- rbind(orig_spec, lehd_portland, c_stl_sd, city_defined, 
-                  byeonghwa_retail_1) %>%
+                  byeonghwa_retail_1, nash) %>%
   filter(date <= as.Date('2023-06-18') & # last date for provider 190199
            # change providers at 5/17/21
            ((provider_id == '700199' & date < as.Date('2021-05-17')) | 
@@ -207,6 +220,7 @@ downtown <- rbind(orig_spec, lehd_portland, c_stl_sd, city_defined,
     cat == 'city_defined' ~ paste0(city, ' (city-defined)'),
     cat == 'original' ~ paste0(city, ' (original - spectus only)'),
     cat == 'byeonghwa_retail_1' ~ paste0(city, ' (Byeonghwa - retail/office)'),
+    cat == 'nashville' ~ 'Nashville (Planning Dept)',
     TRUE ~ NA_character_
   )) %>%
   select(-c(provider_id, cat))
@@ -370,7 +384,8 @@ unique(each_cr_for_plot$full_name)
 
 original <- read.csv("C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/data_from_website.csv") %>%
   filter(city %in% c('Cleveland', 'Halifax', 'Portland', 'Salt Lake City',
-                     'San Diego', 'San Francisco', 'St Louis', 'Toronto') &
+                     'San Diego', 'San Francisco', 'St Louis', 'Toronto',
+                     'Nashville') &
            metric == 'downtown') %>%
   mutate(week = as.Date(week),
          full_name = paste0(city, ' (original - safegraph + spectus)')) %>%
@@ -396,6 +411,7 @@ alliance_forplot <- for_plot_final %>% filter(str_detect(full_name, 'Downtown Al
 original_safegraph_forplot <- for_plot_final %>% filter(str_detect(full_name, 'original - safegraph'))
 original_spectus_forplot <- for_plot_final %>% filter(str_detect(full_name, 'original - spectus'))
 byeonghwa_retail1_forplot <- for_plot_final %>% filter(str_detect(full_name, 'Byeonghwa - retail/office'))
+nashville_forplot <- for_plot_final %>% filter(str_detect(full_name, 'Nashville \\(Planning'))
 
 # Plotly
 each_cr_plotly <-
@@ -455,7 +471,15 @@ each_cr_plotly <-
             text = ~mytext,
             hoverinfo = 'text',
             opacity = .9,
-            line = list(shape = "linear", color = '#547885')) %>%  
+            line = list(shape = "linear", color = '#547885')) %>% 
+  add_lines(data = nashville_forplot,
+            x = ~week, y = ~rq_rolling,
+            split = ~full_name,
+            name = ~full_name,
+            text = ~mytext,
+            hoverinfo = 'text',
+            opacity = .9,
+            line = list(shape = "linear", color = '#bad6b6')) %>% 
   layout(title = "Recovery rate for alternative downtowns (11 week rolling average)",
          xaxis = list(title = "Week", zerolinecolor = "#ffff",
                       tickformat = "%b %Y"),

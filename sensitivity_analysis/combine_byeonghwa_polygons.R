@@ -13,7 +13,7 @@ shp_files
 # Create empty list
 shp_list <- list()
 
-# For each subfolder in list...
+# For each file in list...
 for (filename in shp_files) {
   
   #...read in the '.gpkg' file in the folder
