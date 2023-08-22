@@ -5,9 +5,19 @@ import matplotlib.pyplot as plt
 
 # COMMAND ----------
 
+
+def create_and_save_as_table(df, table_name):
+    spark_df = spark.createDataFrame(df)
+    spark_df.write.format('csv').saveAsTable(table_name)
+    
+def get_table_as_pandas_df(table_name):
+    return sqlContext.sql("select * from " + table_name + " tables").toPandas()
+
+# COMMAND ----------
+
 # old
 
-all_cities_weekly_df = pd.read_csv('~/data/downtownrecovery/curated_data/model_features_20230707.csv')
+all_cities_weekly_df = get_table_as_pandas_df('all_cities_weekly_lq')
 all_cities_weekly_lq = all_cities_weekly_df.to_numpy()
 
 # COMMAND ----------
@@ -18,33 +28,70 @@ city_df = all_cities_weekly_df.transpose()
 
 # COMMAND ----------
 
-#Import Downtown Zipcodes
-us_city_index = pd.read_csv('~/data/downtownrecovery/geographies/city_index_0119.csv')
+# old
+column_names = []
+for i in range(94):
+    column_names = np.append(column_names,"LQ_"+str(i+1))
 
-us_downtowns = pd.read_csv('~/data/downtownrecovery/geographies/us_downtowns.csv', header = None)
+# COMMAND ----------
+
+# old
+#city_df_cut = city_df.drop(['Phoenix','Dallas','Charlotte','Oklahoma City','Sacramento','Atlanta','Miami','Bakersfield','Wichita','Tampa','Cleveland','Cincinnati','Salt Lake City','Orlando','Colorado Springs'])
+#city_df_cut.columns = column_names
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+# old
+#Replace all LQ's over 2 with the average of the previous and next LQ
+for index,row in city_df_cut.reset_index().iterrows():
+    for i in range(0,city_df_cut.shape[1]):
+        if city_df_cut.iloc[index][i]>2:
+            city_df_cut.iloc[index][i] = (city_df_cut.iloc[index][i-1]+city_df_cut.iloc[index][i+1])/2
+
+# COMMAND ----------
+
+# old
+#Replace all LQ's of 0 with the average of the previous and next LQ (not done)
+#for index,row in city_df_cut.reset_index().iterrows():
+#    for i in range(0,city_df_cut.shape[1]):
+#        if city_df_cut.iloc[index][i]==0:
+#            city_df_cut.iloc[index][i] = (city_df_cut.iloc[index][i-1]+city_df_cut.iloc[index][i+1])/2
+
+# COMMAND ----------
+
+# old
+city_df_cut["LQ_last_25_weeks"] = city_df_cut.iloc[:,-25:].mean(axis=1)
+
+# COMMAND ----------
+
+#Import Downtown Zipcodes
+us_city_index = get_table_as_pandas_df('city_index_0119_csv')
+us_downtowns = get_table_as_pandas_df('us_downtowns_csv')
 us_city_index = us_city_index[~us_city_index["0"].isin(["Mesa", "Long Beach", "Virginia Beach", "Arlington", "Aurora"])]
-us_city_index["_c2"] = us_city_index['0'].map(dict(zip(us_downtowns[0], us_downtowns[2])))
+us_city_index["_c2"] = us_city_index['0'].map(dict(zip(us_downtowns['_c0'], us_downtowns['_c2'])))
 us_city_index["_c2"] = us_city_index["_c2"].apply(lambda x: x[1:-1].split(','))
 us_city_index = us_city_index.rename(columns={"_c2":"downtown_zipcodes"})
 us_city_index["downtown_zipcodes"] = us_city_index["downtown_zipcodes"].apply(lambda x: [int(i) for i in x])
 us_city_index["zipcodes"] = us_city_index["zipcodes"].apply(lambda x: x.strip("][").replace("'","").split(', '))
 us_city_index["zipcodes"] = us_city_index["zipcodes"].apply(lambda x: [int(i) for i in x])
 
+# COMMAND ----------
 
-us_city_index
+display(us_city_index)
 
 # COMMAND ----------
 
+!pip install censusdata
 import json
 import requests
 import censusdata
 acs_url = f'https://api.census.gov/data/2019/acs/acs5?get=NAME,B25024_001E,B25024_002E,B25024_003E,B25024_004E,B25024_005E,B25024_006E,B25024_007E,B25024_008E,B25024_009E,B25024_010E,B25024_011E,B25003_001E,B25003_003E,B01002_001E,B15003_001E,B15003_022E,B15003_023E,B15003_024E,B15003_025E,B19013_001E,B25064_001E,B25002_001E,B25002_002E,B25002_003E,B03002_001E,B03002_003E,B03002_004E,B03002_006E,B03002_012E,B08301_001E,B08301_002E,B08301_010E,B08301_016E,B08301_017E,B08301_018E,B08301_019E,B08301_020E,B08301_021E,B08135_001E,B08303_001E&for=zip%20code%20tabulation%20area:*'
 acs_response_all = requests.get(acs_url)
 acs_results_all = acs_response_all.text
-
-if "Sorry" in acs_results_all:
-    print(acs_results_all)
-
 acs_all = pd.DataFrame.from_records(json.loads(acs_results_all))
 header = acs_all.iloc[0] 
 acs_all = acs_all.iloc[1:] 
@@ -164,7 +211,7 @@ def get_acs_data(row):
                     div_0(float(acs_dwtn_sum.B03002_006E),float(acs_dwtn_sum.B03002_001E)) *100, #pct_nhasian_downtown
                     div_0(float(acs_city_sum.B03002_006E),float(acs_city_sum.B03002_001E)) *100, #pct_nhasian_city
                     div_0(float(acs_dwtn_sum.B03002_012E),float(acs_dwtn_sum.B03002_001E)) *100, #pct_hispanic_downtown
-                    div_0(float(acs_city_sum.B03002_012E),float(acs_city_sum.B03002_001E)) *100, #pct_hispanic_city
+                    div_0(float(acs_dwtn_sum.B03002_012E),float(acs_dwtn_sum.B03002_001E)) *100, #pct_hispanic_city
                     div_0(float(acs_dwtn_sum.B08301_002E), float(acs_dwtn_sum.B08301_001E)) *100, #pct_commute_auto_downtown
                     div_0(float(acs_city_sum.B08301_002E), float(acs_city_sum.B08301_001E)) *100, #pct_commute_auto_city
                     div_0(float(acs_dwtn_sum.B08301_010E), float(acs_dwtn_sum.B08301_001E)) *100, #pct_commute_public_transit_downtown
@@ -232,7 +279,7 @@ us_city_index['pct_others_downtown'] = 100 - us_city_index['pct_hisp_downtown'] 
 us_city_index['pct_others_city'] = 100 - us_city_index['pct_hisp_city'] - us_city_index['pct_nhasian_city'] - us_city_index['pct_nhblack_city'] - us_city_index['pct_nhwhite_city']
 us_city_index['pct_commute_others_downtown'] = 100 - us_city_index['pct_commute_auto_downtown'] - us_city_index['pct_commute_public_transit_downtown'] - us_city_index['pct_commute_bicycle_downtown'] - us_city_index['pct_commute_walk_downtown']
 us_city_index['pct_commute_others_city'] = 100 - us_city_index['pct_commute_auto_city'] - us_city_index['pct_commute_public_transit_city'] - us_city_index['pct_commute_bicycle_city'] - us_city_index['pct_commute_walk_city']
-us_city_index.head()
+display(us_city_index)
 
 # COMMAND ----------
 
@@ -248,13 +295,11 @@ us_city_index = us_city_index.rename(columns={"0":"city"})
 
 # COMMAND ----------
 
-lodes = pd.read_csv('~/data/downtownrecovery/census_data/downtown_cbg_lodes.csv')
+lodes = get_table_as_pandas_df("downtown_cbg_lodes_csv")
 lodes = lodes.loc[:,["C000","CNS01","CNS02","CNS03","CNS04","CNS05","CNS06","CNS07","CNS08","CNS09","CNS10","CNS11","CNS12","CNS13",
                      "CNS14","CNS15","CNS16","CNS17","CNS18","CNS19","CNS20","city.y"]]
-lodes.head()
-lodes.dtypes
 for i in range(len(lodes.columns)-1):
-    lodes.iloc[:,i] = lodes.iloc[:,i].fillna(0)
+    lodes.iloc[:,i] = lodes.iloc[:,i].str.replace("NA","0")
     lodes.iloc[:,i] = lodes.iloc[:,i].astype(int)
 
 def get_lodes_data(city):
@@ -357,61 +402,26 @@ def calculate_entropy(row):
 
 us_city_index["employment_entropy"] = us_city_index.apply(lambda x: calculate_entropy(x), axis=1)
 
-us_zcta_geo = pd.read_csv('~/data/downtownrecovery/census_data/us_zcta_geo.csv')
-# us_zcta_geo and us_zcta_geo-1 are identical
-us_zcta_geo.shape
-us_zcta_geo.head()
-
-us_zcta_geo_1 = pd.read_csv('~/data/downtownrecovery/census_data/us_zcta_geo-1.csv')
-us_zcta_geo_1.shape
-us_zcta_geo_1.head()
-us_zcta_geo.equals(us_zcta_geo_1)
-
+us_zcta_geo = get_table_as_pandas_df("us_zcta_geo_csv")
 us_zcta_geo["GEOID10"] = us_zcta_geo["GEOID10"].astype(int)
-# ALAND10 is in meters squared
 us_zcta_geo["ALAND10"] = us_zcta_geo["ALAND10"].astype(int)
-# to convert m2 -> km2; there are 1000 m in 1km. 1000 * 1000 = 1000000
-us_zcta_geo["ALAND10km2"] = .000001 * us_zcta_geo["ALAND10"] 
-us_zcta_geo["ALAND10km2"] = us_zcta_geo["ALAND10km2"]
-
-def get_land_area_m2(zipcodes):
+def get_land_area(zipcodes):
     us_zcta_geo_cut = us_zcta_geo[us_zcta_geo["GEOID10"].isin([int(i) for i in zipcodes])]
     return np.sum(us_zcta_geo_cut["ALAND10"])
-
-def get_land_area_km2(zipcodes):
-    us_zcta_geo_cut = us_zcta_geo[us_zcta_geo["GEOID10"].isin([int(i) for i in zipcodes])]
-    return np.sum(us_zcta_geo_cut["ALAND10km2"])
     
-us_city_index["land_area_downtown_m2"] = us_city_index["downtown_zipcodes"].apply(lambda x: get_land_area_m2(x))
-us_city_index["land_area_city_m2"] = us_city_index["zipcodes"].apply(lambda x: get_land_area_m2(x))
+us_city_index["land_area_downtown"] = us_city_index["downtown_zipcodes"].apply(lambda x: get_land_area(x))
+us_city_index["land_area_city"] = us_city_index["zipcodes"].apply(lambda x: get_land_area(x))
+us_city_index["population_density_downtown"] = us_city_index["total_pop_downtown"]/us_city_index["land_area_downtown"]
+us_city_index["population_density_city"] = us_city_index["total_pop_city"]/us_city_index["land_area_city"]
+us_city_index["employment_density_downtown"] = us_city_index["total_jobs"]/us_city_index["land_area"]
+us_city_index["housing_density_downtown"] = us_city_index["housing_units_downtown"]/us_city_index["land_area_city"]
+us_city_index["housing_density_city"] = us_city_index["housing_units_downtown"]/us_city_index["land_area_city"]
 
-us_city_index["land_area_downtown_km2"] = us_city_index["downtown_zipcodes"].apply(lambda x: get_land_area_km2(x))
-us_city_index["land_area_city_km2"] = us_city_index["zipcodes"].apply(lambda x: get_land_area_km2(x))
-
-us_city_index["population_density_downtown_m2"] = us_city_index["total_pop_downtown"]/us_city_index["land_area_downtown_m2"]
-us_city_index["population_density_city_m2"] = us_city_index["total_pop_city"]/us_city_index["land_area_city_m2"]
-us_city_index["employment_density_downtown_m2"] = us_city_index["total_jobs"]/us_city_index["land_area_downtown_m2"]
-us_city_index["housing_density_downtown_m2"] = us_city_index["housing_units_downtown"]/us_city_index["land_area_downtown_m2"]
-us_city_index["housing_density_city_m2"] = us_city_index["housing_units_city"]/us_city_index["land_area_city_m2"]
-
-us_city_index["population_density_downtown_km2"] = us_city_index["total_pop_downtown"]/us_city_index["land_area_downtown_km2"]
-us_city_index["population_density_city_km2"] = us_city_index["total_pop_city"]/us_city_index["land_area_city_km2"]
-us_city_index["employment_density_downtown_km2"] = us_city_index["total_jobs"]/us_city_index["land_area_downtown_km2"]
-us_city_index["housing_density_downtown_km2"] = us_city_index["housing_units_downtown"]/us_city_index["land_area_downtown_km2"]
-us_city_index["housing_density_city_km2"] = us_city_index["housing_units_city"]/us_city_index["land_area_city_km2"]
-
-us_city_index.head()
+display(us_city_index)
 
 # COMMAND ----------
 
-us_city_index_subset = us_city_index.drop(columns = [["1", "2", "3", "geo", "zipcodes", "downtown_zipcodes"]])
-
-us_city_index = us_city_index.drop(columns=["1","2","3","geo","zipcodes","downtown_zipcodes"])
-
-us_city_index.head()
-
-us_city_index.to_csv('~/data/downtownrecovery/us_city_index_20230702.csv')
-
+us_city_index = us_city_index.drop(columns=["1","2","3","geo","zipcodes","downtown_zipcodes","land_area"])
 create_and_save_as_table(us_city_index, "us_city_index_0626")
 
 # COMMAND ----------
@@ -485,7 +495,6 @@ us_rfr_factors_0626 = us_city_index[['city',
                "employment_density_downtown",
                "housing_density_downtown",
                "housing_density_city"]]
-
 create_and_save_as_table(us_rfr_factors_0626, "us_rfr_features_0626")
 
 # COMMAND ----------
