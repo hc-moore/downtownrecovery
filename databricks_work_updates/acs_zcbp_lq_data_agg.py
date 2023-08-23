@@ -164,7 +164,7 @@ def get_acs_data(row):
                     div_0(float(acs_dwtn_sum.B03002_006E),float(acs_dwtn_sum.B03002_001E)) *100, #pct_nhasian_downtown
                     div_0(float(acs_city_sum.B03002_006E),float(acs_city_sum.B03002_001E)) *100, #pct_nhasian_city
                     div_0(float(acs_dwtn_sum.B03002_012E),float(acs_dwtn_sum.B03002_001E)) *100, #pct_hispanic_downtown
-                    div_0(float(acs_dwtn_sum.B03002_012E),float(acs_dwtn_sum.B03002_001E)) *100, #pct_hispanic_city
+                    div_0(float(acs_city_sum.B03002_012E),float(acs_city_sum.B03002_001E)) *100, #pct_hispanic_city
                     div_0(float(acs_dwtn_sum.B08301_002E), float(acs_dwtn_sum.B08301_001E)) *100, #pct_commute_auto_downtown
                     div_0(float(acs_city_sum.B08301_002E), float(acs_city_sum.B08301_001E)) *100, #pct_commute_auto_city
                     div_0(float(acs_dwtn_sum.B08301_010E), float(acs_dwtn_sum.B08301_001E)) *100, #pct_commute_public_transit_downtown
@@ -236,7 +236,7 @@ us_city_index.head()
 
 # COMMAND ----------
 
-us_city_index[['0','median_rent_downtown','median_rent_city']]
+us_city_index[['0','pct_hisp_downtown', 'pct_hisp_city']]
 
 # COMMAND ----------
 

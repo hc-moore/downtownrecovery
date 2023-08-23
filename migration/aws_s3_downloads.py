@@ -68,7 +68,7 @@ KEY = 'oregon-prod/3181607526002649/user/hive/warehouse/' # replace with your ob
 # so the loop can just iterate through
 # the filetype is rarely discernible from the name, so you need to know what you're downloading
 # in AWS before selecting them
-table_names = ['lq_clusters_single_period_1015', 'rq_dwtn_clusters_0822', 'rq_city_clusters_0822', 'rq_dwtn_clusters_1015_period_1', 'rq_dwtn_clusters_1015_period_2_']
+table_names = ['1015_all_model_features']
 # df = pd_read_s3_multiple_parquets(KEY, BUCKET_NAME)
 
 for table in table_names:
@@ -76,7 +76,7 @@ for table in table_names:
     key_string = KEY + table + '/'
 
     # objects = s3_bucket.objects.filter(Prefix = key_string)
-    test_df = wr.s3.read_csv(path = 's3://' + BUCKET_NAME + '/' + key_string, path_suffix = ".csv", ignore_empty = True, boto3_session = s3_session, header = None, names = ['city', 'cluster'])
+    test_df = wr.s3.read_csv(path = 's3://' + BUCKET_NAME + '/' + key_string, ignore_empty = True, boto3_session = s3_session, header = None)
     test_df.to_csv(DOWNLOAD_LOCATION_PATH + 'recovery_clusters/' + table + '.csv')
     
     # test_df = pd_read_s3_multiple_parquets(key_string, bucket = BUCKET_NAME)
@@ -92,6 +92,8 @@ for table in table_names:
 test_df.shape
 
 test_df.head()
+
+test_df[test_df[0] == 'Portland'].values
 full_df =  pd.concat(df_list)
 full_df.to_csv(DOWNLOAD_LOCATION_PATH + table[:-1] + '.csv')
 

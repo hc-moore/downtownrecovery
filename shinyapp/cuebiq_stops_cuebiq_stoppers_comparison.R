@@ -113,18 +113,6 @@ cuebiq_stoppers_agg <- cuebiq_data_stoppers_20230413 %>%
   mutate(table = "stoppers_hll_by_geohash") %>%
   ungroup()
 
-# weekly counts of normalized visits
-ggplotly(rbind(cuebiq_data_agg %>%
-                 filter(as_datetime >= min(cuebiq_stoppers_agg$as_datetime)) %>%
-                 select(-country_code),
-               cuebiq_stoppers_agg) %>%
-           distinct(as_datetime, table, city, .keep_all = TRUE) %>%
-           filter((as_datetime <= "2022-12-01")) %>%
-           group_by(as_datetime, city, table) %>%
-           ggplot(aes(x = as_datetime, y = normalized_visits_by_total_visits, color = table)) +
-           geom_line()+
-           facet_wrap(.~city, nrow = 6))
-
 cuebiq_data_agg %>% glimpse()
 
 safegraph_data %>% glimpse()
@@ -181,172 +169,8 @@ comparison_df <- comparison_window %>%
   ungroup()
 
 comparison_df %>% glimpse()
-#' normalized_visits_by_total_visits is the proportion of devices that visited the selected area
-#' relative to all observed visits in the state for that day
-# on average, how much greater is safegraph than cuebiq?
-# generally, it's a bit less- cuebiq creeps up and surpasses safegraph after 2021 or so
-# for most cities, by a slightly increasing margin
-comparisons_df <- all_counts %>%
-  ungroup() %>%
-  select(date_range_start, city, source:raw_visit_counts) %>%
-  pivot_wider(id_cols = c('date_range_start', 'city'), names_from = 'source', values_from = 'normalized_visits_by_total_visits') %>%
-  arrange(date_range_start) %>%
-  group_by(city, date_range_start) %>%
-  mutate(
-    normalized_safegraph_cuebiq_diff = safegraph - cuebiq
-  ) %>%
-  # halifax has no observations for provider_id == 190199 prior to may 2021
-  # to do the following visualizations, omit it
-  filter(!is.na(normalized_safegraph_cuebiq_diff) & (city != "Halifax"))
 
-comparison_df %>% glimpse()
-
-
-plot_df <- 
-  comparison_df %>%
-  filter(name == "normalized_visits_by_total_visits") %>%
-  pivot_longer(cols = c("stoppers_hll_by_geohash", "stops_uplevelled"), names_to = "table")
-
-plot_df %>% glimpse()
-
-
-plot_df  %>%
-  ggplot(aes(x = date_range_start, y = value, color = table)) +
-  geom_line() +
-  facet_wrap(.~city, ncol = 6, scales = 'free')
-
-# histogram of differences between sources
-t_test_df <- comparison_df %>%
-  group_by(city, name) %>%
-  summarise(hll_scaled = (stoppers_hll_by_geohash - min(stoppers_hll_by_geohash)) / (max(stoppers_hll_by_geohash) - min(stoppers_hll_by_geohash)),
-            uplevelled_scaled = (stops_uplevelled - min(stops_uplevelled)) / (max(stops_uplevelled) - min(stops_uplevelled)),
-            scaled_change = hll_scaled / uplevelled_scaled,
-            scaled_difference = hll_scaled - uplevelled_scaled
-  ) %>%
-  ungroup()
-
-t_test_df %>% glimpse()
-
-t_test_df %>%
-  ggplot(aes(x = scaled_difference)) +
-  geom_histogram(binwidth = .001) +
-  facet_wrap(.~name, scales = 'free')
-
-t_test_df %>% glimpse()
-
-
-# t test for all observations
-t.test(t_test_df%>% pull(scaled_difference))
-
-# t test by season
-comparisons_df[(comparisons_df$date_range_start >= base::as.Date("2019-01-01")) & (comparisons_df$date_range_start < base::as.Date("2020-03-02")), "Season"] = "prepandemic" 
-comparisons_df[(comparisons_df$date_range_start >= base::as.Date("2020-03-02")) & (comparisons_df$date_range_start < base::as.Date("2020-06-01")), "Season"] = "Season_1" 
-comparisons_df[(comparisons_df$date_range_start >= base::as.Date("2020-06-01")) & (comparisons_df$date_range_start < base::as.Date("2020-08-31")), "Season"] = "Season_2"
-comparisons_df[(comparisons_df$date_range_start >= base::as.Date("2020-08-31")) & (comparisons_df$date_range_start < base::as.Date("2020-11-30")), "Season"] = "Season_3"
-comparisons_df[(comparisons_df$date_range_start >= base::as.Date("2020-11-30")) & (comparisons_df$date_range_start < base::as.Date("2021-03-01")), "Season"] = "Season_4"
-comparisons_df[(comparisons_df$date_range_start >= base::as.Date("2021-03-01")) & (comparisons_df$date_range_start < base::as.Date("2021-05-31")), "Season"] = "Season_5"
-comparisons_df[(comparisons_df$date_range_start >= base::as.Date("2021-05-31")) & (comparisons_df$date_range_start < base::as.Date("2021-08-30")), "Season"] = "Season_6"
-comparisons_df[(comparisons_df$date_range_start >= base::as.Date("2021-08-30")) & (comparisons_df$date_range_start < base::as.Date("2021-12-06")), "Season"] = "Season_7"
-# these are edited to be consistent with policy brief but they do not quite fully represent the months in season 8 and 9- consider changing these for the paper
-comparisons_df[(comparisons_df$date_range_start >= base::as.Date("2021-12-06")) & (comparisons_df$date_range_start < base::as.Date("2022-03-07")), "Season"] = "Season_8"
-comparisons_df[(comparisons_df$date_range_start >= base::as.Date("2022-03-07")) & (comparisons_df$date_range_start < base::as.Date("2022-06-13")), "Season"] = "Season_9"
-
-comparisons_df <- comparisons_df %>% filter(!is.na(Season))
-
-season_df <- comparisons_df %>%
-  filter(date_range_start >= "2022-05-01")
-
-t_test_city <- t_test_df %>% filter(name == "normalized_visits_by_total_visits")
-
-
-t_test_city_scaled <- lapply(split(t_test_city, factor(t_test_city$city)), function(x) {t.test(x$scaled_difference)})
-t_test_sheet <- as.data.frame(do.call(rbind, t_test_city_scaled))
-t_test_sheet$city <- row.names(t_test_sheet)
-t_test_sheet %>% glimpse()
-t_test_sheet_df <- t_test_sheet %>%
-  unnest_wider(conf.int, names_sep = '_') %>%
-  unnest(statistic:data.name) %>% as.data.frame()
-
-t_test_sheet_df %>%
-  select(statistic, p.value, city) %>%
-  mutate(rounded_pvalue = round(p.value, 2)) %>%
-  arrange(-p.value)
-
-all_cities <- comparison_df %>% distinct(city) %>% pull(city)
-append_var <- NA
-
-all_variables <- comparison_df %>% distinct(name) %>% pull(name)
-
-for (vars in all_variables) {
-  
-  comparison_df_sheet <- comparison_df %>% filter(name == vars)
-for (current_city in all_cities) {
-  city_df <- comparison_df_sheet %>% filter(city == current_city)
-  row.names(city_df) <- city_df$date_range_start
-  if (current_city == all_cities[1]) {
-    append_var <- FALSE
-  } else{
-    append_var <- TRUE
-  }
-  xlsx::write.xlsx2(city_df,
-                    file = paste0("~/data/downtownrecovery/update_2023/cuebiq_table_comparisons/", vars, "_change.xlsx"),
-                    sheetName = current_city,
-                    col.names = TRUE,
-                    row.names = TRUE,
-                    append = append_var)
-}
-}
-
-city_df %>% glimpse()
-
-all_seasons <- comparisons_df %>% pull(Season) %>% unique()
-all_seasons
-
-for (seasons in all_seasons[-1]) {
-  season_df <- comparisons_df %>% filter(Season == seasons)
-  t_test_city_seasons <- lapply(split(season_df, factor(season_df$city)), function(x) {t.test(x$normalized_safegraph_cuebiq_diff)})
-  t_test_sheet <- as.data.frame(do.call(rbind, t_test_city_seasons))
-  t_test_sheet$city <- row.names(t_test_sheet)
-  t_test_sheet_df <- t_test_sheet %>%
-    unnest_wider(conf.int, names_sep = '_') %>%
-    unnest(statistic:data.name) %>% as.data.frame()
-  
-  write.xlsx2(t_test_sheet_df %>% select(city, statistic:data.name),
-              "data/downtownrecovery/t_tests/t_tests.xlsx",
-              sheetName = seasons,
-              col.names = TRUE,
-              row.names = TRUE,
-              append = TRUE)
-}
-
-# bind each separate list to into a data frame
-t_test_df <- as.data.frame(do.call(rbind, t_test_list))
-
-t_test_df %>% glimpse()
-
-# inspect cities that had high p-values for season 9
-comparisons_df %>%
-  filter((date_range_start < "2022-06-06") &
-           (city %in% c("Albuquerque", "Quebec", "Honolulu")) &
-           (date_range_start >= "2019-01-01")) %>%
-  ggplot(aes(x = date_range_start, y = normalized_safegraph_cuebiq_diff)) + 
-  geom_line() +
-  facet_wrap(.~city, nrow = 5, scales = 'free') + 
-  theme(legend.position = 'top')
-
-p0 <- safegraph_cuebiq_ratio %>%
-  mutate(vdate = as.integer(format(date_range_start, "%Y%m%d"))) %>%
-  arrange(date_range_start) %>%
-  ggplot(aes(x = safegraph, y = cuebiq, color = vdate)) +
-  geom_point() +
-  facet_wrap(.~city, nrow = 6) +
-  theme(axis.text = element_blank())
-
-ggplotly(p0)
-
-all_counts %>% glimpse()
-
-last_safegraph_date <- all_counts %>%
+last_safegraph_date <- sg_cuebiq %>%
   filter((source == 'safegraph') & !is.na(normalized_visits_by_total_visits)) %>%
   group_by(city) %>%
   summarise(last_valid_date = max(date_range_start)) %>%
@@ -359,20 +183,20 @@ last_safegraph_date
 
 
 # normalized_visits_by_total_visits with <= 2022-06-06 as safegraph; > 2022-06-06 as cuebiq
-p2 <- all_counts %>%
+p2 <- sg_cuebiq %>%
   filter((date_range_start < "2022-12-05") & (date_range_start >= "2019-01-01")) %>%
   pivot_wider(id_cols = c('date_range_start', 'city'), names_from = 'source', values_from = 'normalized_visits_by_total_visits') %>%
   mutate(value = case_when(date_range_start <= last_safegraph_date ~ safegraph,
-                           TRUE ~ cuebiq)
+                           TRUE ~ cuebiq_20230413)
   ) %>%
-  left_join(comparisons_df %>%
+  left_join(comparison_df %>%
               # give this the entirety of season 9 to 'adjust' to safegraph counts
               filter((date_range_start >= "2022-01-01") & (date_range_start <= last_safegraph_date)) %>%
               group_by(city) %>%
               summarise(
                 #' on average, what would cuebiq's normalized visits have to be multiplied by to
                 #' get safegraph's normalized visits for the last 3 months? 
-                ratio = mean(safegraph / cuebiq)) %>% 
+                ratio = mean(safegraph / cuebiq_20230413)) %>% 
               filter(!is.na(ratio) ) %>%
               distinct()) %>%
   group_by(date_range_start, city) %>%
@@ -380,22 +204,24 @@ p2 <- all_counts %>%
                            TRUE ~ value)) %>%
   ggplot(aes(x = date_range_start, y = value)) +
   geom_line() +
-  facet_wrap(.~city, scales = "free")
-
-p2
+  facet_wrap(~city, ncol = 6, scales = 'free') +
+  theme(axis.text = element_blank())
 
 ggplotly(p2)
 
+cuebiq_data_agg %>% glimpse()
+
 normalized_cuebiq <- cuebiq_data_agg %>%
+  rename(date_range_start = as_datetime) %>%
   filter(date_range_start > last_safegraph_date) %>%
-  left_join(comparisons_df %>%
-              # give this  ___ to 'adjust' to safegraph counts
+  left_join(comparison_df %>%
+              # give this  ___ to 'adata:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAWElEQVR42mNgGPTAxsZmJsVqQApgmGw1yApwKcQiT7phRBuCzzCSDSHGMKINIeDNmWQlA2IigKJwIssQkHdINgxfmBBtGDEBS3KCxBc7pMQgMYE5c/AXPwAwSX4lV3pTWwAAAABJRU5ErkJggg==djust' to safegraph counts
               filter((date_range_start >= "2022-01-01") & (date_range_start <= last_safegraph_date)) %>%
               group_by(city) %>%
               summarise(
                 #' on average, what would cuebiq's normalized visits have to be multiplied by to
                 #' get safegraph's normalized visits for the last ___? 
-                ratio = mean(safegraph / cuebiq)) %>% 
+                ratio = mean(safegraph / cuebiq_20230413)) %>% 
               filter(!is.na(ratio) ) %>%
               distinct()) %>%
   group_by(date_range_start, city) %>%

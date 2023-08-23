@@ -1,26 +1,27 @@
 library(ggplot2)
-library(thematic)
-library(markdown)
 library(readxl)
 library(stringr)
-library(ggrepel)
-library(ggpmisc)
-library(shiny.router)
-library(shinyLP)
-library(shinyBS)
+
 library(zoo)
 library(tidyverse)
 library(broom)
 library(dplyr)
-library(leaflet)
 library(scales)
-library(shiny)
-library(shinyWidgets)
-library(shinythemes)
 library(sf)
 library(sp)
 library(spdep)
 library(geojsonio)
+
+existing_data <- read.csv("~/data/downtownrecovery/curated_data/one_week_metrics_canada_usa_revised_cuebiq_update_hll_region_health_crime_april2023.csv") %>%
+                  select(-week, -normalized_visits_by_total_visits)
+
+us_update <- read.csv("~/data/downtownrecovery/curated_data/all_model_features_20230714.csv") %>% select(-X, -X.1)
+
+
+all_data <- existing_data %>% select(-pct_hisp_city, pct_hisp_downtown) %>%
+              left_join(us_update %>% select(city, pct_hisp_city, pct_hisp_downtown))
+
+write.csv(all_data, "~/data/downtownrecovery/curated_data/variables_data_20230717.csv")
 
 oxford_vars <- read.csv("input_data/oxford_explanatory_vars.csv")
 
