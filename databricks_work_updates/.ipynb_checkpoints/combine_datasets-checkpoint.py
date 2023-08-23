@@ -95,8 +95,6 @@ original_model_data_updated_subset[['population_density_downtown',
                                                                   'housing_density_city',
                                                                   'employment_density_downtown']]
 
-original_model_data_updated_subset[original_model_data_updated_subset['city'] == 'Portland'][['pct_hisp_city', 'pct_hisp_downtown', 'median_hhinc_downtown', 'median_rent_downtown',  'median_hhinc_city', 'median_rent_city','housing_units_downtown']]
-
 original_model_data_updated_subset.to_csv('~/data/downtownrecovery/curated_data/model_features_20230707.csv')
 
 

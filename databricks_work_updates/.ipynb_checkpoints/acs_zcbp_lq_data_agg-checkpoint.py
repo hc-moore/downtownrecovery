@@ -236,7 +236,7 @@ us_city_index.head()
 
 # COMMAND ----------
 
-us_city_index[['0','pct_hisp_downtown', 'pct_hisp_city']]
+us_city_index[['0','median_rent_downtown','median_rent_city']]
 
 # COMMAND ----------
 
