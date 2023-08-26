@@ -1,31 +1,12 @@
-################################################################################
-# Sensitivity analysis - compare recovery rates for different definitions of 
-# downtown. Includes:
-#  - LEHD clusters (Cleveland, Portland, San Diego, San Francisco, Salt Lake
-#    City, St Louis)
-#  - Portland (definition based on Will Hollingsworth's suggestion)
-#  - Cleveland (definition based on Downtown Cleveland Alliance - suggestion
-#    from Sean McDonnell)
-#  - city-defined boundaries that Sarah or I found online (Toronto, St Louis, 
-#    Salt Lake City, San Francisco, Portland, Halifax, Cleveland, San Diego,
-#    Nashville)
-#  - boundaries based on Byeonghwa's retail + office methodology (San Francisco, 
-#    Cleveland, Portland, Salt Lake City and Toronto)
-#  - boundaries based on Byeonghwa's office-only methodology (SF, Cleveland, 
-#    Portland, SLC, Toronto, Calgary, Edmonton, Montreal, Ottawa, and Vancouver)
-#  - original boundaries - Spectus only
-#  - original boundaries - Safegraph + Spectus stitched together
-#
-# Author: Julia Greenberg
-# Date created: 8.11.2023
-################################################################################
+#===============================================================================
+# Compare downtowns, but for US cities only use provider 190199
+#===============================================================================
 
 # Load packages
 #=====================================
 
 source('~/git/timathomas/functions/functions.r')
 ipak(c('tidyverse', 'sf', 'lubridate', 'leaflet', 'plotly', 'htmlwidgets'))
-
 
 # Load userbase data
 #=====================================
@@ -58,19 +39,27 @@ userbase2 <-
   arrange(date) %>%
   select(-event_date)
 
+canada <- c('Manitoba', 'British Columbia', 'Alberta', 'Ontario', 'Quebec',
+            'Nova Scotia')
+
 userbase <- rbind(userbase1, userbase2) %>% 
-  filter(date <= as.Date('2023-06-18') & # last date for provider 190199
-         # change providers at 5/17/21
-         ((provider_id == '700199' & date < as.Date('2021-05-17')) | 
-            (provider_id == '190199' & date >= as.Date('2021-05-17')))) %>%
-  select(-provider_id)
+  # change providers at 5/17/21 for Canada ONLY
+  mutate(to_keep = case_when(
+    !(geography_name %in% canada) & provider_id == '190199' ~ 'yes',
+    (geography_name %in% canada) & 
+      ((provider_id == '700199' & date < as.Date('2021-05-17')) | 
+         (provider_id == '190199' & date >= as.Date('2021-05-17'))) ~ 'yes',
+    TRUE ~ 'no'
+  )) %>%
+  filter(to_keep == 'yes' & date <= as.Date('2023-06-18'))
 
 head(userbase)
-glimpse(userbase)
-range(userbase$date)
-unique(userbase$provider_id)
-unique(userbase$geography_name)
 
+us <- userbase %>% filter(!geography_name %in% canada)
+ca <- userbase %>% filter(geography_name %in% canada)
+
+unique(us$provider_id)
+unique(ca$provider_id)
 
 # Load downtown data
 #=====================================
@@ -227,13 +216,21 @@ nash <-
   select(-event_date) %>%
   mutate(cat = 'nashville')
 
+canada_dt <- c('Calgary', 'Edmonton', 'Halifax', 'Mississauga', 'Montreal',
+               'Ottawa', 'Quebec', 'Toronto', 'Vancouver', 'Winnipeg')
+
 # Combine them all
 downtown <- rbind(orig_spec, lehd_portland, c_stl_sd, city_defined, 
                   byeonghwa_retail_1, byeonghwa_office, nash) %>%
-  filter(date <= as.Date('2023-06-18') & # last date for provider 190199
-           # change providers at 5/17/21
-           ((provider_id == '700199' & date < as.Date('2021-05-17')) | 
-              (provider_id == '190199' & date >= as.Date('2021-05-17')))) %>%
+  # change providers at 5/17/21 for Canada ONLY
+  mutate(to_keep = case_when(
+    !(city %in% canada_dt) & provider_id == '190199' ~ 'yes',
+    (city %in% canada_dt) & 
+      ((provider_id == '700199' & date < as.Date('2021-05-17')) | 
+         (provider_id == '190199' & date >= as.Date('2021-05-17'))) ~ 'yes',
+    TRUE ~ 'no'
+  )) %>%
+  filter(to_keep == 'yes' & date <= as.Date('2023-06-18')) %>%
   mutate(full_name = case_when(
     city == 'Portland' & cat == 'lehd_portland' ~ 'Portland (Will Hollingsworth)',
     city == 'Cleveland' & cat == 'lehd_portland' ~ 'Cleveland (LEHD)',
@@ -249,7 +246,13 @@ downtown <- rbind(orig_spec, lehd_portland, c_stl_sd, city_defined,
     cat == 'nashville' ~ 'Nashville (Planning Dept)',
     TRUE ~ NA_character_
   )) %>%
-  select(-c(provider_id, cat))
+  select(-cat)
+
+us_dt <- downtown %>% filter(!city %in% canada_dt)
+ca_dt <- downtown %>% filter(city %in% canada_dt)
+
+unique(us_dt$provider_id)
+unique(ca_dt$provider_id)
 
 head(downtown)
 glimpse(downtown)
@@ -516,14 +519,14 @@ each_cr_plotly <-
             hoverinfo = 'text',
             opacity = .9,
             line = list(shape = "linear", color = '#574b2b')) %>%
-  layout(title = "Recovery rate for alternative downtowns (11 week rolling average)",
+  layout(title = "Recovery rate for alternative downtowns, US cities using only 190199 (11 week rolling average)",
          xaxis = list(title = "Week", zerolinecolor = "#ffff",
                       tickformat = "%b %Y"),
          yaxis = list(title = "Recovery rate", zerolinecolor = "#ffff",
                       tickformat = ".0%", ticksuffix = "  "),
          shapes = list(list(y0 = 0, y1 = 1, yref = "paper",
-                       x0 = as.Date('2021-05-17'), x1 = as.Date('2021-05-17'),
-                       line = list(color = 'black', dash = 'dash')),
+                            x0 = as.Date('2021-05-17'), x1 = as.Date('2021-05-17'),
+                            line = list(color = 'black', dash = 'dash')),
                        list(y0 = 0, y1 = 1, yref = "paper",
                             x0 = as.Date('2022-05-02'), x1 = as.Date('2022-05-02'),
                             line = list(color = 'black', dash = 'dash'))))
@@ -532,4 +535,4 @@ each_cr_plotly
 
 saveWidget(
   each_cr_plotly,
-  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/compare_downtown_definitions.html')
+  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/compare_downtowns_USonly190199.html')

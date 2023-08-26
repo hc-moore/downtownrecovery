@@ -41,6 +41,12 @@ userbase2 <-
   arrange(date) %>%
   select(-event_date)
 
+# Keep both providers, for plotting
+userbase_2prov <- rbind(userbase1, userbase2) %>% 
+  filter(date <= as.Date('2023-06-18'))
+
+head(userbase_2prov)
+
 userbase <- rbind(userbase1, userbase2) %>% 
   filter(date <= as.Date('2023-06-18') & # last date for provider 190199
            # change providers at 5/17/21
@@ -96,12 +102,81 @@ orig_spec2 <-
 head(orig_spec1)
 head(orig_spec2)
 
+downtown_2prov <- rbind(orig_spec1, orig_spec2) %>% 
+  filter(date <= as.Date('2023-06-18'))
+
+head(downtown_2prov)
+
 # Combine pre-2023 and 2023 original downtowns
 downtown <- rbind(orig_spec1, orig_spec2) %>%
   filter((provider_id == '700199' & date < as.Date('2021-05-17')) | 
             (provider_id == '190199' & date >= as.Date('2021-05-17'))) %>%
   select(-c(provider_id, cat))
 
+# Plot shift in providers (spectus)
+#=====================================
+
+userbase_2prov_forplot <- userbase_2prov %>%
+  filter(provider_id != '230599') %>%
+  mutate(
+    date_range_start = floor_date(
+      date,
+      unit = "week",
+      week_start = getOption("lubridate.week.start", 1))) %>%
+    # Calculate # of devices by big_area, week and year
+    dplyr::group_by(geography_name, provider_id, date_range_start) %>%
+    dplyr::summarize(userbase = sum(userbase, na.rm = T)) %>%
+    dplyr::ungroup() 
+
+head(userbase_2prov_forplot)
+
+dt_2prov_forplot <- downtown_2prov %>%
+  filter(provider_id != '230599') %>%
+  mutate(
+    date_range_start = floor_date(
+      date,
+      unit = "week",
+      week_start = getOption("lubridate.week.start", 1))) %>%
+  # Calculate # of devices by big_area, week and year
+  dplyr::group_by(city, provider_id, date_range_start) %>%
+  dplyr::summarize(dt_devices = sum(approx_distinct_devices_count, na.rm = T)) %>%
+  dplyr::ungroup() 
+
+head(dt_2prov_forplot)
+
+prov_shift <- plot_ly() %>%
+  add_lines(data = dt_2prov_forplot,
+            x = ~date_range_start, y = ~dt_devices,
+            split = ~city,
+            color = ~provider_id,
+            colors = c("#592d6b", "#f09329"),
+            name = ~paste0('Downtown ', provider_id, ' - ', city),
+            text = ~paste0('Downtown ', provider_id, ' - ', city),
+            opacity = .7,
+            line = list(shape = "linear")) %>%
+  add_lines(data = userbase_2prov_forplot,
+            x = ~date_range_start, y = ~userbase,
+            split = ~geography_name,
+            color = ~provider_id,
+            colors = c("#592d6b", "#f09329"),
+            name = ~paste0('Userbase ', provider_id, ' - ', geography_name),
+            text = ~paste0('Userbase ', provider_id, ' - ', geography_name),
+            opacity = .7,
+            line = list(shape = "linear")) %>%
+  layout(title = "Spectus provider shift (userbase & downtowns)",
+         xaxis = list(title = "Week", zerolinecolor = "#ffff",
+                      tickformat = "%b %Y"),
+         yaxis = list(title = "Raw counts", zerolinecolor = "#ffff",
+                      ticksuffix = "  "),
+         shapes = list(list(y0 = 0, y1 = 1, yref = "paper",
+                            x0 = as.Date('2021-05-17'), x1 = as.Date('2021-05-17'),
+                            line = list(color = 'gray', dash = 'dot'))))
+
+prov_shift
+
+saveWidget(
+  prov_shift,
+  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/prov_shift_dt_userbase.html')
 
 # Join downtowns with userbase
 #=====================================
@@ -180,6 +255,45 @@ city_to_state <- data.frame(
   ) %>%
   mutate(city = str_replace_all(city, '\\.', ' '))
 
+# Plot provider shift (normalized)
+#=====================================
+
+norm_prov2 <- dt_2prov_forplot %>%
+  left_join(city_to_state) %>%
+  left_join(userbase_2prov_forplot, by = c('state' = 'geography_name', 
+                                           'date_range_start', 'provider_id')) %>%
+  mutate(normalized = dt_devices/userbase)
+
+head(norm_prov2)
+
+norm_prov2_plot <- plot_ly() %>%
+  add_lines(data = norm_prov2,
+            x = ~date_range_start, y = ~normalized,
+            split = ~city,
+            color = ~provider_id,
+            colors = c("#592d6b", "#f09329"),
+            name = ~paste0('Normalized ', provider_id, ' - ', city),
+            text = ~paste0('Normalized ', provider_id, ' - ', city),
+            opacity = .7,
+            line = list(shape = "linear")) %>%
+  layout(title = "Spectus provider shift (normalized)",
+         xaxis = list(title = "Week", zerolinecolor = "#ffff",
+                      tickformat = "%b %Y"),
+         yaxis = list(title = "Normalized counts", zerolinecolor = "#ffff",
+                      ticksuffix = "  "),
+         shapes = list(list(y0 = 0, y1 = 1, yref = "paper",
+                            x0 = as.Date('2021-05-17'), x1 = as.Date('2021-05-17'),
+                            line = list(color = 'gray', dash = 'dot'))))
+
+norm_prov2_plot
+
+saveWidget(
+  norm_prov2_plot,
+  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/prov_shift_norm.html')
+
+# Manipulate data for plotting
+#=====================================
+
 downtown1 <- downtown %>%
   left_join(city_to_state)
 
@@ -253,7 +367,8 @@ each_cr_for_plot <-
   mutate(rq_rolling = zoo::rollmean(rq, k = 11, fill = NA, align = 'right')) %>%
   dplyr::ungroup() %>%
   data.frame() %>%
-  filter(!(year == 2020 & week_num < 12) & !is.na(city) & week >= as.Date('2020-05-11')) %>%
+  filter(!(year == 2020 & week_num < 12) & !is.na(city) & 
+           week >= as.Date('2020-05-11')) %>%
   select(week, city, rq_rolling)
 
 # Now add data from website to compare
@@ -371,7 +486,8 @@ rank_plot <- ggplot(rankings, aes(x = reorder(city, avg_rq),
 
 rank_plot
 
-# Compare Safegraph & Spectus 2019
+# Compare Safegraph & Spectus
+# (provider 700199) in 2019
 #=====================================
 
 safe0 <- read_parquet("C:/Users/jpg23/Downloads/safegraph_dt_recovery.pq")
@@ -427,7 +543,7 @@ compare_counts <- plot_ly() %>%
             text = ~paste0(provider, ' - ', city),
             opacity = .7,
             line = list(shape = "linear")) %>%
-  layout(title = "Downtown counts - Safegraph vs Spectus (2019)",
+  layout(title = "Downtown counts - Safegraph vs Spectus (2019), provider 700199",
          xaxis = list(title = "Week", zerolinecolor = "#ffff",
                       tickformat = "%b %Y"),
          yaxis = list(title = "Downtown raw counts", zerolinecolor = "#ffff",
@@ -437,7 +553,7 @@ compare_counts
 
 saveWidget(
   compare_counts,
-  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/safegraph_spectus_2019_counts.html')
+  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/safegraph_spectus_2019_counts_700199.html')
 
 # Normalized
 #-------------------
@@ -452,7 +568,7 @@ compare_norm <- plot_ly() %>%
             text = ~paste0(provider, ' - ', city),
             opacity = .7,
             line = list(shape = "linear")) %>%
-  layout(title = "Downtown normalized counts - Safegraph vs Spectus (2019)",
+  layout(title = "Downtown normalized counts - Safegraph vs Spectus (2019), provider 700199",
          xaxis = list(title = "Week", zerolinecolor = "#ffff",
                       tickformat = "%b %Y"),
          yaxis = list(title = "Downtown normalized counts", zerolinecolor = "#ffff",
@@ -462,4 +578,116 @@ compare_norm
 
 saveWidget(
   compare_norm,
-  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/safegraph_spectus_2019_norm.html')
+  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/safegraph_spectus_2019_norm_700199.html')
+
+
+# Compare Safegraph & Spectus
+# (provider 190199) in 2019
+#=====================================
+
+userbase_190199 <- rbind(userbase1, userbase2) %>% 
+  filter(date >= as.Date('2019-01-01') & 
+           date <= as.Date('2019-12-31') & provider_id == '190199') %>%
+  select(-provider_id)
+
+downtown_190199 <- rbind(orig_spec1, orig_spec2) %>%
+  filter(date >= as.Date('2019-01-01') & 
+           date <= as.Date('2019-12-31') & provider_id == '190199') %>%
+  select(-c(provider_id, cat))
+
+head(userbase_190199)
+head(downtown_190199)
+
+final_df_190199 <- 
+  downtown_190199 %>% 
+  left_join(city_to_state) %>%
+  left_join(userbase_190199, by = c('state' = 'geography_name', 'date')) %>%
+  rename(downtown_devices = approx_distinct_devices_count) %>%
+  mutate(normalized = downtown_devices/userbase)
+
+rec_rate_cr_190199 <-
+  final_df_190199 %>%
+  # Determine week and year # for each date
+  mutate(
+    date_range_start = floor_date(
+      date,
+      unit = "week",
+      week_start = getOption("lubridate.week.start", 1)),
+    week_num = isoweek(date_range_start),
+    year = year(date_range_start)) %>%
+  # Calculate # of devices by big_area, week and year
+  dplyr::group_by(city, year, week_num) %>%
+  dplyr::summarize(downtown_devices = sum(downtown_devices, na.rm = T),
+                   userbase = sum(userbase, na.rm = T)) %>%
+  dplyr::ungroup() 
+
+compare_2019_190199 <- safe %>%
+  left_join(
+    rec_rate_cr_190199 %>%
+      mutate(normalized_spectus = downtown_devices/userbase,
+             date_range_start = as.Date(paste(year, week_num, 1, sep = '_'),
+                                        format = '%Y_%W_%w')) %>%
+      select(city, date_range_start, counts_spectus = downtown_devices,
+             normalized_spectus)
+  ) %>%
+  filter(date_range_start >= as.Date('2019-01-01') & 
+           date_range_start < as.Date('2019-12-30')) %>%
+  data.frame() %>%
+  pivot_longer(
+    cols = -c(date_range_start, city), 
+    names_to = c('type', 'provider'), 
+    names_pattern = '(counts|normalized)_(safegraph|spectus)'
+  )
+
+head(compare_2019_190199)
+range(compare_2019_190199$date_range_start)
+
+# Counts
+#-------------------
+
+compare_counts_190199 <- plot_ly() %>%
+  add_lines(data = compare_2019_190199 %>% filter(type == 'counts'),
+            x = ~date_range_start, y = ~value,
+            split = ~city,
+            color = ~provider,
+            colors = c("#ffa600", "#bc5090"),
+            name = ~paste0(provider, ' - ', city),
+            text = ~paste0(provider, ' - ', city),
+            opacity = .7,
+            line = list(shape = "linear")) %>%
+  layout(title = "Downtown counts - Safegraph vs Spectus (2019), provider 190199",
+         xaxis = list(title = "Week", zerolinecolor = "#ffff",
+                      tickformat = "%b %Y"),
+         yaxis = list(title = "Downtown raw counts", zerolinecolor = "#ffff",
+                      ticksuffix = "  "))
+
+compare_counts_190199
+
+saveWidget(
+  compare_counts_190199,
+  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/safegraph_spectus_2019_counts_190199.html')
+
+# Normalized
+#-------------------
+
+compare_norm_190199 <- plot_ly() %>%
+  add_lines(data = compare_2019_190199 %>% filter(type == 'normalized'),
+            x = ~date_range_start, y = ~value,
+            split = ~city,
+            color = ~provider,
+            colors = c("#ffa600", "#bc5090"),
+            name = ~paste0(provider, ' - ', city),
+            text = ~paste0(provider, ' - ', city),
+            opacity = .7,
+            line = list(shape = "linear")) %>%
+  layout(title = "Downtown normalized counts - Safegraph vs Spectus (2019), provider 190199",
+         xaxis = list(title = "Week", zerolinecolor = "#ffff",
+                      tickformat = "%b %Y"),
+         yaxis = list(title = "Downtown normalized counts", zerolinecolor = "#ffff",
+                      ticksuffix = "  "))
+
+compare_norm_190199
+
+saveWidget(
+  compare_norm_190199,
+  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/safegraph_spectus_2019_norm_190199.html')
