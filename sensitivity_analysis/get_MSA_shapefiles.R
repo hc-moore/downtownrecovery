@@ -6,7 +6,7 @@
 #=====================================
 
 source('~/git/timathomas/functions/functions.r')
-ipak(c('tidyverse', 'tigris', 'sf', 'stringr'))
+ipak(c('tidyverse', 'tigris', 'sf', 'stringr', 'rmapshaper'))
 
 # Load US shapefile
 #=====================================
@@ -78,7 +78,9 @@ head(cma)
 st_crs(cbsa)
 st_crs(cma)
 
-all_msa <- rbind(cbsa, cma %>% st_transform(st_crs(cbsa)))
+all_msa <- rbind(cbsa, cma %>% st_transform(st_crs(cbsa))) %>%
+  ms_simplify(keep = 0.05, keep_shapes = TRUE)
+  
 st_crs(all_msa)
 
 unique(all_msa$msa_name)
