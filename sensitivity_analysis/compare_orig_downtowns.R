@@ -486,6 +486,34 @@ rank_plot <- ggplot(rankings, aes(x = reorder(city, avg_rq),
 
 rank_plot
 
+# Rankings for June 2023 (provider 190199/ provider 700199) for all cities
+#=====================================
+
+rankings_june2023 <- each_cr_for_plot %>%
+  filter(week >= as.Date('2023-06-01') & week < as.Date('2023-07-01')) %>%
+  group_by(city) %>%
+  summarize(avg_rq = mean(rq_rolling, na.rm = TRUE)) %>%
+  arrange(desc(avg_rq))
+
+head(rankings_june2023)
+unique(rankings_june2023$city)
+
+write.csv(rankings_june2023, 
+          'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/rankings_june2023.csv', 
+          row.names = F)
+
+rank_plot_june2023 <- ggplot(rankings_june2023, aes(x = reorder(city, avg_rq), 
+                                  y = avg_rq)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  ggtitle("Recovery quotient rankings for June 2023 (spectus only, (provider 190199/provider 700199) for all cities)") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_bw() +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank())
+
+rank_plot_june2023
+
 # Compare Safegraph & Spectus
 # (provider 700199) in 2019
 #=====================================
@@ -691,3 +719,134 @@ compare_norm_190199
 saveWidget(
   compare_norm_190199,
   'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/safegraph_spectus_2019_norm_190199.html')
+
+# Rankings for June 2023 ((provider 190199 / provider 190199) for US cities and 
+# (provider 190199 / provider 700199) for Canadian cities)
+#=====================================
+
+head(downtown_2prov)
+
+canada_dt <- c('Calgary', 'Edmonton', 'Halifax', 'Mississauga', 'Montreal',
+               'Ottawa', 'Quebec', 'Toronto', 'Vancouver', 'Winnipeg', 'London')
+
+downtown_both <- downtown_2prov %>%
+  # change providers at 5/17/21 for Canada ONLY
+  mutate(to_keep = case_when(
+  !(city %in% canada_dt) & provider_id == '190199' ~ 'yes',
+  (city %in% canada_dt) & 
+    ((provider_id == '700199' & date < as.Date('2021-05-17')) | 
+       (provider_id == '190199' & date >= as.Date('2021-05-17'))) ~ 'yes',
+  TRUE ~ 'no')) %>%
+  filter(to_keep == 'yes') %>%
+  select(-c(to_keep, provider_id))
+
+head(userbase_2prov)
+
+canada <- c('Manitoba', 'British Columbia', 'Alberta', 'Ontario', 'Quebec',
+            'Nova Scotia')
+
+userbase_both <- userbase_2prov %>% 
+  # change providers at 5/17/21 for Canada ONLY
+  mutate(to_keep = case_when(
+    !(geography_name %in% canada) & provider_id == '190199' ~ 'yes',
+    (geography_name %in% canada) & 
+      ((provider_id == '700199' & date < as.Date('2021-05-17')) | 
+         (provider_id == '190199' & date >= as.Date('2021-05-17'))) ~ 'yes',
+    TRUE ~ 'no'
+  )) %>%
+  filter(to_keep == 'yes') %>%
+  select(-c(to_keep, provider_id))
+
+downtown1_both <- downtown_both %>%
+  left_join(city_to_state)
+
+head(downtown1_both)
+head(userbase_both)
+
+final_df_both <- 
+  downtown1_both %>% 
+  left_join(userbase_both, by = c('state' = 'geography_name', 'date')) %>%
+  rename(downtown_devices = approx_distinct_devices_count) %>%
+  mutate(normalized = downtown_devices/userbase)
+
+head(final_df_both)
+unique(final_df_both$city)
+
+rec_rate_cr_both <-
+  final_df_both %>%
+  # Determine week and year # for each date
+  mutate(
+    date_range_start = floor_date(
+      date,
+      unit = "week",
+      week_start = getOption("lubridate.week.start", 1)),
+    week_num = isoweek(date_range_start),
+    year = year(date_range_start)) %>%
+  # Calculate # of devices by big_area, week and year
+  dplyr::group_by(city, year, week_num) %>%
+  dplyr::summarize(downtown_devices = sum(downtown_devices, na.rm = T),
+                   userbase = sum(userbase, na.rm = T)) %>%
+  dplyr::ungroup() 
+
+head(rec_rate_cr_both)
+
+each_cr_for_plot_both <-
+  rec_rate_cr_both %>%
+  filter(year > 2018) %>%
+  dplyr::group_by(year, week_num, city) %>%
+  dplyr::summarize(downtown_devices = sum(downtown_devices, na.rm = T),
+                   userbase = sum(userbase, na.rm = T)) %>%
+  dplyr::ungroup() %>%
+  mutate(normalized = downtown_devices/userbase) %>%
+  pivot_wider(
+    id_cols = c('week_num', 'city'),
+    names_from = 'year',
+    names_prefix = 'ntv',
+    values_from = 'normalized') %>%
+  mutate(rec2020 = ntv2020/ntv2019,
+         rec2021 = ntv2021/ntv2019,
+         rec2022 = ntv2022/ntv2019,
+         rec2023 = ntv2023/ntv2019) %>%
+  select(-starts_with('ntv')) %>%
+  pivot_longer(
+    cols = rec2020:rec2023,
+    names_to = 'year',
+    values_to = 'rq') %>%
+  filter(week_num < 53) %>%
+  mutate(year = substr(year, 4, 7),
+         week = as.Date(paste(year, week_num, 1, sep = '_'),
+                        format = '%Y_%W_%w')) %>% # Monday of week
+  filter(!(year == 2023 & week_num > 24)) %>%
+  arrange(city, year, week_num) %>%
+  dplyr::group_by(city) %>%
+  mutate(rq_rolling = zoo::rollmean(rq, k = 11, fill = NA, align = 'right')) %>%
+  dplyr::ungroup() %>%
+  data.frame() %>%
+  filter(!(year == 2020 & week_num < 12) & !is.na(city) & 
+           week >= as.Date('2020-05-11')) %>%
+  select(week, city, rq_rolling)
+
+rankings_june2023_both <- each_cr_for_plot_both %>%
+  filter(week >= as.Date('2023-06-01') & week < as.Date('2023-07-01')) %>%
+  group_by(city) %>%
+  summarize(avg_rq = mean(rq_rolling, na.rm = TRUE)) %>%
+  arrange(desc(avg_rq))
+
+head(rankings_june2023_both)
+unique(rankings_june2023_both$city)
+
+write.csv(rankings_june2023_both, 
+          'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/rankings_june2023_USonly190199.csv', 
+          row.names = F)
+
+rank_plot_june2023_both <- ggplot(rankings_june2023_both, 
+                                  aes(x = reorder(city, avg_rq), y = avg_rq)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  ggtitle("Recovery quotient rankings for June 2023 (spectus only,\n((provider 190199 / provider 190199) for US cities and (provider 190199 / provider 700199) for Canadian cities)") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_bw() +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank())
+
+rank_plot_june2023_both

@@ -220,7 +220,7 @@ nash <-
   mutate(cat = 'nashville')
 
 canada_dt <- c('Calgary', 'Edmonton', 'Halifax', 'Mississauga', 'Montreal',
-               'Ottawa', 'Quebec', 'Toronto', 'Vancouver', 'Winnipeg')
+               'Ottawa', 'Quebec', 'Toronto', 'Vancouver', 'Winnipeg', 'London')
 
 # Combine them all
 downtown <- rbind(orig_spec, lehd_portland, c_stl_sd, city_defined, 
