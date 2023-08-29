@@ -57,7 +57,9 @@ msa_names <- msa %>%
            city == 'Louisville/Jefferson County' ~ 'Louisville',
            TRUE ~ city
          )) %>%
-  add_row(city = 'Mississauga', msa_name = 'Toronto')
+  add_row(city = 'Mississauga', msa_name = 'Toronto') %>%
+  filter(!(msa_name == 'Portland-Vancouver-Hillsboro, OR-WA' & 
+             city == 'Vancouver') & city != 'Arlington')
 
 head(msa_names %>% data.frame(), 15)
 tail(msa_names %>% data.frame(), 15)
@@ -211,7 +213,7 @@ norm_prov2_plot <- plot_ly() %>%
             text = ~paste0('Normalized ', provider_id, ' - ', city),
             opacity = .7,
             line = list(shape = "linear")) %>%
-  layout(title = "Spectus provider shift (normalized)",
+  layout(title = "Spectus provider shift (normalized, standardized using MSA)",
          xaxis = list(title = "Week", zerolinecolor = "#ffff",
                       tickformat = "%b %Y"),
          yaxis = list(title = "Normalized counts", zerolinecolor = "#ffff",
