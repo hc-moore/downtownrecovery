@@ -29,9 +29,12 @@ msa <-
   select(-event_date) %>%
   filter((provider_id == '700199' & date < as.Date('2021-05-17')) | 
            (provider_id == '190199' & date >= as.Date('2021-05-17'))) %>%
-  select(-provider_id)
+  select(-provider_id) %>%
+  rename(msa_count = approx_distinct_devices_count)
 
 msa_names <- msa %>% 
+  select(msa_name) %>%
+  distinct() %>%
   mutate(msa_no_state = str_remove_all(msa_name, ',.*$')) %>%
   separate(msa_no_state, remove = FALSE, sep = '-',
            into = c('name1', 'name2', 'name3', 'name4', 'name5', 'name6')) %>%
@@ -250,3 +253,197 @@ downtown1 <- downtown %>%
 head(downtown1)
 
 downtown1 %>% filter(is.na(msa_name))
+
+final_df <- 
+  downtown1 %>% 
+  left_join(msa, by = c('msa_name', 'date')) %>%
+  rename(downtown_devices = approx_distinct_devices_count) %>%
+  mutate(normalized = downtown_devices/msa_count)
+
+head(final_df)
+
+rec_rate_cr <-
+  final_df %>%
+  # Determine week and year # for each date
+  mutate(
+    date_range_start = floor_date(
+      date,
+      unit = "week",
+      week_start = getOption("lubridate.week.start", 1)),
+    week_num = isoweek(date_range_start),
+    year = year(date_range_start)) %>%
+  # Calculate # of devices by big_area, week and year
+  dplyr::group_by(full_name, year, week_num) %>%
+  dplyr::summarize(downtown_devices = sum(downtown_devices, na.rm = T),
+                   msa_count = sum(msa_count, na.rm = T)) %>%
+  dplyr::ungroup() 
+
+head(rec_rate_cr)
+
+each_cr_for_plot <-
+  rec_rate_cr %>%
+  filter(year > 2018) %>%
+  dplyr::group_by(year, week_num, full_name) %>%
+  dplyr::summarize(downtown_devices = sum(downtown_devices, na.rm = T),
+                   msa_count = sum(msa_count, na.rm = T)) %>%
+  dplyr::ungroup() %>%
+  mutate(normalized = downtown_devices/msa_count) %>%
+  pivot_wider(
+    id_cols = c('week_num', 'full_name'),
+    names_from = 'year',
+    names_prefix = 'ntv',
+    values_from = 'normalized') %>%
+  mutate(rec2020 = ntv2020/ntv2019,
+         rec2021 = ntv2021/ntv2019,
+         rec2022 = ntv2022/ntv2019,
+         rec2023 = ntv2023/ntv2019) %>%
+  select(-starts_with('ntv')) %>%
+  pivot_longer(
+    cols = rec2020:rec2023,
+    names_to = 'year',
+    values_to = 'rq') %>%
+  filter(week_num < 53) %>%
+  mutate(year = substr(year, 4, 7),
+         week = as.Date(paste(year, week_num, 1, sep = '_'),
+                        format = '%Y_%W_%w')) %>% # Monday of week
+  filter(!(year == 2023 & week_num > 24)) %>%
+  arrange(full_name, year, week_num) %>%
+  dplyr::group_by(full_name) %>%
+  mutate(rq_rolling = zoo::rollmean(rq, k = 11, fill = NA, align = 'right')) %>%
+  dplyr::ungroup() %>%
+  data.frame() %>%
+  filter(!(year == 2020 & week_num < 12)) %>%
+  filter(!is.na(full_name))
+
+head(each_cr_for_plot)
+tail(each_cr_for_plot)
+
+unique(each_cr_for_plot$full_name)
+
+# Now add data from website to compare (https://downtownrecovery.com/charts/patterns)
+
+original <- read.csv("C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/data_from_website.csv") %>%
+  filter(city %in% c('Cleveland', 'Halifax', 'Portland', 'Salt Lake City',
+                     'San Diego', 'San Francisco', 'St Louis', 'Toronto',
+                     'Nashville', 'Calgary', 'Edmonton', 'Montreal', 'Ottawa',
+                     'Vancouver') &
+           metric == 'downtown') %>%
+  mutate(week = as.Date(week),
+         full_name = paste0(city, ' (original - safegraph + spectus)')) %>%
+  select(week, full_name, rq_rolling = rolling_avg)
+
+head(original)
+unique(original$full_name)
+range(original$week)
+range(each_cr_for_plot$week)
+
+for_plot_final <- each_cr_for_plot %>%
+  select(week, full_name, rq_rolling) %>%
+  rbind(original) %>%
+  mutate(
+    mytext = paste0(full_name, '<br>Week of ', week, ': ',
+                    scales::percent(rq_rolling, accuracy = 2)))
+
+# Color differently based on type of polygon
+city_forplot <- for_plot_final %>% filter(str_detect(full_name, 'city-defined'))
+lehd_forplot <- for_plot_final %>% filter(str_detect(full_name, 'LEHD'))
+will_forplot <- for_plot_final %>% filter(str_detect(full_name, 'Will Hollingsworth'))
+alliance_forplot <- for_plot_final %>% filter(str_detect(full_name, 'Downtown Alliance'))
+original_safegraph_forplot <- for_plot_final %>% filter(str_detect(full_name, 'original - safegraph'))
+original_spectus_forplot <- for_plot_final %>% filter(str_detect(full_name, 'original - spectus'))
+byeonghwa_retail1_forplot <- for_plot_final %>% filter(str_detect(full_name, 'Byeonghwa - retail/office'))
+byeonghwa_office_forplot <- for_plot_final %>% filter(str_detect(full_name, 'Byeonghwa - office only'))
+nashville_forplot <- for_plot_final %>% filter(str_detect(full_name, 'Nashville \\(Planning'))
+
+# Plotly
+each_cr_plotly <-
+  plot_ly() %>%
+  add_lines(data = city_forplot,
+            x = ~week, y = ~rq_rolling,
+            split = ~full_name,
+            name = ~full_name,
+            text = ~mytext,
+            hoverinfo = 'text',
+            opacity = .6,
+            line = list(shape = "linear", color = '#e0091e')) %>%
+  add_lines(data = lehd_forplot,
+            x = ~week, y = ~rq_rolling,
+            split = ~full_name,
+            name = ~full_name,
+            text = ~mytext,
+            hoverinfo = 'text',
+            opacity = .6,
+            line = list(shape = "linear", color = '#2183a3')) %>%
+  add_lines(data = will_forplot,
+            x = ~week, y = ~rq_rolling,
+            split = ~full_name,
+            name = ~full_name,
+            text = ~mytext,
+            hoverinfo = 'text',
+            opacity = .6,
+            line = list(shape = "linear", color = 'orange')) %>%
+  add_lines(data = alliance_forplot,
+            x = ~week, y = ~rq_rolling,
+            split = ~full_name,
+            name = ~full_name,
+            text = ~mytext,
+            hoverinfo = 'text',
+            opacity = .6,
+            line = list(shape = "linear", color = '#289e2d')) %>%
+  add_lines(data = original_safegraph_forplot,
+            x = ~week, y = ~rq_rolling,
+            split = ~full_name,
+            name = ~full_name,
+            text = ~mytext,
+            hoverinfo = 'text',
+            opacity = .9,
+            line = list(shape = "linear", color = '#5d1aba')) %>%
+  add_lines(data = original_spectus_forplot,
+            x = ~week, y = ~rq_rolling,
+            split = ~full_name,
+            name = ~full_name,
+            text = ~mytext,
+            hoverinfo = 'text',
+            opacity = .9,
+            line = list(shape = "linear", color = '#e83cdf')) %>%
+  add_lines(data = byeonghwa_retail1_forplot,
+            x = ~week, y = ~rq_rolling,
+            split = ~full_name,
+            name = ~full_name,
+            text = ~mytext,
+            hoverinfo = 'text',
+            opacity = .9,
+            line = list(shape = "linear", color = '#547885')) %>% 
+  add_lines(data = nashville_forplot,
+            x = ~week, y = ~rq_rolling,
+            split = ~full_name,
+            name = ~full_name,
+            text = ~mytext,
+            hoverinfo = 'text',
+            opacity = .9,
+            line = list(shape = "linear", color = '#bad6b6')) %>% 
+  add_lines(data = byeonghwa_office_forplot,
+            x = ~week, y = ~rq_rolling,
+            split = ~full_name,
+            name = ~full_name,
+            text = ~mytext,
+            hoverinfo = 'text',
+            opacity = .9,
+            line = list(shape = "linear", color = '#574b2b')) %>%
+  layout(title = "Recovery rate for alternative downtowns, standardized using MSA (11 week rolling average)",
+         xaxis = list(title = "Week", zerolinecolor = "#ffff",
+                      tickformat = "%b %Y"),
+         yaxis = list(title = "Recovery rate", zerolinecolor = "#ffff",
+                      tickformat = ".0%", ticksuffix = "  "),
+         shapes = list(list(y0 = 0, y1 = 1, yref = "paper",
+                            x0 = as.Date('2021-05-17'), x1 = as.Date('2021-05-17'),
+                            line = list(color = 'black', dash = 'dash')),
+                       list(y0 = 0, y1 = 1, yref = "paper",
+                            x0 = as.Date('2022-05-02'), x1 = as.Date('2022-05-02'),
+                            line = list(color = 'black', dash = 'dash'))))
+
+each_cr_plotly
+
+saveWidget(
+  each_cr_plotly,
+  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/compare_downtowns_MSA.html')
