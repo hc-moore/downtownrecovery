@@ -144,6 +144,9 @@ dt_2prov_forplot <- downtown_2prov %>%
 
 head(dt_2prov_forplot)
 
+unique(userbase_2prov_forplot$provider_id)
+unique(dt_2prov_forplot$provider_id)
+
 prov_shift <- plot_ly() %>%
   add_lines(data = dt_2prov_forplot,
             x = ~date_range_start, y = ~dt_devices,
