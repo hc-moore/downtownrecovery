@@ -269,6 +269,10 @@ norm_prov2 <- dt_2prov_forplot %>%
 
 head(norm_prov2)
 
+# write.csv(norm_prov2, 
+#           'C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/for_imputation.csv',
+#           row.names = FALSE)
+
 norm_prov2_plot <- plot_ly() %>%
   add_lines(data = norm_prov2,
             x = ~date_range_start, y = ~normalized,
