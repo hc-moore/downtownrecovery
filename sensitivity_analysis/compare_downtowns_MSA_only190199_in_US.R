@@ -54,7 +54,16 @@ msa_names <- msa %>%
   ) %>%
   select(msa_name, city = city_value) %>%
   filter(!is.na(city) & !city %in% c('', ' ')) %>%
-  mutate(city = str_remove_all(city, '\\.'))
+  mutate(city = str_remove_all(city, '\\.'),
+         city = case_when(
+           city == 'Washington' ~ 'Washington DC',
+           city == 'Urban Honolulu' ~ 'Honolulu',
+           city == 'Louisville/Jefferson County' ~ 'Louisville',
+           TRUE ~ city
+         )) %>%
+  add_row(city = 'Mississauga', msa_name = 'Toronto') %>%
+  filter(!(msa_name == 'Portland-Vancouver-Hillsboro, OR-WA' & 
+             city == 'Vancouver') & city != 'Arlington')
 
 head(msa_names %>% data.frame(), 15)
 tail(msa_names %>% data.frame(), 15)
