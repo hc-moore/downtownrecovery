@@ -78,19 +78,6 @@ head(msa_2prov)
 canada_dt <- c('Calgary', 'Edmonton', 'Halifax', 'Mississauga', 'Montreal',
                'Ottawa', 'Quebec', 'Toronto', 'Vancouver', 'Winnipeg', 'London')
 
-# count_na <- downtown_bothprov %>%
-#   filter(city %in% canada_dt & provider_id == '190199') %>%
-#   select(city, full_name, provider_id) %>%
-#   distinct() %>%
-#   mutate(date = NA_Date_) %>%
-#   complete(city, full_name, provider_id,
-#            date = seq(as.Date('2019-01-01'),
-#                       as.Date('2021-05-16'), by = '1 day')) %>%
-#   arrange(full_name, provider_id) %>%
-#   data.frame() %>%
-#   filter(!is.na(date)) %>%
-#   mutate(approx_distinct_devices_count = NA_integer_)
-
 for_imp <- msa_2prov %>%
   filter(msa_name %in% canada_dt & provider_id == '190199') %>%
   select(msa_name, provider_id) %>%
