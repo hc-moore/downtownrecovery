@@ -31,6 +31,7 @@ msa_2prov <-
   select(-event_date)
 
 unique(msa_2prov$provider_id)
+head(msa_2prov)
 
 msa <- msa_2prov %>%
   filter((provider_id == '700199' & date < as.Date('2021-05-17')) | 
@@ -68,6 +69,106 @@ head(msa)
 glimpse(msa)
 range(msa$date)
 unique(msa$msa_name)
+
+# Export MSA data for imputation
+#-----------------------------------------------
+
+head(msa_2prov)
+
+canada_dt <- c('Calgary', 'Edmonton', 'Halifax', 'Mississauga', 'Montreal',
+               'Ottawa', 'Quebec', 'Toronto', 'Vancouver', 'Winnipeg', 'London')
+
+# count_na <- downtown_bothprov %>%
+#   filter(city %in% canada_dt & provider_id == '190199') %>%
+#   select(city, full_name, provider_id) %>%
+#   distinct() %>%
+#   mutate(date = NA_Date_) %>%
+#   complete(city, full_name, provider_id,
+#            date = seq(as.Date('2019-01-01'),
+#                       as.Date('2021-05-16'), by = '1 day')) %>%
+#   arrange(full_name, provider_id) %>%
+#   data.frame() %>%
+#   filter(!is.na(date)) %>%
+#   mutate(approx_distinct_devices_count = NA_integer_)
+
+for_imp <- msa_2prov %>%
+  filter(msa_name %in% canada_dt & provider_id == '190199') %>%
+  select(msa_name, provider_id) %>%
+  distinct() %>%
+  mutate(date = NA_Date_) %>%
+  complete(msa_name, provider_id,
+           date = seq(as.Date('2019-01-01'),
+                      as.Date('2021-05-16'), by = '1 day')) %>%
+  arrange(msa_name, provider_id) %>%
+  data.frame() %>%
+  filter(!is.na(date)) %>%
+  mutate(approx_distinct_devices_count = NA_integer_)
+
+head(for_imp)    
+
+rec_rate_MSA_imp <-
+  msa_2prov %>%
+  # Keep all US data. In Canada, remove pre-5/17/21 for provider 190199
+  filter(!msa_name %in% canada_dt | 
+           (msa_name %in% canada_dt & (date >= as.Date('2021-05-17') |
+                                         (date < as.Date('2021-05-17') & 
+                                            provider_id == '700199')))) %>%
+  rbind(for_imp) %>%
+  # Determine week and year # for each date
+  mutate(
+    date_range_start = floor_date(
+      date,
+      unit = "week",
+      week_start = getOption("lubridate.week.start", 1))) %>%
+  # Calculate # of devices by big_area, week and year
+  dplyr::group_by(msa_name, provider_id, date_range_start) %>%
+  dplyr::summarize(msa_devices = sum(approx_distinct_devices_count, na.rm = T)) %>%
+  dplyr::ungroup() %>%
+  # Make sure Canadian cities have NAs for provider 190199 pre-5/17/21
+  mutate(msa_devices = case_when(
+    msa_name %in% canada_dt & provider_id == '190199' & 
+      date_range_start <= as.Date('2021-05-10') ~ NA_integer_,
+    TRUE ~ msa_devices
+  ))
+
+head(rec_rate_MSA_imp)
+
+imp_MSA_na <- rec_rate_MSA_imp %>% 
+  filter(msa_name %in% canada_dt & provider_id == '190199' & 
+           date_range_start <= as.Date('2021-05-10'))
+
+summary(imp_MSA_na$msa_devices)
+
+imp_MSA_plot <-
+  plot_ly() %>%
+  add_lines(data = rec_rate_MSA_imp %>% filter(provider_id == '190199'),
+            x = ~date_range_start, y = ~msa_devices,
+            split = ~msa_name,
+            name = ~paste0(provider_id, ' - ', msa_name),
+            hoverinfo = 'text',
+            opacity = .6,
+            line = list(shape = "linear", color = 'orange')) %>%
+  add_lines(data = rec_rate_MSA_imp %>% filter(provider_id == '700199'),
+            x = ~date_range_start, y = ~msa_devices,
+            split = ~msa_name,
+            name = ~paste0(provider_id, ' - ', msa_name),
+            hoverinfo = 'text',
+            opacity = .6,
+            line = list(shape = "linear", color = 'darkgreen')) %>%
+  layout(xaxis = list(title = "Week", zerolinecolor = "#ffff",
+                      tickformat = "%b %Y"),
+         shapes = list(list(y0 = 0, y1 = 1, yref = "paper",
+                            x0 = as.Date('2021-05-17'), x1 = as.Date('2021-05-17'),
+                            line = list(color = 'black', dash = 'dash'))))
+
+imp_MSA_plot
+  
+write.csv(rec_rate_MSA_imp,
+          'C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/for_imputation_MSA.csv',
+          row.names = FALSE)
+
+#-----------------------------------------------
+
 
 # Load downtown data
 #=====================================
@@ -136,7 +237,7 @@ msa_2prov_forplot <- msa_2prov %>%
       week_start = getOption("lubridate.week.start", 1))) %>%
     # Calculate # of devices by big_area, week and year
     dplyr::group_by(msa_name, provider_id, date_range_start) %>%
-    dplyr::summarize(msa_count = sum(msa_count, na.rm = T)) %>%
+    dplyr::summarize(msa_count = sum(approx_distinct_devices_count, na.rm = T)) %>%
     dplyr::ungroup() 
 
 head(msa_2prov_forplot)
@@ -174,7 +275,7 @@ prov_shift <- plot_ly() %>%
             text = ~paste0('MSA ', provider_id, ' - ', msa_name),
             opacity = .7,
             line = list(shape = "linear")) %>%
-  layout(title = "Spectus provider shift (userbase & MSAs)",
+  layout(title = "Spectus provider shift (downtowns & MSAs)",
          xaxis = list(title = "Week", zerolinecolor = "#ffff",
                       tickformat = "%b %Y"),
          yaxis = list(title = "Raw counts", zerolinecolor = "#ffff",
@@ -193,7 +294,6 @@ saveWidget(
 #=====================================
 
 # Join downtowns with MSA
-#=====================================
 
 norm_prov2 <- dt_2prov_forplot %>%
   left_join(msa_names) %>%

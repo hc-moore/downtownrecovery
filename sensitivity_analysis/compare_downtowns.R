@@ -257,6 +257,143 @@ range(downtown$date)
 unique(downtown$city)
 unique(downtown$full_name)
 
+# Export for imputation
+#---------------------------------------
+
+# Combine them but keep both providers
+downtown_bothprov <- rbind(orig_spec, lehd_portland, c_stl_sd, city_defined, 
+                  byeonghwa_retail_1, byeonghwa_office, nash) %>%
+  filter(date <= as.Date('2023-06-18') &
+           provider_id %in% c('700199', '190199')) %>%
+  mutate(full_name = case_when(
+    city == 'Portland' & cat == 'lehd_portland' ~ 'Portland (Will Hollingsworth)',
+    city == 'Cleveland' & cat == 'lehd_portland' ~ 'Cleveland (LEHD)',
+    city == 'Salt Lake City' & cat == 'lehd_portland' ~ 'Salt Lake City (LEHD)',
+    city == 'San Francisco' & cat == 'lehd_portland' ~ 'San Francisco (LEHD)',
+    city == 'Cleveland' & cat == 'c_stl_sd' ~ 'Cleveland (Downtown Alliance)',
+    city == 'St Louis' & cat == 'c_stl_sd' ~ 'St Louis (LEHD)',
+    city == 'San Diego' & cat == 'c_stl_sd' ~ 'San Diego (LEHD)',
+    cat == 'city_defined' ~ paste0(city, ' (city-defined)'),
+    cat == 'original' ~ paste0(city, ' (original - spectus only)'),
+    cat == 'byeonghwa_retail_1' ~ paste0(city, ' (Byeonghwa - retail/office)'),
+    cat == 'byeonghwa_office' ~ paste0(city, ' (Byeonghwa - office only)'),
+    cat == 'nashville' ~ 'Nashville (Planning Dept)',
+    TRUE ~ NA_character_
+  )) %>%
+  select(-cat)
+
+head(downtown_bothprov)
+
+canada_dt <- c('Calgary', 'Edmonton', 'Halifax', 'Mississauga', 'Montreal',
+               'Ottawa', 'Quebec', 'Toronto', 'Vancouver', 'Winnipeg', 'London')
+
+# dt_ca_190_before <- downtown_bothprov %>%
+#   filter(city %in% canada_dt & provider_id == '190199' & 
+#            date < as.Date('2021-05-17'))
+# 
+# head(dt_ca_190_before)
+# summary(dt_ca_190_before$approx_distinct_devices_count)
+# 
+# dt_ca_190_before_na <- dt_ca_190_before %>%
+#   mutate(approx_distinct_devices_count = NA_integer_)
+# 
+# head(dt_ca_190_before_na)
+# summary(dt_ca_190_before_na$approx_distinct_devices_count)
+
+count_na <- downtown_bothprov %>%
+  filter(city %in% canada_dt & provider_id == '190199') %>%
+  select(city, full_name, provider_id) %>%
+  distinct() %>%
+  mutate(date = NA_Date_) %>%
+  complete(city, full_name, provider_id,
+           date = seq(as.Date('2019-01-01'),
+                      as.Date('2021-05-16'), by = '1 day')) %>%
+  arrange(full_name, provider_id) %>%
+  data.frame() %>%
+  filter(!is.na(date)) %>%
+  mutate(approx_distinct_devices_count = NA_integer_)
+
+head(count_na)
+nrow(count_na)
+
+# test <- count_na %>% 
+#   filter(full_name == 'Calgary (Byeonghwa - office only)')
+# 
+# summary(test$date)
+# test %>% filter(is.na(date))
+# 
+# test2 <- count_na %>%
+#   filter(full_name == 'Montreal (original - spectus only)' & 
+#            provider_id == '190199')
+# 
+# summary(test2$date)
+# test2 %>% filter(is.na(date))
+
+rec_rate_cr_imp <-
+  downtown_bothprov %>%
+  # Keep all US data. In Canada, remove pre-5/17/21 for provider 190199
+  filter(!city %in% canada_dt | 
+           (city %in% canada_dt & (date >= as.Date('2021-05-17') |
+                                     (date < as.Date('2021-05-17') & 
+                                        provider_id == '700199')))) %>%
+  rbind(count_na) %>%
+  # Determine week and year # for each date
+  mutate(
+    date_range_start = floor_date(
+      date,
+      unit = "week",
+      week_start = getOption("lubridate.week.start", 1))) %>%
+  # Calculate # of devices by big_area, week and year
+  dplyr::group_by(city, full_name, provider_id, date_range_start) %>%
+  dplyr::summarize(downtown_devices = sum(approx_distinct_devices_count, 
+                                          na.rm = T)) %>%
+  dplyr::ungroup() %>%
+  # Make sure Canadian cities have NAs for provider 190199 pre-5/17/21
+  mutate(downtown_devices = case_when(
+    city %in% canada_dt & provider_id == '190199' & 
+      date_range_start <= as.Date('2021-05-10') ~ NA_integer_,
+    TRUE ~ downtown_devices
+  ))
+
+head(rec_rate_cr_imp)
+
+imp_na <- rec_rate_cr_imp %>% 
+  filter(city %in% canada_dt & provider_id == '190199' & 
+           date_range_start <= as.Date('2021-05-10'))
+
+summary(imp_na$downtown_devices)
+
+imp_plot <-
+  plot_ly() %>%
+  add_lines(data = rec_rate_cr_imp %>% filter(provider_id == '190199'),
+            x = ~date_range_start, y = ~downtown_devices,
+            split = ~full_name,
+            name = ~paste0(provider_id, ' - ', full_name),
+            hoverinfo = 'text',
+            opacity = .6,
+            line = list(shape = "linear", color = 'orange')) %>%
+  add_lines(data = rec_rate_cr_imp %>% filter(provider_id == '700199'),
+            x = ~date_range_start, y = ~downtown_devices,
+            split = ~full_name,
+            name = ~paste0(provider_id, ' - ', full_name),
+            hoverinfo = 'text',
+            opacity = .6,
+            line = list(shape = "linear", color = 'darkgreen')) %>%
+  layout(xaxis = list(title = "Week", zerolinecolor = "#ffff",
+                      tickformat = "%b %Y"),
+         shapes = list(list(y0 = 0, y1 = 1, yref = "paper",
+                            x0 = as.Date('2021-05-17'), x1 = as.Date('2021-05-17'),
+                            line = list(color = 'black', dash = 'dash'))))
+
+imp_plot
+
+write.csv(rec_rate_cr_imp, 
+          "C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/for_imputation_alt_downtowns.csv",
+          row.names = F)
+
+#---------------------------------------
+
+
 # Join downtowns with userbase
 #=====================================
 

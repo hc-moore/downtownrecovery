@@ -192,6 +192,118 @@ range(msa$date)
 unique(msa$msa_name)
 
 
+# Compare userbase & MSA counts
+#=====================================
+
+user_msa <- userbase %>%
+  mutate(name = paste0('userbase - ', geography_name),
+         type = 'userbase') %>%
+  select(name, count = userbase, date, type) %>%
+  rbind(
+    msa %>%
+      mutate(name = paste0('MSA - ', msa_name),
+             type = 'MSA') %>%
+      select(name, count = msa_count, date, type)
+  ) %>%
+  mutate(
+    date_range_start = floor_date(
+      date,
+      unit = "week",
+      week_start = getOption("lubridate.week.start", 1))) %>%
+  group_by(name, type, date_range_start) %>%
+  summarize(count = sum(count, na.rm = T))
+
+head(user_msa)
+
+user_msa_plot <- plot_ly() %>%
+  add_lines(data = user_msa,
+            x = ~date_range_start, y = ~count,
+            split = ~name,
+            color = ~type,
+            colors = c("red", "blue"),
+            name = ~name,
+            text = ~paste0(name, ' - ', count),
+            opacity = .7,
+            line = list(shape = "linear")) %>%
+  layout(title = "MSA vs userbase counts (US using 190199 only)",
+         xaxis = list(title = "Week", zerolinecolor = "#ffff",
+                      tickformat = "%b %Y"),
+         yaxis = list(title = "Counts", zerolinecolor = "#ffff",
+                      ticksuffix = "  "))
+
+user_msa_plot
+
+saveWidget(
+  user_msa_plot,
+  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/user_MSA_counts.html')
+
+# Ratio of MSA to state/province
+
+state_abbs <- states() %>%
+  select(geography_name = NAME, state_abb = STUSPS) %>%
+  st_drop_geometry()
+
+head(state_abbs)
+n_distinct(state_abbs$geography_name)
+
+user_msa_joined <- msa %>%
+  mutate(state_abb = case_when(
+    str_detect(msa_name, '[A-Z]{2}') ~ str_extract(msa_name, '[A-Z]{2}'),
+    TRUE ~ NA_character_
+  ),
+  ca_geography_name = case_when(
+    msa_name == 'Vancouver' ~ 'British Columbia',
+    msa_name %in% c('Edmonton', 'Calgary') ~ 'Alberta',
+    msa_name %in% c('Toronto', 'Ottawa', 'London') ~ 'Ontario',
+    msa_name == 'Halifax' ~ 'Nova Scotia',
+    msa_name %in% c('Montreal', 'Quebec') ~ 'Quebec',
+    msa_name == 'Winnipeg' ~ 'Manitoba',
+    TRUE ~ NA_character_
+  )) %>%
+  left_join(state_abbs) %>%
+  mutate(geography_name = case_when(
+    !is.na(geography_name) ~ geography_name,
+    !is.na(ca_geography_name) ~ ca_geography_name,
+    TRUE ~ NA_character_
+  )) %>%
+  select(-c(ca_geography_name, state_abb)) %>%
+  left_join(userbase, by = c('geography_name', 'date')) %>%
+  mutate(
+    date_range_start = floor_date(
+      date,
+      unit = "week",
+      week_start = getOption("lubridate.week.start", 1))) %>%
+  group_by(msa_name, date_range_start) %>%
+  summarize(msa_count = sum(msa_count, na.rm = T),
+            userbase = sum(userbase, na.rm = T)) %>%
+  ungroup() %>%
+  mutate(ratio = msa_count/userbase)
+
+head(user_msa_joined, 10)
+
+user_msa_ratio_plot <- plot_ly() %>%
+  add_lines(data = user_msa_joined,
+            x = ~date_range_start, y = ~ratio,
+            split = ~msa_name,
+            name = ~msa_name,
+            text = ~paste0(msa_name, '<br>- MSA: ', msa_count, '<br>- Userbase: ',
+                           userbase, '<br>Ratio: ', ratio),
+            opacity = .7,
+            line = list(shape = "linear")) %>%
+  layout(title = "MSA:userbase ratio (US using 190199 only)",
+         xaxis = list(title = "Week", zerolinecolor = "#ffff",
+                      tickformat = "%b %Y"),
+         yaxis = list(title = "MSA to userbase ratio", zerolinecolor = "#ffff",
+                      ticksuffix = "  "))
+
+user_msa_ratio_plot
+
+saveWidget(
+  user_msa_ratio_plot,
+  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/user_MSA_ratio.html')
+
+
+
 # Create RQs without normalizing
 #=====================================
 
