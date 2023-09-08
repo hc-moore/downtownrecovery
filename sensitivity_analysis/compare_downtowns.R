@@ -302,10 +302,10 @@ canada_dt <- c('Calgary', 'Edmonton', 'Halifax', 'Mississauga', 'Montreal',
 
 count_na <- downtown_bothprov %>%
   filter(city %in% canada_dt & provider_id == '190199') %>%
-  select(city, full_name, provider_id) %>%
+  select(full_name, provider_id) %>%
   distinct() %>%
   mutate(date = NA_Date_) %>%
-  complete(city, full_name, provider_id,
+  complete(full_name, provider_id,
            date = seq(as.Date('2019-01-01'),
                       as.Date('2021-05-16'), by = '1 day')) %>%
   arrange(full_name, provider_id) %>%
@@ -336,6 +336,7 @@ rec_rate_cr_imp <-
            (city %in% canada_dt & (date >= as.Date('2021-05-17') |
                                      (date < as.Date('2021-05-17') & 
                                         provider_id == '700199')))) %>%
+  select(-city) %>%
   rbind(count_na) %>%
   # Determine week and year # for each date
   mutate(
@@ -344,10 +345,13 @@ rec_rate_cr_imp <-
       unit = "week",
       week_start = getOption("lubridate.week.start", 1))) %>%
   # Calculate # of devices by big_area, week and year
-  dplyr::group_by(city, full_name, provider_id, date_range_start) %>%
+  dplyr::group_by(full_name, provider_id, date_range_start) %>%
   dplyr::summarize(downtown_devices = sum(approx_distinct_devices_count, 
                                           na.rm = T)) %>%
   dplyr::ungroup() %>%
+  left_join(
+    downtown_bothprov %>% select(city, full_name) %>% distinct()
+  ) %>%
   # Make sure Canadian cities have NAs for provider 190199 pre-5/17/21
   mutate(downtown_devices = case_when(
     city %in% canada_dt & provider_id == '190199' & 
@@ -362,6 +366,16 @@ imp_na <- rec_rate_cr_imp %>%
            date_range_start <= as.Date('2021-05-10'))
 
 summary(imp_na$downtown_devices)
+
+cal_test <- rec_rate_cr_imp %>%
+  filter(city == 'Calgary')
+
+unique(cal_test$full_name)
+
+rec_rate_cr_imp %>%
+  select(city, full_name) %>%
+  distinct() %>%
+  data.frame()
 
 imp_plot <-
   plot_ly() %>%
