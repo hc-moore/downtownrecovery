@@ -62,6 +62,10 @@ msa_names <- msa %>%
   filter(!(msa_name == 'Portland-Vancouver-Hillsboro, OR-WA' & 
              city == 'Vancouver') & city != 'Arlington')
 
+write.csv(msa_names,
+          'C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/msa_names.csv', 
+          row.names = FALSE)
+
 head(msa_names %>% data.frame(), 15)
 tail(msa_names %>% data.frame(), 15)
 
