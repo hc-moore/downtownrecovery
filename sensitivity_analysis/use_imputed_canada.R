@@ -303,3 +303,26 @@ rank_plot
 
 # Create RQ plots
 #=====================================
+
+rq_plot <- plot_ly() %>%
+  add_lines(data = rq,
+            x = ~week, y = ~rq_rolling,
+            split = ~city,
+            name = ~city,
+            text = ~paste0(city, ': ', round(rq_rolling, 3)),
+            opacity = .7,
+            line = list(shape = "linear")) %>%
+  layout(title = "Recovery rates: Spectus, standardized by MSA, provider 190199 (Canada imputed pre-5/17/21)",
+         xaxis = list(title = "Week", zerolinecolor = "#ffff",
+                      tickformat = "%b %Y"),
+         yaxis = list(title = "Recovery rate", zerolinecolor = "#ffff",
+                      ticksuffix = "  "),
+         shapes = list(list(y0 = 0, y1 = 1, yref = "paper",
+                            x0 = as.Date('2021-05-17'), x1 = as.Date('2021-05-17'),
+                            line = list(color = 'black', dash = 'dash'))))
+
+rq_plot
+
+saveWidget(
+  rq_plot,
+  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/RQ_trends_imputed_Canada_by_MSA_190199.html')
