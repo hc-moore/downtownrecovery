@@ -1,6 +1,7 @@
 #===============================================================================
-# Compare downtowns, but use provider 190199 (imputed for Canada by Amir), 
-# and standardize by MSA
+# Compare downtowns, but use provider 190199 (imputed for Canada by Byeonghwa
+# using Multivariate Imputation by Chained Equations (MICE)), and standardized 
+# by MSA
 #===============================================================================
 
 # Load packages
@@ -13,14 +14,15 @@ ipak(c('tidyverse', 'sf', 'lubridate', 'leaflet', 'plotly', 'htmlwidgets',
 # Load imputed MSA data for Canada
 #=====================================
 
-imputed <- read.csv('C:/Users/jpg23/data/downtownrecovery/imputed_canada_190199/imputation_Canada_msa_Final.csv') %>%
-  mutate(week = as.Date(date_range_start, '%m/%d/%Y'),
-         mytext = case_when(
-           week < as.Date('2021-05-17') & provider_id == '190199' ~ 
+imputed <- read.csv('C:/Users/jpg23/data/downtownrecovery/imputed_canada_190199/imputation_Canada_msa_Byeonghwa.csv') %>%
+  mutate(mytext = case_when(
+    date_range_start < as.Date('2021-05-17') & provider_id == '190199' ~ 
              paste('IMPUTED:', city, paste0('Provider ', provider_id), 
                    normalized_msa, sep = '<br>'),
            TRUE ~ paste(city, paste0('Provider ', provider_id), normalized_msa, 
                         sep = '<br>')))
+
+# week = as.Date(date_range_start, '%m/%d/%Y'),
 
 head(imputed)
 table(imputed$city)
@@ -32,7 +34,7 @@ range(imputed$date_range_start)
 imputed_plot <-
   plot_ly() %>%
   add_lines(data = imputed %>% filter(provider_id == '700199'),
-            x = ~week, y = ~normalized_msa,
+            x = ~date_range_start, y = ~normalized_msa,
             split = ~city,
             name = ~city,
             text = ~mytext,
@@ -40,7 +42,7 @@ imputed_plot <-
             opacity = .6,
             line = list(shape = "linear", color = '#214e36')) %>%
   add_lines(data = imputed %>% filter(provider_id == '190199'),
-            x = ~week, y = ~normalized_msa,
+            x = ~date_range_start, y = ~normalized_msa,
             split = ~city,
             name = ~city,
             text = ~mytext,
@@ -60,7 +62,7 @@ imputed_plot
 
 saveWidget(
   imputed_plot,
-  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/imputed_Canada_by_MSA_190199.html')
+  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/byeonghwa_imputed_Canada_by_MSA_190199.html')
 
 # Load MSA data
 #=====================================
@@ -232,11 +234,12 @@ head(missing_imputed)
 head(imputed)
 
 imputed_new <- imputed %>% 
-  mutate(date_range_start = as.Date(date_range_start, '%m/%d/%Y')) %>%
+  mutate(date_range_start = as.Date(date_range_start)) %>%
   filter(provider_id == '190199' & date_range_start < as.Date('2021-05-17')) %>%
   select(city, date_range_start, normalized_msa)
 
 head(imputed_new)
+glimpse(imputed_new)
 
 rq <-
   bind_rows(missing_imputed, imputed_new) %>%
@@ -286,14 +289,14 @@ head(rankings)
 unique(rankings$city)
 
 write.csv(rankings,
-          'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/rankings_imputed_canada_normalized_by_MSA.csv',
+          'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/byeonghwa_rankings_imputed_canada_normalized_by_MSA.csv',
           row.names = F)
 
 rank_plot <- ggplot2::ggplot(rankings, aes(x = reorder(city, avg_rq), 
                                   y = avg_rq)) +
   geom_bar(stat="identity") +
   coord_flip() +
-  ggtitle("Recovery quotient rankings for March - June 2023\n(spectus only, standardized using MSA, provider 190199 only -\nimputed pre-5/17/21 for Canada)") +
+  ggtitle("Recovery quotient rankings for March - June 2023\n(spectus only, standardized using MSA, provider 190199 only -\nimputed pre-5/17/21 for Canada by Byeonghwa using MICE method)") +
   scale_y_continuous(labels = scales::percent) +
   theme_bw() +
   theme(axis.title.x = element_blank(),
@@ -312,7 +315,7 @@ rq_plot <- plot_ly() %>%
             text = ~paste0(city, ': ', round(rq_rolling, 3)),
             opacity = .7,
             line = list(shape = "linear")) %>%
-  layout(title = "Recovery rates: Spectus, standardized by MSA, provider 190199 (Canada imputed pre-5/17/21)",
+  layout(title = "Recovery rates: Spectus, standardized by MSA, provider 190199 (Canada imputed pre-5/17/21 by Byeonghwa using MICE method)",
          xaxis = list(title = "Week", zerolinecolor = "#ffff",
                       tickformat = "%b %Y"),
          yaxis = list(title = "Recovery rate", zerolinecolor = "#ffff",
@@ -325,4 +328,30 @@ rq_plot
 
 saveWidget(
   rq_plot,
-  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/RQ_trends_imputed_Canada_by_MSA_190199.html')
+  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/byeonghwa_RQ_trends_imputed_Canada_by_MSA_190199.html')
+
+# Compare rankings with Amir's data
+#=====================================
+
+head(rankings)
+
+amir_rankings <- read.csv('C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/rankings_imputed_canada_normalized_by_MSA.csv')
+
+head(amir_rankings)
+
+compare <- 
+  rankings %>%
+  mutate(rank_byeonghwa = row_number()) %>%
+  rename(avg_rq_byeonghwa = avg_rq) %>%
+  full_join(
+    amir_rankings %>%
+      mutate(rank_amir = row_number()) %>%
+      rename(avg_rq_amir = avg_rq)
+  ) %>%
+  arrange(rank_byeonghwa)
+
+head(compare, 30)
+
+write.csv(compare,
+          'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/compare_imputed_ranks.csv',
+          row.names = FALSE)

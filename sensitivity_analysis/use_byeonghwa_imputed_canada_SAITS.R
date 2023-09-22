@@ -1,6 +1,7 @@
 #===============================================================================
-# Compare downtowns, but use provider 190199 (imputed for Canada by Amir), 
-# and standardize by MSA
+# Compare downtowns, but use provider 190199 (imputed for Canada by Byeonghwa
+# using SAITS: Self-Attention-based Imputation for Time Series), and standardized 
+# by MSA
 #===============================================================================
 
 # Load packages
@@ -13,10 +14,10 @@ ipak(c('tidyverse', 'sf', 'lubridate', 'leaflet', 'plotly', 'htmlwidgets',
 # Load imputed MSA data for Canada
 #=====================================
 
-imputed <- read.csv('C:/Users/jpg23/data/downtownrecovery/imputed_canada_190199/imputation_Canada_msa_Final.csv') %>%
-  mutate(week = as.Date(date_range_start, '%m/%d/%Y'),
-         mytext = case_when(
-           week < as.Date('2021-05-17') & provider_id == '190199' ~ 
+imputed <- read.csv('C:/Users/jpg23/data/downtownrecovery/imputed_canada_190199/imputation_Canada_msa_Byeonghwa_us_ca_SAITS.csv') %>%
+  filter(city %in% canada_dt) %>%
+  mutate(mytext = case_when(
+    date_range_start < as.Date('2021-05-17') & provider_id == '190199' ~ 
              paste('IMPUTED:', city, paste0('Provider ', provider_id), 
                    normalized_msa, sep = '<br>'),
            TRUE ~ paste(city, paste0('Provider ', provider_id), normalized_msa, 
@@ -32,7 +33,7 @@ range(imputed$date_range_start)
 imputed_plot <-
   plot_ly() %>%
   add_lines(data = imputed %>% filter(provider_id == '700199'),
-            x = ~week, y = ~normalized_msa,
+            x = ~date_range_start, y = ~normalized_msa,
             split = ~city,
             name = ~city,
             text = ~mytext,
@@ -40,14 +41,14 @@ imputed_plot <-
             opacity = .6,
             line = list(shape = "linear", color = '#214e36')) %>%
   add_lines(data = imputed %>% filter(provider_id == '190199'),
-            x = ~week, y = ~normalized_msa,
+            x = ~date_range_start, y = ~normalized_msa,
             split = ~city,
             name = ~city,
             text = ~mytext,
             hoverinfo = 'text',
             opacity = .6,
             line = list(shape = "linear", color = '#40a7de')) %>%
-  layout(title = "Provider 190199 imputed for Canada pre-5/17/21",
+  layout(title = "Provider 190199 imputed for Canada pre-5/17/21 (using SAITS)",
          xaxis = list(title = "Week", zerolinecolor = "#ffff",
                       tickformat = "%b %Y"),
          yaxis = list(title = "Normalized by MSA", zerolinecolor = "#ffff",
@@ -60,7 +61,7 @@ imputed_plot
 
 saveWidget(
   imputed_plot,
-  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/imputed_Canada_by_MSA_190199.html')
+  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/byeonghwa_imputed_Canada_by_MSA_190199_SAITS.html')
 
 # Load MSA data
 #=====================================
@@ -232,11 +233,16 @@ head(missing_imputed)
 head(imputed)
 
 imputed_new <- imputed %>% 
-  mutate(date_range_start = as.Date(date_range_start, '%m/%d/%Y')) %>%
-  filter(provider_id == '190199' & date_range_start < as.Date('2021-05-17')) %>%
+  mutate(date_range_start = as.Date(date_range_start)) %>%
+  filter(provider_id == '190199' & date_range_start < as.Date('2021-05-17') &
+           city %in% canada_dt) %>%
   select(city, date_range_start, normalized_msa)
 
 head(imputed_new)
+glimpse(imputed_new)
+
+range(missing_imputed$date_range_start)
+range(imputed_new$date_range_start)
 
 rq <-
   bind_rows(missing_imputed, imputed_new) %>%
@@ -272,6 +278,10 @@ rq <-
 
 head(rq)
 
+write.csv(rq,
+          'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/byeonghwa_RQ_imputed_canada_byMSA_SAITS.csv',
+          row.names = F)
+
 # Rankings for March - June 2023
 #=====================================
 
@@ -286,14 +296,14 @@ head(rankings)
 unique(rankings$city)
 
 write.csv(rankings,
-          'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/rankings_imputed_canada_normalized_by_MSA.csv',
+          'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/byeonghwa_rankings_imputed_canada_normalized_by_MSA_SAITS.csv',
           row.names = F)
 
 rank_plot <- ggplot2::ggplot(rankings, aes(x = reorder(city, avg_rq), 
                                   y = avg_rq)) +
   geom_bar(stat="identity") +
   coord_flip() +
-  ggtitle("Recovery quotient rankings for March - June 2023\n(spectus only, standardized using MSA, provider 190199 only -\nimputed pre-5/17/21 for Canada)") +
+  ggtitle("Recovery quotient rankings for March - June 2023\n(spectus only, standardized using MSA, provider 190199 only -\nimputed pre-5/17/21 for Canada by Byeonghwa using SAITS method)") +
   scale_y_continuous(labels = scales::percent) +
   theme_bw() +
   theme(axis.title.x = element_blank(),
@@ -312,7 +322,7 @@ rq_plot <- plot_ly() %>%
             text = ~paste0(city, ': ', round(rq_rolling, 3)),
             opacity = .7,
             line = list(shape = "linear")) %>%
-  layout(title = "Recovery rates: Spectus, standardized by MSA, provider 190199 (Canada imputed pre-5/17/21)",
+  layout(title = "Recovery rates: Spectus, standardized by MSA, provider 190199 (Canada imputed pre-5/17/21 by Byeonghwa using SAITS method)",
          xaxis = list(title = "Week", zerolinecolor = "#ffff",
                       tickformat = "%b %Y"),
          yaxis = list(title = "Recovery rate", zerolinecolor = "#ffff",
@@ -325,4 +335,5 @@ rq_plot
 
 saveWidget(
   rq_plot,
-  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/RQ_trends_imputed_Canada_by_MSA_190199.html')
+  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/byeonghwa_RQ_trends_imputed_Canada_by_MSA_190199_SAITS.html')
+
