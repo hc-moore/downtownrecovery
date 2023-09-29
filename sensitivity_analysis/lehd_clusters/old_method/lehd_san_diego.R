@@ -41,6 +41,88 @@ sd_raw <- fread("C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/lehd/
 glimpse(sd_raw)
 table(nchar(sd_raw$block))
 
+# Map block-level job density
+#=====================================
+
+sd_block <- blocks(state = 'CA', county = 'San Diego', year = 2019) %>% 
+  select(block = GEOID10, ALAND10)
+
+head(sd_block)
+
+sd_dens <- 
+  sd_block %>% 
+  left_join(sd_raw) %>% 
+  replace(is.na(.), 0) %>%
+  mutate(job_dens = case_when(ALAND10 == 0 ~ NA_real_, TRUE ~ jobs/ALAND10),
+         jobs_cat = factor(case_when(
+          job_dens < .001 ~ '<.001 jobs/m^2',
+          job_dens < .005 ~ '.001 - .0049 jobs/m^2',
+          job_dens < .01 ~ '.005 - .009 jobs/m^2',
+          job_dens < .02 ~ '.01 - .019 jobs/m^2',
+          job_dens >= .02 ~ '.02+ jobs/m^2',
+          TRUE ~ NA_character_
+          ),
+          levels = c('<.001 jobs/m^2', '.001 - .0049 jobs/m^2', 
+                     '.005 - .009 jobs/m^2', '.01 - .019 jobs/m^2', 
+                     '.02+ jobs/m^2')))
+
+head(sd_dens)
+table(sd_dens$jobs_cat)
+
+pal_dens <-
+  colorFactor(c(
+    "white",
+    "#9ce4f6",
+    "#00b2f9",
+    "#0077f7",
+    "#0123d1"
+  ),
+  domain = sd_dens$jobs_cat,
+  na.color = 'transparent'
+  )
+
+block_map <-
+  leaflet(
+    options = leafletOptions(minZoom = 6, maxZoom = 16)
+  ) %>%
+  addMapPane(name = "lehd_pane", zIndex = 410) %>%
+  addMapPane(name = "current_pane", zIndex = 420) %>%
+  addMapPane(name = "maplabels", zIndex = 430) %>%
+  addProviderTiles("CartoDB.PositronNoLabels") %>%
+  addProviderTiles("Stamen.TonerLines",
+                   options = providerTileOptions(opacity = 0.3),
+                   group = "Roads"
+  ) %>%
+  addProviderTiles("CartoDB.PositronOnlyLabels",
+                   options = leafletOptions(pane = "maplabels")
+  ) %>%
+  addPolygons(
+    data = sd_dens,
+    label = ~job_dens,
+    labelOptions = labelOptions(textsize = "12px"),
+    fillOpacity = .6,
+    color = ~pal_dens(jobs_cat),
+    stroke = TRUE,
+    weight = 1,
+    opacity = .3,
+    highlightOptions =
+      highlightOptions(
+        color = "black",
+        weight = 3,
+        bringToFront = TRUE),
+    options = pathOptions(pane = "lehd_pane")
+  ) %>%
+  addLegend(
+    data = sd_dens,
+    position = "bottomright",
+    pal = pal_dens,
+    values = ~jobs_cat,
+    title = "Job density",
+    className = 'info legend lehd'
+  )
+
+block_map
+
 # Aggregate to block group level
 #=====================================
 
@@ -66,6 +148,96 @@ glimpse(sd_blgr)
 
 sd0 <- sd_blgr %>% left_join(sd_agg) %>% mutate(job_dens = jobs/ALAND)
 
+head(sd0)
+summary(sd0$job_dens)
+
+# Map block group-level job density
+#=====================================
+
+sd_dens_blgr <-
+  sd0 %>% 
+  mutate(jobs_cat = factor(case_when(
+      job_dens < .001 ~ '<.001 jobs/m^2',
+      job_dens < .005 ~ '.001 - .0049 jobs/m^2',
+      job_dens < .01 ~ '.005 - .009 jobs/m^2',
+      job_dens < .02 ~ '.01 - .019 jobs/m^2',
+      job_dens >= .02 ~ '.02+ jobs/m^2',
+      TRUE ~ NA_character_
+    ),
+    levels = c('<.001 jobs/m^2', '.001 - .0049 jobs/m^2', 
+               '.005 - .009 jobs/m^2', '.01 - .019 jobs/m^2', 
+               '.02+ jobs/m^2')))
+
+head(sd_dens_blgr)
+table(sd_dens_blgr$jobs_cat)
+
+pal_dens_blgr <-
+  colorFactor(c(
+    "white",
+    "#9ce4f6",
+    "#00b2f9",
+    "#0077f7",
+    "#0123d1"
+  ),
+  domain = sd_dens_blgr$jobs_cat,
+  na.color = 'transparent'
+  )
+
+blgr_map <-
+  leaflet(
+    options = leafletOptions(minZoom = 6, maxZoom = 16)
+  ) %>%
+  addMapPane(name = "lehd_pane", zIndex = 410) %>%
+  addMapPane(name = "current_pane", zIndex = 420) %>%
+  addMapPane(name = "maplabels", zIndex = 430) %>%
+  addProviderTiles("CartoDB.PositronNoLabels") %>%
+  addProviderTiles("Stamen.TonerLines",
+                   options = providerTileOptions(opacity = 0.3),
+                   group = "Roads"
+  ) %>%
+  addProviderTiles("CartoDB.PositronOnlyLabels",
+                   options = leafletOptions(pane = "maplabels")
+  ) %>%
+  addPolygons(
+    data = sd_dens_blgr,
+    label = ~job_dens,
+    labelOptions = labelOptions(textsize = "12px"),
+    fillOpacity = .6,
+    color = ~pal_dens_blgr(jobs_cat),
+    stroke = TRUE,
+    weight = 1,
+    opacity = .3,
+    highlightOptions =
+      highlightOptions(
+        color = "black",
+        weight = 3,
+        bringToFront = TRUE),
+    options = pathOptions(pane = "lehd_pane")
+  ) %>%
+  addLegend(
+    data = sd_dens_blgr,
+    position = "bottomright",
+    pal = pal_dens_blgr,
+    values = ~jobs_cat,
+    title = "Job density",
+    className = 'info legend lehd'
+  )
+
+blgr_map
+
+
+
+
+
+
+
+
+
+
+
+# Create clusters
+#=====================================
+
 sd <- sd0 %>%
   mutate(
     jobs_avg = mean(sd0$job_dens, na.rm = T),
@@ -83,9 +255,6 @@ sd <- sd0 %>%
     jobs_lab = paste0(job_dens, ' jobs per square meters: ', 100*(round(job_dens/jobs_avg, 2)), '% of avg.'))
 
 glimpse(sd)
-
-# Create clusters
-#=====================================
 
 # See documentation on SKATER algorithm:
 # https://www.dshkol.com/post/spatially-constrained-clustering-and-regionalization/
