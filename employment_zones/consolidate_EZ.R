@@ -19,39 +19,61 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 # Load data
 #-----------------------------------------
 
-# Userbase: 1/1/2019 - 4/25/2023
-
-filepath_bia <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/BIAs/'
-
-userbase1 <- read_delim(
-  paste0(filepath_bia, "bia_userbase/20230522_190855_00007_3yd5w_80fe0af5-8ae8-468e-ad40-4d1714548545.gz"),
-  delim = '\001',
-  col_names = c('bia', 'provider', 'n_devices', 'userbase', 'date'),
-  col_types = c('cciii')
-) %>%
-  mutate(date = as.Date(as.character(date), format = "%Y%m%d")) %>%
-  data.frame() %>%
-  arrange(date) %>%
-  select(-c(bia, n_devices)) %>%
-  distinct()
-
+# # Userbase: 1/1/2019 - 4/25/2023
+# 
+# filepath_bia <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/BIAs/'
+# 
+# userbase1 <- read_delim(
+#   paste0(filepath_bia, "bia_userbase/20230522_190855_00007_3yd5w_80fe0af5-8ae8-468e-ad40-4d1714548545.gz"),
+#   delim = '\001',
+#   col_names = c('bia', 'provider', 'n_devices', 'userbase', 'date'),
+#   col_types = c('cciii')
+# ) %>%
+#   mutate(date = as.Date(as.character(date), format = "%Y%m%d")) %>%
+#   data.frame() %>%
+#   arrange(date) %>%
+#   select(-c(bia, n_devices)) %>%
+#   distinct()
+# 
 filepath <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/employment_zones/'
+# 
+# # Userbase: 4/10/23 - 6/18/23
+# userbase2 <-
+#   list.files(path = paste0(filepath, 'userbase')) %>% 
+#   map_df(~read_delim(
+#     paste0(filepath, 'userbase/', .),
+#     delim = '\001',
+#     col_names = c('geography_name', 'userbase', 'event_date'),
+#     col_types = c('cii')
+#   )) %>%
+#   data.frame() %>%
+#   filter(geography_name == 'Ontario') %>%
+#   mutate(date = as.Date(as.character(event_date), format = "%Y%m%d"),
+#          provider = '190199') %>%
+#   arrange(date) %>%
+#   select(-c(event_date, geography_name))
 
-# Userbase: 4/10/23 - 6/18/23
-userbase2 <-
-  list.files(path = paste0(filepath, 'userbase')) %>% 
+# Toronto MSA
+s_filepath <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/sensitivity_analysis/'
+
+msa <-
+  list.files(path = paste0(s_filepath, 'MSA')) %>% 
   map_df(~read_delim(
-    paste0(filepath, 'userbase/', .),
+    paste0(s_filepath, 'MSA/', .),
     delim = '\001',
-    col_names = c('geography_name', 'userbase', 'event_date'),
-    col_types = c('cii')
+    col_names = c('msa_name', 'provider_id', 'approx_distinct_devices_count', 
+                  'event_date'),
+    col_types = c('ccii')
   )) %>%
   data.frame() %>%
-  filter(geography_name == 'Ontario') %>%
-  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d"),
-         provider = '190199') %>%
+  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
   arrange(date) %>%
-  select(-c(event_date, geography_name))
+  select(-event_date) %>%
+  filter((provider_id == '700199' & date < as.Date('2021-05-17')) | 
+           (provider_id == '190199' & date >= as.Date('2021-05-17'))) %>%
+  select(-provider_id) %>%
+  rename(msa_count = approx_distinct_devices_count) %>%
+  filter(msa_name == 'Toronto')
 
 # # Region-wide: 1/1/19 - 7/7/21
 # region1 <-
@@ -158,9 +180,43 @@ downtown0 <-
   arrange(date) %>%
   select(-event_date)
 
+town_centre_1 <-
+  list.files(path = paste0(filepath, 'town_centre_1')) %>%
+  map_df(~read_delim(
+    paste0(filepath, 'town_centre_1/', .),
+    delim = '\001',
+    col_names = c('precinct', 'approx_distinct_devices_count', 'event_date'),
+    col_types = c('cii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
+  arrange(date) %>%
+  select(-event_date) 
+
+town_centre_2 <-
+  list.files(path = paste0(filepath, 'town_centre_2')) %>%
+  map_df(~read_delim(
+    paste0(filepath, 'town_centre_2/', .),
+    delim = '\001',
+    col_names = c('precinct', 'approx_distinct_devices_count', 'event_date'),
+    col_types = c('cii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
+  arrange(date) %>%
+  select(-event_date) 
+
+#-----------------------------------------
+# Replace Town Centre
+#-----------------------------------------
+
+
+
 #-----------------------------------------
 # Load current downtown polygons
 #-----------------------------------------
+
+# UPDATE THIS WITH NEW DOWNTOWN DEFINITION!
 
 dp <- st_read("C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/current/study_area_downtowns.shp")
 
@@ -219,28 +275,28 @@ downtown <-
 
 head(downtown)
 
-#-----------------------------------------
-# Combine userbase data
-#-----------------------------------------
-
-head(userbase1)
-head(userbase2)
-
-range(userbase1$date)
-range(userbase2$date)
-
-userbase <- 
-  userbase1 %>% 
-  filter(date < as.Date('2023-04-10')) %>%
-  rbind(userbase2) %>%
-  filter(date < as.Date('2023-06-01') & # through end of May
-           # change providers at 5/17/21
-           ((provider == '700199' & date < as.Date('2021-05-17')) | 
-           (provider == '190199' & date >= as.Date('2021-05-17')))) %>%
-  select(-provider)
-
-head(userbase)
-range(userbase$date)
+# #-----------------------------------------
+# # Combine userbase data
+# #-----------------------------------------
+# 
+# head(userbase1)
+# head(userbase2)
+# 
+# range(userbase1$date)
+# range(userbase2$date)
+# 
+# userbase <- 
+#   userbase1 %>% 
+#   filter(date < as.Date('2023-04-10')) %>%
+#   rbind(userbase2) %>%
+#   filter(date < as.Date('2023-06-01') & # through end of May
+#            # change providers at 5/17/21
+#            ((provider == '700199' & date < as.Date('2021-05-17')) | 
+#            (provider == '190199' & date >= as.Date('2021-05-17')))) %>%
+#   select(-provider)
+# 
+# head(userbase)
+# range(userbase$date)
 
 #-----------------------------------------
 # Choose provider for region-wide data
