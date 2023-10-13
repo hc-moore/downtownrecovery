@@ -19,39 +19,7 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 # Load data
 #-----------------------------------------
 
-# # Userbase: 1/1/2019 - 4/25/2023
-# 
-# filepath_bia <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/BIAs/'
-# 
-# userbase1 <- read_delim(
-#   paste0(filepath_bia, "bia_userbase/20230522_190855_00007_3yd5w_80fe0af5-8ae8-468e-ad40-4d1714548545.gz"),
-#   delim = '\001',
-#   col_names = c('bia', 'provider', 'n_devices', 'userbase', 'date'),
-#   col_types = c('cciii')
-# ) %>%
-#   mutate(date = as.Date(as.character(date), format = "%Y%m%d")) %>%
-#   data.frame() %>%
-#   arrange(date) %>%
-#   select(-c(bia, n_devices)) %>%
-#   distinct()
-# 
 filepath <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/employment_zones/'
-# 
-# # Userbase: 4/10/23 - 6/18/23
-# userbase2 <-
-#   list.files(path = paste0(filepath, 'userbase')) %>% 
-#   map_df(~read_delim(
-#     paste0(filepath, 'userbase/', .),
-#     delim = '\001',
-#     col_names = c('geography_name', 'userbase', 'event_date'),
-#     col_types = c('cii')
-#   )) %>%
-#   data.frame() %>%
-#   filter(geography_name == 'Ontario') %>%
-#   mutate(date = as.Date(as.character(event_date), format = "%Y%m%d"),
-#          provider = '190199') %>%
-#   arrange(date) %>%
-#   select(-c(event_date, geography_name))
 
 # Toronto MSA
 s_filepath <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/sensitivity_analysis/'
@@ -74,51 +42,6 @@ msa <-
   select(-provider_id) %>%
   rename(msa_count = approx_distinct_devices_count) %>%
   filter(msa_name == 'Toronto')
-
-# # Region-wide: 1/1/19 - 7/7/21
-# region1 <-
-#   list.files(path = paste0(filepath, 'region_20190101_20210707')) %>% 
-#   map_df(~read_delim(
-#     paste0(filepath, 'region_20190101_20210707/', .),
-#     delim = '\001',
-#     col_names = c('ez', 'provider_id', 'approx_distinct_devices_count', 
-#                   'event_date'),
-#     col_types = c('ccii')
-#   )) %>%
-#   data.frame() %>%
-#   mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
-#   arrange(date) %>%
-#   select(-event_date)
-# 
-# # Region-wide: 7/7/21 - 6/27/23
-# region2 <-
-#   list.files(path = paste0(filepath, 'region_20210707_20230627')) %>% 
-#   map_df(~read_delim(
-#     paste0(filepath, 'region_20210707_20230627/', .),
-#     delim = '\001',
-#     col_names = c('ez', 'provider_id', 'approx_distinct_devices_count', 
-#                   'event_date'),
-#     col_types = c('ccii')
-#   )) %>%
-#   data.frame() %>%
-#   mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
-#   arrange(date) %>%
-#   select(-event_date)
-
-# # Region-wide: 1/1/19 - 6/18/23
-# region0 <-
-#   list.files(path = paste0(filepath, 'region_20190101_20230618')) %>% 
-#   map_df(~read_delim(
-#     paste0(filepath, 'region_20190101_20230618/', .),
-#     delim = '\001',
-#     col_names = c('ez', 'provider_id', 'approx_distinct_devices_count', 
-#                   'event_date'),
-#     col_types = c('ccii')
-#   )) %>%
-#   data.frame() %>%
-#   mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
-#   arrange(date) %>%
-#   select(-event_date)
 
 # Region-wide (outside city): 1/1/2019 - 5/31/2023
 region0 <-
@@ -167,23 +90,12 @@ city2 <-
 
 # Toronto downtown
 downtown0 <-
-  list.files(path = paste0(filepath, 'toronto_downtown')) %>%
-  map_df(~read_delim(
-    paste0(filepath, 'toronto_downtown/', .),
-    delim = '\001',
-    col_names = c('city', 'provider_id', 'approx_distinct_devices_count', 
-                  'event_date'),
-    col_types = c('ccii')
-  )) %>%
-  data.frame() %>%
-  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
-  arrange(date) %>%
-  select(-event_date)
+  # REPLACE WITH NEW QUERIED DOWNTOWN!!!!!
 
-town_centre_1 <-
-  list.files(path = paste0(filepath, 'town_centre_1')) %>%
+town_centre <-
+  list.files(path = paste0(filepath, 'town_centre_fixed')) %>%
   map_df(~read_delim(
-    paste0(filepath, 'town_centre_1/', .),
+    paste0(filepath, 'town_centre_fixed/', .),
     delim = '\001',
     col_names = c('precinct', 'approx_distinct_devices_count', 'event_date'),
     col_types = c('cii')
@@ -192,42 +104,20 @@ town_centre_1 <-
   mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
   arrange(date) %>%
   select(-event_date) 
-
-town_centre_2 <-
-  list.files(path = paste0(filepath, 'town_centre_2')) %>%
-  map_df(~read_delim(
-    paste0(filepath, 'town_centre_2/', .),
-    delim = '\001',
-    col_names = c('precinct', 'approx_distinct_devices_count', 'event_date'),
-    col_types = c('cii')
-  )) %>%
-  data.frame() %>%
-  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
-  arrange(date) %>%
-  select(-event_date) 
-
-#-----------------------------------------
-# Replace Town Centre
-#-----------------------------------------
-
-
 
 #-----------------------------------------
 # Load current downtown polygons
 #-----------------------------------------
 
-# UPDATE THIS WITH NEW DOWNTOWN DEFINITION!
+# UPDATE THIS WITH NEW DOWNTOWN DEFINITION!!!!!!!!!!!!!!!
 
-dp <- st_read("C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/current/study_area_downtowns.shp")
+dp <- st_read("C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/new_downtowns/HDBSCAN_downtowns.geojson") %>%
+  filter(city == 'Toronto')
 
-head(dp)
-
-dpt <- dp %>% 
-  filter(city == 'Toronto') %>% 
-  mutate(ez = 'Downtown') %>% 
-  select(ez)
+dpt <- dp[2,]
 
 dpt
+plot(dpt)
 
 #-----------------------------------------
 # Calculate downtown recovery rate
@@ -275,29 +165,6 @@ downtown <-
 
 head(downtown)
 
-# #-----------------------------------------
-# # Combine userbase data
-# #-----------------------------------------
-# 
-# head(userbase1)
-# head(userbase2)
-# 
-# range(userbase1$date)
-# range(userbase2$date)
-# 
-# userbase <- 
-#   userbase1 %>% 
-#   filter(date < as.Date('2023-04-10')) %>%
-#   rbind(userbase2) %>%
-#   filter(date < as.Date('2023-06-01') & # through end of May
-#            # change providers at 5/17/21
-#            ((provider == '700199' & date < as.Date('2021-05-17')) | 
-#            (provider == '190199' & date >= as.Date('2021-05-17')))) %>%
-#   select(-provider)
-# 
-# head(userbase)
-# range(userbase$date)
-
 #-----------------------------------------
 # Choose provider for region-wide data
 #-----------------------------------------
@@ -314,6 +181,18 @@ range(r7$date)
 range(r1$date)
 range(r2$date)
 
+r_export <-
+  region0 %>%
+  mutate(
+    date_range_start = floor_date(
+      date,
+      unit = "week",
+      week_start = getOption("lubridate.week.start", 1))) %>%
+  # Calculate # of devices by week and provider
+  group_by(ez, date_range_start, provider_id) %>%
+  summarize(n_devices = sum(approx_distinct_devices_count, na.rm = T)) %>%
+  ungroup()
+
 rnew <- region0 %>%
   mutate(
     date_range_start = floor_date(
@@ -325,6 +204,11 @@ rnew <- region0 %>%
   summarize(n_devices = sum(approx_distinct_devices_count, na.rm = T)) %>%
   ungroup() %>%
   mutate(mytext = paste0('<br>Week of ', date_range_start, ': ', n_devices))
+
+head(rnew)
+unique(rnew$provider_id)
+
+head(rnew)
 
 plot_ly() %>%
   add_lines(data = rnew %>% filter(provider_id == '700199'),
@@ -376,31 +260,6 @@ head(region)
 range(region$date)
 n_distinct(region$ez)
 
-# #-----------------------------------------
-# # Combine region-wide data
-# #-----------------------------------------
-# 
-# head(region1)
-# head(region2)
-# 
-# range(region1$date)
-# range(region2$date)
-# region <-
-#   region1 %>%
-#   filter(date < as.Date('2021-07-07')) %>%
-#   rbind(region2) %>%
-#   filter(date < as.Date('2023-06-01') & # through end of May
-#            # change providers at 5/17/21
-#            ((provider_id == '700199' & date < as.Date('2021-05-17')) | 
-#               (provider_id == '190199' & date >= as.Date('2021-05-17')))) %>%
-#   mutate(ez = as.character(round(as.integer(ez), 0))) %>%
-#   select(-provider_id) %>%
-#   rename(n_devices = approx_distinct_devices_count) %>%
-#   left_join(userbase) # add userbase
-# 
-# head(region)
-# range(region$date)
-
 #-----------------------------------------
 # Combine city-wide data
 #-----------------------------------------
@@ -415,11 +274,7 @@ city0 <-
   city1 %>% 
   filter(date < as.Date('2022-08-12')) %>%
   rbind(city2) %>%
-  filter(date < as.Date('2023-06-01') & # through end of May
-           # change providers at 5/17/21
-           ((provider_id == '700199' & date < as.Date('2021-05-17')) | 
-           (provider_id == '190199' & date >= as.Date('2021-05-17')))) %>%
-  select(-provider_id) %>%
+  filter(date < as.Date('2023-06-01')) %>% # through end of May
   mutate(
     ez = big_area,
     ez = recode(ez, 
@@ -479,6 +334,54 @@ city <- city0 %>%
 head(city)
 range(city$date)
 
+city_export <- city0 %>%
+  mutate(
+    date_range_start = floor_date(
+      date,
+      unit = "week",
+      week_start = getOption("lubridate.week.start", 1))) %>%
+  # Calculate # of devices by week and provider
+  group_by(ez, date_range_start, provider_id) %>%
+  summarize(n_devices = sum(approx_distinct_devices_count, na.rm = T)) %>%
+  ungroup()
+
+head(city_export)
+
+#-----------------------------------------
+# Create Town Centre data for export
+#-----------------------------------------
+
+tc_export <-
+  town_centre %>%
+  mutate(
+    date_range_start = floor_date(
+      date,
+      unit = "week",
+      week_start = getOption("lubridate.week.start", 1))) %>%
+  rename(ez = precinct) %>%
+  # Calculate # of devices by week and provider
+  group_by(ez, date_range_start, provider_id) %>%
+  summarize(n_devices = sum(approx_distinct_devices_count, na.rm = T)) %>%
+  ungroup()  
+
+head(tc_export)
+
+unique(tc_export$ez)
+
+#-----------------------------------------
+# Export for imputation
+#-----------------------------------------
+
+head(r_export)
+head(city_export)
+head(tc_export)
+
+all_export <- rbind(r_export, city_export, tc_export)
+
+write.csv(all_export,
+          "C:/Users/jpg23/UDP/downtown_recovery/employment_zones/for_imputation.csv",
+          row.names = F)
+
 #-----------------------------------------
 # Look at trends for all 3 datasets
 #-----------------------------------------
@@ -508,6 +411,11 @@ all_plotly
 #-----------------------------------------
 # Add spatial data
 #-----------------------------------------
+
+# Load new Town Centre shapefile
+new_tc <- st_read("C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/town_centre_split.geojson")
+
+new_tc
 
 # Load city shapefile
 city_sf <- st_read("C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/final_city_sf_dissolved.geojson") %>%
