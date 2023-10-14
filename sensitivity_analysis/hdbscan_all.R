@@ -73,6 +73,10 @@ dt <-
            )) %>%
   rename(downtown_devices = approx_distinct_devices_count)
 
+head(dt)
+n_distinct(dt$city)
+unique(dt$city)
+
 # Load MSA data
 #-----------------------------------------
 
@@ -89,11 +93,14 @@ msa <-
   mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
   arrange(date) %>%
   select(-event_date) %>%
-  rename(msa_count = approx_distinct_devices_count)
+  rename(msa_count = approx_distinct_devices_count) %>%
+  filter(provider_id != '230599')
 
 msa_names <- read.csv('C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/msa_names.csv')
 
 head(msa)
+unique(msa$provider_id)
+
 head(msa_names)
 
 # Join downtown & MSA data
@@ -135,6 +142,7 @@ for_imputation <-
   mutate(normalized = downtown_devices/msa_count)
 
 head(for_imputation)
+range(for_imputation$date_range_start)
 
 write.csv(for_imputation,
           'C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/hdbscan_dt_for_imputation.csv',
@@ -168,6 +176,13 @@ trend_by_prov
 
 
 
+
+
+# to calculate rankings:
+
+# 1. sum downtown unique devices and MSA unique devices by city and year
+# 2. calculate normalized count for overall time period by dividing downtown/MSA for each year (2019 and 2023)
+# 3. divide normalized 2023 by normalized 2019
 
 # probably need to adapt this:
 
