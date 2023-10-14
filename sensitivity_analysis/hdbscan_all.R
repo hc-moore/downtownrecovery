@@ -145,6 +145,8 @@ write.csv(for_imputation,
 
 # COMMENT OUT ALL THE ABOVE AND JUST RUN BELOW ONCE I HAVE IMPUTED DATA!!!!
 
+imputed <- ???
+
 # Plot
 trend_by_prov <- plot_ly() %>%
   add_lines(data = imputed,
@@ -161,4 +163,29 @@ trend_by_prov <- plot_ly() %>%
                       tickformat = "%b %Y"),
          yaxis = list(title = "Normalized", zerolinecolor = "#ffff",
                       ticksuffix = "  "))
+
 trend_by_prov
+
+
+
+
+# probably need to adapt this:
+
+rq <-
+  imputed %>%
+  mutate(week_num = isoweek(date_range_start), 
+         year = year(date_range_start)) %>%
+  select(-date_range_start) %>%
+  pivot_wider(
+    id_cols = c('week_num', 'city'),
+    names_from = 'year',
+    names_prefix = 'ntv',
+    values_from = 'normalized') %>%
+  mutate(rec2023 = ntv2023/ntv2019) %>%
+  select(-starts_with('ntv')) %>%
+  pivot_longer(
+    cols = rec2023,
+    names_to = 'year',
+    values_to = 'rq')
+
+# ?????

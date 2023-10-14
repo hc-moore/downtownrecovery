@@ -37,11 +37,9 @@ msa <-
   mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
   arrange(date) %>%
   select(-event_date) %>%
-  filter((provider_id == '700199' & date < as.Date('2021-05-17')) | 
-           (provider_id == '190199' & date >= as.Date('2021-05-17'))) %>%
-  select(-provider_id) %>%
   rename(msa_count = approx_distinct_devices_count) %>%
-  filter(msa_name == 'Toronto')
+  filter(msa_name == 'Toronto') %>%
+  select(-msa_name)
 
 # Region-wide (outside city): 1/1/2019 - 5/31/2023
 region0 <-
@@ -97,7 +95,8 @@ town_centre <-
   map_df(~read_delim(
     paste0(filepath, 'town_centre_fixed/', .),
     delim = '\001',
-    col_names = c('precinct', 'approx_distinct_devices_count', 'event_date'),
+    col_names = c('precinct', 'provider_id', 'approx_distinct_devices_count', 
+                  'event_date'),
     col_types = c('cii')
   )) %>%
   data.frame() %>%
@@ -109,12 +108,8 @@ town_centre <-
 # Load current downtown polygons
 #-----------------------------------------
 
-# UPDATE THIS WITH NEW DOWNTOWN DEFINITION!!!!!!!!!!!!!!!
-
-dp <- st_read("C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/new_downtowns/HDBSCAN_downtowns.geojson") %>%
+dpt <- st_read("C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/new_downtowns/HDBSCAN_downtowns.geojson") %>%
   filter(city == 'Toronto')
-
-dpt <- dp[2,]
 
 dpt
 plot(dpt)
@@ -123,142 +118,75 @@ plot(dpt)
 # Calculate downtown recovery rate
 #-----------------------------------------
 
-dnew <- downtown0 %>%
-  mutate(
-    date_range_start = floor_date(
-      date,
-      unit = "week",
-      week_start = getOption("lubridate.week.start", 1))) %>%
-  # Calculate # of devices by week and provider
-  group_by(date_range_start, provider_id) %>%
-  summarize(n_devices = sum(approx_distinct_devices_count, na.rm = T)) %>%
-  ungroup() %>%
-  mutate(mytext = paste0('<br>Week of ', date_range_start, ': ', n_devices))
+# DO THIS WHEN I HAVE THE NEW DOWNTOWN DATA!
 
-plot_ly() %>%
-  add_lines(data = dnew %>% filter(provider_id == '700199'),
-            x = ~date_range_start, y = ~n_devices,
-            name = "700199",
-            opacity = .9,
-            text = ~mytext,
-            line = list(shape = "linear", color = 'purple')) %>%
-  add_lines(data = dnew %>% filter(provider_id == '190199'),
-            x = ~date_range_start, y = ~n_devices,
-            name = "190199",
-            opacity = .8,
-            text = ~mytext,
-            line = list(shape = "linear", color = 'darkgreen')) %>%
-  add_lines(data = dnew %>% filter(provider_id == '230599'),
-            x = ~date_range_start, y = ~n_devices,
-            name = "230599",
-            opacity = .9,
-            text = ~mytext,
-            line = list(shape = "linear", color = 'orange'))
 
-downtown <-
-  downtown0 %>%
-  filter(((provider_id == '700199' & date < as.Date('2021-05-17')) |
-            (provider_id == '190199' & date >= as.Date('2021-05-17')))) %>%
-  select(-c(provider_id, city)) %>%
-  rename(n_devices = approx_distinct_devices_count) %>%
-  left_join(userbase)
 
-head(downtown)
+# dnew <- downtown0 %>%
+#   mutate(
+#     date_range_start = floor_date(
+#       date,
+#       unit = "week",
+#       week_start = getOption("lubridate.week.start", 1))) %>%
+#   # Calculate # of devices by week and provider
+#   group_by(date_range_start, provider_id) %>%
+#   summarize(n_devices = sum(approx_distinct_devices_count, na.rm = T)) %>%
+#   ungroup() %>%
+#   mutate(mytext = paste0('<br>Week of ', date_range_start, ': ', n_devices))
+# 
+# plot_ly() %>%
+#   add_lines(data = dnew %>% filter(provider_id == '700199'),
+#             x = ~date_range_start, y = ~n_devices,
+#             name = "700199",
+#             opacity = .9,
+#             text = ~mytext,
+#             line = list(shape = "linear", color = 'purple')) %>%
+#   add_lines(data = dnew %>% filter(provider_id == '190199'),
+#             x = ~date_range_start, y = ~n_devices,
+#             name = "190199",
+#             opacity = .8,
+#             text = ~mytext,
+#             line = list(shape = "linear", color = 'darkgreen')) %>%
+#   add_lines(data = dnew %>% filter(provider_id == '230599'),
+#             x = ~date_range_start, y = ~n_devices,
+#             name = "230599",
+#             opacity = .9,
+#             text = ~mytext,
+#             line = list(shape = "linear", color = 'orange'))
+# 
+# downtown <-
+#   downtown0 %>%
+#   filter(((provider_id == '700199' & date < as.Date('2021-05-17')) |
+#             (provider_id == '190199' & date >= as.Date('2021-05-17')))) %>%
+#   select(-c(provider_id, city)) %>%
+#   rename(n_devices = approx_distinct_devices_count) %>%
+#   left_join(userbase)
+# 
+# head(downtown)
 
 #-----------------------------------------
-# Choose provider for region-wide data
+# Aggregate region-wide data
 #-----------------------------------------
 
 head(region0)
 range(region0$date)
 unique(region0$provider_id)
 
-r7 <- region0 %>% filter(provider_id == '700199')
-r1 <- region0 %>% filter(provider_id == '190199')
-r2 <- region0 %>% filter(provider_id == '230599')
-
-range(r7$date)
-range(r1$date)
-range(r2$date)
-
 r_export <-
   region0 %>%
+  filter(provider_id != '230599') %>%
   mutate(
     date_range_start = floor_date(
       date,
       unit = "week",
       week_start = getOption("lubridate.week.start", 1))) %>%
-  # Calculate # of devices by week and provider
   group_by(ez, date_range_start, provider_id) %>%
   summarize(n_devices = sum(approx_distinct_devices_count, na.rm = T)) %>%
-  ungroup()
-
-rnew <- region0 %>%
-  mutate(
-    date_range_start = floor_date(
-      date,
-      unit = "week",
-      week_start = getOption("lubridate.week.start", 1))) %>%
-  # Calculate # of devices by week and provider
-  group_by(date_range_start, provider_id) %>%
-  summarize(n_devices = sum(approx_distinct_devices_count, na.rm = T)) %>%
   ungroup() %>%
-  mutate(mytext = paste0('<br>Week of ', date_range_start, ': ', n_devices))
+  data.frame()
 
-head(rnew)
-unique(rnew$provider_id)
-
-head(rnew)
-
-plot_ly() %>%
-  add_lines(data = rnew %>% filter(provider_id == '700199'),
-            x = ~date_range_start, y = ~n_devices,
-            name = "700199",
-            opacity = .9,
-            text = ~mytext,
-            line = list(shape = "linear", color = 'purple')) %>%
-  add_lines(data = rnew %>% filter(provider_id == '190199'),
-            x = ~date_range_start, y = ~n_devices,
-            name = "190199",
-            opacity = .8,
-            text = ~mytext,
-            line = list(shape = "linear", color = 'darkgreen')) %>%
-  add_lines(data = rnew %>% filter(provider_id == '230599'),
-            x = ~date_range_start, y = ~n_devices,
-            name = "230599",
-            opacity = .9,
-            text = ~mytext,
-            line = list(shape = "linear", color = 'orange'))
-
-r1may <- r1 %>% 
-  filter(date >= as.Date('2023-05-01')) %>% 
-  group_by(date) %>%
-  summarize(n_devices = sum(approx_distinct_devices_count, na.rm = T))
-
-head(r1may)
-
-plot_ly() %>%
-  add_lines(data = r1may,
-            x = ~date, y = ~n_devices,
-            name = "190199",
-            opacity = .9,
-            line = list(shape = "linear", color = 'darkgreen'))
-
-region <-
-  region0 %>%
-  filter(date < as.Date('2023-06-01') & # through end of May
-           # change providers at 5/17/21
-           ((provider_id == '700199' & date < as.Date('2021-05-17')) |
-              (provider_id == '190199' & date >= as.Date('2021-05-17')))) %>%
-  mutate(ez = as.character(round(as.integer(ez), 0))) %>%
-  select(-provider_id) %>%
-  rename(n_devices = approx_distinct_devices_count) %>%
-  # filter(!ez %in% c('8', '5')) %>% # remove EZs
-  left_join(userbase) # add userbase
-
-head(region)
-range(region$date)
-n_distinct(region$ez)
+head(r_export)
+unique(r_export$provider_id)
 
 #-----------------------------------------
 # Combine city-wide data
@@ -324,16 +252,6 @@ city0 <-
     '17'='Don Mills'
   )) 
 
-city <- city0 %>%
-  # Aggregate city data to 'big_area'
-  dplyr::group_by(ez, date) %>%
-  dplyr::summarize(n_devices = sum(approx_distinct_devices_count, na.rm = T)) %>%
-  data.frame() %>%
-  left_join(userbase) # add userbase
-
-head(city)
-range(city$date)
-
 city_export <- city0 %>%
   mutate(
     date_range_start = floor_date(
@@ -362,10 +280,10 @@ tc_export <-
   # Calculate # of devices by week and provider
   group_by(ez, date_range_start, provider_id) %>%
   summarize(n_devices = sum(approx_distinct_devices_count, na.rm = T)) %>%
-  ungroup()  
+  ungroup() %>%
+  data.frame()
 
 head(tc_export)
-
 unique(tc_export$ez)
 
 #-----------------------------------------
@@ -376,237 +294,260 @@ head(r_export)
 head(city_export)
 head(tc_export)
 
-all_export <- rbind(r_export, city_export, tc_export)
+# Load full names of region EZs
+region_sf0 <- st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/PSEZ_with_ID.geojson') %>%
+  st_transform(st_crs(dpt))
 
-write.csv(all_export,
+region_sf <- region_sf0 %>% filter(Precinct != 'Outside GTHA study area')
+
+head(region_sf)
+
+r_export1 <-
+  r_export %>%
+  inner_join(
+    region_sf %>%
+      st_drop_geometry() %>%
+      select(ez, Precinct) %>%
+      mutate(ez = as.character(ez)),
+    by = 'ez'
+  ) %>%
+  select(-ez) %>%
+  rename(ez = Precinct) %>%
+  filter(ez != 'Town Centre') # replace Town Centre with new 4 polygons!
+
+head(r_export1)
+r_export1 %>% filter(is.na(ez)) # should be no rows
+
+all_export <- rbind(r_export1, city_export, tc_export)
+
+head(all_export)
+
+# Group by *new* precinct
+
+new_precincts <- read.csv("C:/Users/jpg23/UDP/downtown_recovery/employment_zones/toronto-updated-precinct-list.csv")
+
+head(new_precincts)
+
+all_export1 <-
+  all_export %>%
+  left_join(new_precincts %>% rename(ez = Employment.precinct)) %>%
+  rename(new_ez = Consolidated.precincts) %>%
+  mutate(new_ez = case_when(
+    ez == 'City of Toronto Port Lands' ~ 'Port Lands and South of Eastern',
+    ez == 'Churchill Meadows Em' ~ 'Churchill Meadows',
+    ez == '21_Town Centre_Allstate' ~ 'Allstate',
+    ez %in% c('21_Town Centre_Denison Steeles - Fourteenth Avenue',
+              '69_Town Centre_Denison Steeles - Fourteenth Avenue') ~ 
+      'Denison Steeles - Fourteenth Avenue',
+    ez == '69_Town Centre_Riseborough' ~ 'Riseborough',
+    TRUE ~ new_ez
+  )) %>%
+  filter(ez != 'North Leslie')
+
+head(all_export1)
+
+missing_new_ez <- all_export1 %>% filter(is.na(new_ez))
+unique(missing_new_ez$ez)
+
+unique(all_export1$new_ez)
+
+all_export2 <-
+  all_export1 %>%
+  group_by(new_ez, provider_id, date_range_start) %>%
+  summarize(n_devices = sum(n_devices, na.rm = T)) %>%
+  ungroup() %>%
+  data.frame()
+
+head(all_export2)
+
+head(msa)
+
+# Normalize by MSA
+
+msa_weekly <- msa %>%
+  filter(provider_id != '230599') %>%
+  mutate(
+    date_range_start = floor_date(
+      date,
+      unit = "week",
+      week_start = getOption("lubridate.week.start", 1))) %>%
+  group_by(date_range_start, provider_id) %>%
+  summarize(msa_count = sum(msa_count, na.rm = T)) %>%
+  ungroup() %>%
+  data.frame()
+
+head(msa_weekly)
+unique(msa_weekly$provider_id)
+
+head(all_export2)
+
+all_export_final <-
+  all_export2 %>%
+  left_join(msa_weekly, by = c('date_range_start', 'provider_id')) %>%
+  mutate(normalized = n_devices/msa_count) %>%
+  select(-c(n_devices, msa_count))
+
+head(all_export_final)
+unique(all_export_final$new_ez)
+
+write.csv(all_export_final,
           "C:/Users/jpg23/UDP/downtown_recovery/employment_zones/for_imputation.csv",
           row.names = F)
 
 #-----------------------------------------
-# Look at trends for all 3 datasets
+# Explore non-imputed data
 #-----------------------------------------
 
-all_plotly <- 
+# all_plotly <- 
+#   plot_ly() %>%
+#   add_lines(data = msa_weekly %>% filter(provider_id == '190199'), 
+#             x = ~date_range_start, y = ~msa_count, 
+#             name = "Toronto MSA  (provider 190199)",
+#             opacity = .9,
+#             line = list(shape = "linear", color = '#d6ad09')) %>%
+#   add_lines(data = msa_weekly %>% filter(provider_id == '700199'), 
+#             x = ~date_range_start, y = ~msa_count, 
+#             name = "Toronto MSA (provider 700199)",
+#             opacity = .9,
+#             line = list(shape = "linear", color = '#8c0a03')) %>%
+#   add_lines(data = all_export2 %>% filter(provider_id == '190199'), 
+#             x = ~date_range_start, y = ~n_devices,
+#             name = ~paste0(new_ez, ": provider 190199"),
+#             opacity = .3,
+#             split = ~new_ez,
+#             line = list(shape = "linear", color = 'orange')) %>%
+#   add_lines(data = all_export2 %>% filter(provider_id == '700199'), 
+#             x = ~date_range_start, y = ~n_devices,
+#             name = ~paste0(new_ez, ": provider 700199"),
+#             opacity = .3,
+#             split = ~new_ez,
+#             line = list(shape = "linear", color = 'purple')) %>%
+#   layout(title = "Trends by area",
+#          xaxis = list(title = "Date", zerolinecolor = "#ffff", 
+#                       tickformat = "%b %Y"),
+#          yaxis = list(title = "Devices", zerolinecolor = "#ffff",
+#                       ticksuffix = "  "))
+# 
+# all_plotly
+
+norm_plotly <-
   plot_ly() %>%
-  add_lines(data = userbase, x = ~date, y = ~userbase, 
-            name = "Userbase",
-            opacity = .9,
+  add_lines(data = all_export_final %>% filter(provider_id == '190199'), 
+            x = ~date_range_start, y = ~normalized, 
+            name = ~paste0(new_ez, ":  provider 190199"),
+            opacity = .7,
+            split = ~new_ez,
             line = list(shape = "linear", color = '#d6ad09')) %>%
-  add_lines(data = city, x = ~date, y = ~n_devices,
-            name = "City",
-            opacity = .3,
+  add_lines(data = all_export_final %>% filter(provider_id == '700199'), 
+            x = ~date_range_start, y = ~normalized, 
+            name = ~paste0(new_ez, ": provider 700199"),
+            opacity = .7,
+            split = ~new_ez,
             line = list(shape = "linear", color = '#8c0a03')) %>%
-  add_lines(data = region, x = ~date, y = ~n_devices,
-            name = "Region", 
-            opacity = .3,
-            line = list(shape = "linear", color = '#6bc0c2')) %>%
-  layout(title = "Trends by area",
+  layout(title = "Normalized trends by consolidated EZ",
          xaxis = list(title = "Date", zerolinecolor = "#ffff", 
                       tickformat = "%b %Y"),
          yaxis = list(title = "Devices", zerolinecolor = "#ffff",
                       ticksuffix = "  "))
 
-all_plotly
+norm_plotly
+
+##########################################
+# LOAD IMPUTED DATA!!! USE IT BELOW
+##########################################
+
+imputed <- ??? # from byeonghwa
+
+imputed_190 <- imputed %>% filter(provider_id=='190199')
+
+
+
+
+
+
+
+
+# EVERYTHING ELSE -- GO THROUGH CAREFULLY AND MAKE SURE IT STILL APPLIES.
+# MIGHT NEED TO ADAPT THINGS (like changing 'ez' to 'new_ez')
+
+
+
+
+
+
+
+
+
+
+#-----------------------------------------
+# Explore imputed data
+#-----------------------------------------
+
+norm_plotly_imp <-
+  plot_ly() %>%
+  add_lines(data = imputed_190, 
+            x = ~date_range_start, y = ~normalized, 
+            name = ~paste0(new_ez, ":  provider 190199"),
+            opacity = .7,
+            split = ~new_ez,
+            line = list(shape = "linear", color = '#d6ad09')) %>%
+  add_lines(data = imputed %>% filter(provider_id == '700199'), 
+            x = ~date_range_start, y = ~normalized, 
+            name = ~paste0(new_ez, ": provider 700199"),
+            opacity = .7,
+            split = ~new_ez,
+            line = list(shape = "linear", color = '#8c0a03')) %>%
+  layout(title = "Normalized trends by consolidated EZ - IMPUTED",
+         xaxis = list(title = "Date", zerolinecolor = "#ffff", 
+                      tickformat = "%b %Y"),
+         yaxis = list(title = "Devices", zerolinecolor = "#ffff",
+                      ticksuffix = "  "))
+
+norm_plotly_imp
 
 #-----------------------------------------
 # Add spatial data
 #-----------------------------------------
 
-# Load new Town Centre shapefile
-new_tc <- st_read("C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/town_centre_split.geojson")
+new_sf <- st_read("C:/Users/jpg23/UDP/downtown_recovery/employment_zones/gtha-da-2021_fixed/gtha-da-2021_fixed.shp") %>%
+  filter(!is.na(Precinct)) %>%
+  rename(new_ez = Precinct) %>%
+  select(-DAUID) %>%
+  group_by(new_ez) %>%
+  summarize()
 
-new_tc
+head(new_sf)
+plot(new_sf)
 
-# Load city shapefile
-city_sf <- st_read("C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/final_city_sf_dissolved.geojson") %>%
-  left_join(city0 %>% select(big_area, ez) %>% distinct(), by = c('big_area')) %>%
-  select(ez, geometry) %>%
-  st_transform(st_crs(dpt))
+sf_ez <- unique(new_sf$new_ez)
+imp_ez <- unique(imputed_190$new_ez)
 
-head(city_sf)
-
-# st_write(city_sf, "C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/city_sf.shp")
-
-# Load region shapefile
-region_sf0 <- st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/PSEZ_with_ID.geojson') %>%
-  st_transform(st_crs(dpt))
-
-# region_sf <- 
-#   st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/region_clipped.geojson') %>% 
-#   mutate(ez = paste0(MUNICIPALI, ': ', PSEZ_ID)) %>%
-#   st_transform(st_crs(city_sf)) %>%
-#   filter(!ez %in% c('8: TORONTO', '5: TORONTO'))
-
-head(region_sf0)
-n_distinct(region_sf0$Precinct)
-
-outside <- region_sf0 %>% filter(Precinct == 'Outside GTHA study area')
-outside
-plot(outside$geometry)
-
-region_sf <- region_sf0 %>% filter(Precinct != 'Outside GTHA study area')
-
-head(region_sf)
-n_distinct(region_sf$Precinct)
-
-cr_sf <- rbind(city_sf, region_sf %>% select(ez = Precinct), dpt)
-
-head(cr_sf)
-unique(cr_sf$ez)
-plot(cr_sf$geometry)
+setdiff(sf_ez, imp_ez)
+setdiff(imp_ez, sf_ez)
 
 # Load Toronto city boundary
-toronto <- get_census(
-  dataset='CA21', regions=list(CMA="35535"),
-  level='CSD', quiet = TRUE, 
-  geo_format = 'sf', labels = 'short') %>%
-  filter(str_detect(name, 'Toronto')) %>%
-  select(geometry) %>%
-  st_transform(st_crs(dpt))
+toronto <- st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/toronto.geojson')
 
-# st_write(
-#   toronto,
-#   'C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/toronto.geojson')
+plot(toronto)
 
-# pal <- c("turquoise", "purple")
-#
-# region_pal <- colorFactor(
-#   pal,
-#   domain = region_sf$in_tor,
-#   na.color = 'transparent'
-# )
-# 
-# interactive_region <-
-#   leaflet(
-#     options = leafletOptions(minZoom = 7, maxZoom = 18, zoomControl = FALSE)
-#   ) %>%
-#   # setView(lat = 28.72, lng = -81.97, zoom = 7) %>%
-#   addMapPane(name = "munic", zIndex = 410) %>%
-#   addMapPane(name = "polygons", zIndex = 420) %>%
-#   addProviderTiles("CartoDB.PositronNoLabels") %>%
-#   addProviderTiles("Stamen.TonerLines",
-#                    options = providerTileOptions(opacity = 0.3),
-#                    group = "Roads"
-#   ) %>%
-#   addPolygons(
-#     data = region_sf,
-#     label = ~label,
-#     labelOptions = labelOptions(textsize = "12px"),
-#     fillOpacity = .6,
-#     stroke = TRUE,
-#     color = ~region_pal(in_tor),
-#     weight = 2,
-#     opacity = 1,
-#     highlightOptions =
-#       highlightOptions(
-#         color = "black",
-#         weight = 3,
-#         bringToFront = TRUE),
-#     options = pathOptions(pane = "polygons")
-#   ) %>%
-#   addPolygons(
-#     data = city_sf,
-#     label = ~ez,
-#     labelOptions = labelOptions(textsize = "12px"),
-#     fillOpacity = .6,
-#     stroke = TRUE,
-#     weight = 2,
-#     opacity = 1,
-#     color = "orange",
-#     highlightOptions =
-#       highlightOptions(
-#         color = "black",
-#         weight = 3,
-#         bringToFront = TRUE),
-#     options = pathOptions(pane = "polygons")
-#   ) %>%
-#   addPolygons(
-#     data = toronto,
-#     fillOpacity = 0,
-#     stroke = TRUE,
-#     weight = 1,
-#     opacity = 1,
-#     color = "black",
-#     highlightOptions =
-#       highlightOptions(
-#         color = "black",
-#         weight = 3,
-#         bringToFront = TRUE),
-#     options = pathOptions(pane = "munic")
-#   )
-# 
-# interactive_region
+final_sf <-
+  new_sf %>%
+  left_join(imputed_190)
 
-#-----------------------------------------
-# Combine city- and region-wide data
-#-----------------------------------------
-
-nrow(city)
-nrow(region)
-
-cr <- rbind(
-  city, 
-  region_sf %>%
-    mutate(ez = as.character(ez)) %>%
-    st_drop_geometry() %>%
-    select(ez, Precinct) %>%
-    left_join(region) %>%
-    select(ez = Precinct, date, n_devices, userbase),
-  downtown
-)
-
-# cr <- rbind(
-#   city, 
-#   region %>%
-#     left_join(
-#       region_sf %>% 
-#         st_drop_geometry() %>% 
-#         rename(new_ez = ez) %>%
-#         mutate(ez = as.character(PSEZ_ID)) %>%
-#         select(ez, new_ez)
-#     ) %>%
-#     select(ez = new_ez, n_devices, date, userbase)
-#   )
-
-nrow(cr)
-head(cr)
-tail(cr)
-unique(cr$ez)
-
-cr %>% filter(ez == 'Outside GTHA study area') # should be none
+head(final_sf)
 
 #-----------------------------------------
 # Create plots
 #-----------------------------------------
 
-rec_rate_cr <-
-  cr %>%
-  # Determine week and year # for each date
+all_cr_for_plot <-
+  imputed_190 %>%
   mutate(
-    date_range_start = floor_date(
-      date,
-      unit = "week",
-      week_start = getOption("lubridate.week.start", 1)),
     week_num = isoweek(date_range_start),
     year = year(date_range_start)) %>%
-  # Calculate # of devices by big_area, week and year
-  dplyr::group_by(ez, year, week_num) %>%
-  dplyr::summarize(n_devices = sum(n_devices, na.rm = T),
-            userbase = sum(userbase, na.rm = T)) %>%
-  dplyr::ungroup() 
-
-head(rec_rate_cr)
-
-all_cr_for_plot <-
-  rec_rate_cr %>%
-  filter(year > 2018) %>%
-  dplyr::group_by(year, week_num) %>%
-  dplyr::summarize(n_devices = sum(n_devices, na.rm = T),
-            userbase = sum(userbase, na.rm = T)) %>%
-  dplyr::ungroup() %>%
-  mutate(normalized = n_devices/userbase) %>%
+  select(-date_range_start) %>%
   pivot_wider(
-    id_cols = c('week_num'),
+    id_cols = c('new_ez', 'week_num'),
     names_from = 'year',
     names_prefix = 'ntv',
     values_from = 'normalized') %>%
