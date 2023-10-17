@@ -25,11 +25,11 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 # s_filepath <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/sensitivity_analysis/'
 # 
 # msa <-
-#   list.files(path = paste0(s_filepath, 'MSA')) %>% 
+#   list.files(path = paste0(s_filepath, 'MSA')) %>%
 #   map_df(~read_delim(
 #     paste0(s_filepath, 'MSA/', .),
 #     delim = '\001',
-#     col_names = c('msa_name', 'provider_id', 'approx_distinct_devices_count', 
+#     col_names = c('msa_name', 'provider_id', 'approx_distinct_devices_count',
 #                   'event_date'),
 #     col_types = c('ccii')
 #   )) %>%
@@ -43,11 +43,11 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 # 
 # # Region-wide (outside city): 1/1/2019 - 5/31/2023
 # region0 <-
-#   list.files(path = paste0(filepath, 'laura_region')) %>% 
+#   list.files(path = paste0(filepath, 'laura_region')) %>%
 #   map_df(~read_delim(
 #     paste0(filepath, 'laura_region/', .),
 #     delim = '\001',
-#     col_names = c('ez', 'provider_id', 'approx_distinct_devices_count', 
+#     col_names = c('ez', 'provider_id', 'approx_distinct_devices_count',
 #                   'event_date'),
 #     col_types = c('ccii')
 #   )) %>%
@@ -62,7 +62,7 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 #   map_df(~read_delim(
 #     paste0(filepath, 'city_20190101_20220812/', .),
 #     delim = '\001',
-#     col_names = c('small_area', 'big_area', 'provider_id', 
+#     col_names = c('small_area', 'big_area', 'provider_id',
 #                   'approx_distinct_devices_count', 'event_date'),
 #     col_types = c('cccii')
 #   )) %>%
@@ -77,7 +77,7 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 #   map_df(~read_delim(
 #     paste0(filepath, 'city_20220812_20230629/', .),
 #     delim = '\001',
-#     col_names = c('small_area', 'big_area', 'provider_id', 
+#     col_names = c('small_area', 'big_area', 'provider_id',
 #                   'approx_distinct_devices_count', 'event_date'),
 #     col_types = c('cccii')
 #   )) %>%
@@ -95,14 +95,14 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 #   map_df(~read_delim(
 #     paste0(filepath, 'town_centre_fixed/', .),
 #     delim = '\001',
-#     col_names = c('precinct', 'provider_id', 'approx_distinct_devices_count', 
+#     col_names = c('precinct', 'provider_id', 'approx_distinct_devices_count',
 #                   'event_date'),
 #     col_types = c('cii')
 #   )) %>%
 #   data.frame() %>%
 #   mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
 #   arrange(date) %>%
-#   select(-event_date) 
+#   select(-event_date)
 # 
 # #-----------------------------------------
 # # Calculate downtown recovery rate
@@ -123,7 +123,7 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 # #   summarize(n_devices = sum(approx_distinct_devices_count, na.rm = T)) %>%
 # #   ungroup() %>%
 # #   mutate(mytext = paste0('<br>Week of ', date_range_start, ': ', n_devices))
-# # 
+# #
 # # plot_ly() %>%
 # #   add_lines(data = dnew %>% filter(provider_id == '700199'),
 # #             x = ~date_range_start, y = ~n_devices,
@@ -143,7 +143,7 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 # #             opacity = .9,
 # #             text = ~mytext,
 # #             line = list(shape = "linear", color = 'orange'))
-# # 
+# #
 # # downtown <-
 # #   downtown0 %>%
 # #   filter(((provider_id == '700199' & date < as.Date('2021-05-17')) |
@@ -151,7 +151,7 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 # #   select(-c(provider_id, city)) %>%
 # #   rename(n_devices = approx_distinct_devices_count) %>%
 # #   left_join(userbase)
-# # 
+# #
 # # head(downtown)
 # 
 # #-----------------------------------------
@@ -188,15 +188,15 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 # range(city1$date)
 # range(city2$date)
 # 
-# city0 <- 
-#   city1 %>% 
+# city0 <-
+#   city1 %>%
 #   filter(date < as.Date('2022-08-12')) %>%
 #   rbind(city2) %>%
 #   filter(date < as.Date('2023-06-01')) %>% # through end of May
 #   mutate(
 #     ez = big_area,
-#     ez = recode(ez, 
-#     '31'='South of Eastern', 
+#     ez = recode(ez,
+#     '31'='South of Eastern',
 #     '32'='Rexdale-Airport',
 #     '33'='Junction-Weston-Dupont North',
 #     '34'='Junction-Weston-Dupont South',
@@ -240,7 +240,7 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 #     '8'='Consumers Road',
 #     '16'='Duncan Mill',
 #     '17'='Don Mills'
-#   )) 
+#   ))
 # 
 # city_export <- city0 %>%
 #   mutate(
@@ -285,8 +285,7 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 # head(tc_export)
 # 
 # # Load full names of region EZs
-# region_sf0 <- st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/PSEZ_with_ID.geojson') %>%
-#   st_transform(st_crs(dpt))
+# region_sf0 <- st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_lands/PSEZ_with_ID.geojson')
 # 
 # region_sf <- region_sf0 %>% filter(Precinct != 'Outside GTHA study area')
 # 
@@ -327,7 +326,7 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 #     ez == 'Churchill Meadows Em' ~ 'Churchill Meadows',
 #     ez == '21_Town Centre_Allstate' ~ 'Allstate',
 #     ez %in% c('21_Town Centre_Denison Steeles - Fourteenth Avenue',
-#               '69_Town Centre_Denison Steeles - Fourteenth Avenue') ~ 
+#               '69_Town Centre_Denison Steeles - Fourteenth Avenue') ~
 #       'Denison Steeles - Fourteenth Avenue',
 #     ez == '69_Town Centre_Riseborough' ~ 'Riseborough',
 #     TRUE ~ new_ez
@@ -352,7 +351,7 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 # 
 # head(msa)
 # 
-# # Normalize by MSA
+# # Add MSA data
 # 
 # msa_weekly <- msa %>%
 #   filter(provider_id != '230599') %>%
@@ -373,15 +372,13 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 # 
 # all_export_final <-
 #   all_export2 %>%
-#   left_join(msa_weekly, by = c('date_range_start', 'provider_id')) %>%
-#   mutate(normalized = n_devices/msa_count) %>%
-#   select(-c(n_devices, msa_count))
+#   left_join(msa_weekly, by = c('date_range_start', 'provider_id'))
 # 
 # head(all_export_final)
 # unique(all_export_final$new_ez)
 # 
 # write.csv(all_export_final,
-#           "C:/Users/jpg23/UDP/downtown_recovery/employment_zones/for_imputation.csv",
+#           "C:/Users/jpg23/UDP/downtown_recovery/employment_zones/EZs_for_imputation.csv",
 #           row.names = F)
 # 
 # #-----------------------------------------
@@ -453,7 +450,7 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 
 imputed <- ??? # from byeonghwa
 
-imputed_190 <- imputed %>% filter(provider_id=='190199')
+# filter to only provider 190199
 
 
 
@@ -513,7 +510,8 @@ norm_plotly_imp
 
 # New HDBSCAN downtown polygon
 dpt <- st_read("C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/new_downtowns/HDBSCAN_downtowns.geojson") %>%
-  filter(city == 'Toronto')
+  filter(city == 'Toronto') %>%
+  st_transform(st_crs(region_sf0))
 
 dpt
 plot(dpt)
