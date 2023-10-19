@@ -148,7 +148,7 @@ ipak(c('tidyverse', 'lubridate', 'ggplot2', 'plotly',
 #           'C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/hdbscan_dt_for_imputation.csv',
 #           row.names = F)
 
-# Load and explore imputed data
+# Calculate RQs for US
 #-----------------------------------------
 
 canada_cities <- c('Calgary', 'Edmonton', 'Halifax', 'London', 'Mississauga',
@@ -158,100 +158,9 @@ canada_cities <- c('Calgary', 'Edmonton', 'Halifax', 'London', 'Mississauga',
 not_imputed_us <- read.csv('C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/hdbscan_dt_for_imputation.csv') %>%
   filter(!city %in% canada_cities)
 
-imputed_canada <- read.csv('C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/imputation_Canada_msa_SAITS_hdbscan_all_fin.csv') %>%
-  filter(city %in% canada_cities)
+head(not_imputed_us)
 
-imputed <- rbind(not_imputed_us, imputed_canada)
-
-head(imputed)
-range(imputed$date_range_start)
-n_distinct(imputed$city)
-unique(imputed$city)
-
-# Plot
-imputed_plot <-
-  plot_ly() %>%
-  add_lines(data = imputed %>% filter(provider_id == '190199'), 
-            x = ~date_range_start, y = ~normalized, 
-            name = ~paste0(city, ":  provider 190199"),
-            opacity = .7,
-            split = ~city,
-            text = ~paste0(city, ': ', round(normalized, 3)),
-            line = list(shape = "linear", color = '#d6ad09')) %>%
-  add_lines(data = imputed %>% filter(provider_id == '700199'), 
-            x = ~date_range_start, y = ~normalized, 
-            name = ~paste0(city, ": provider 700199"),
-            opacity = .7,
-            split = ~city,
-            text = ~paste0(city, ': ', round(normalized, 3)),
-            line = list(shape = "linear", color = '#8c0a03')) %>%
-  layout(title = "Weekly counts normalized by MSA (imputed for Canada, HDBSCAN downtowns)",
-         xaxis = list(title = "Week", zerolinecolor = "#ffff", 
-                      tickformat = "%b %Y"),
-         yaxis = list(title = "Normalized", zerolinecolor = "#ffff",
-                      ticksuffix = "  "),
-         shapes = list(list(y0 = 0, y1 = 1, yref = "paper",
-                            x0 = as.Date('2021-05-17'), x1 = as.Date('2021-05-17'),
-                            line = list(color = 'black', dash = 'dash'))))
-
-imputed_plot
-
-saveWidget(
-  imputed_plot,
-  'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/hdbscan_downtowns_by_provider.html')
-
-
-
-
-
-#===========================================================
-
-# Check normalized-only
-
-imputed_canada_norm <- read.csv('C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/imputation_Canada_msa_SAITS_hdbscan_fin.csv') %>%
-  filter(city %in% canada_cities)
-
-head(imputed_canada_norm)
-
-imputed_plot_norm_plot <-
-  plot_ly() %>%
-  add_lines(data = imputed_canada_norm %>% filter(provider_id == '190199'), 
-            x = ~date_range_start, y = ~normalized, 
-            name = ~paste0(city, ":  provider 190199"),
-            opacity = .7,
-            split = ~city,
-            text = ~paste0(city, ': ', round(normalized, 3)),
-            line = list(shape = "linear", color = '#d6ad09')) %>%
-  add_lines(data = imputed_canada_norm %>% filter(provider_id == '700199'), 
-            x = ~date_range_start, y = ~normalized, 
-            name = ~paste0(city, ": provider 700199"),
-            opacity = .7,
-            split = ~city,
-            text = ~paste0(city, ': ', round(normalized, 3)),
-            line = list(shape = "linear", color = '#8c0a03')) %>%
-  layout(title = "HDBSCAN downtowns - normalized by MSA - imputed post-normalization",
-         xaxis = list(title = "Week", zerolinecolor = "#ffff", 
-                      tickformat = "%b %Y"),
-         yaxis = list(title = "Normalized", zerolinecolor = "#ffff",
-                      ticksuffix = "  "),
-         shapes = list(list(y0 = 0, y1 = 1, yref = "paper",
-                            x0 = as.Date('2021-05-17'), x1 = as.Date('2021-05-17'),
-                            line = list(color = 'black', dash = 'dash'))))
-
-imputed_plot_norm_plot
-
-#===========================================================
-
-
-
-
-
-
-
-# Calculate recovery rates
-#-----------------------------------------
-
-# To calculate recovery rates:
+# rq (for US):
 
 # 1. filter to only March - June 18, 2019 and 2023
 # 2. sum downtown unique devices and MSA unique devices by city and year
@@ -259,11 +168,11 @@ imputed_plot_norm_plot
 #    (for overall time period)
 # 4. divide normalized 2023 by normalized 2019
 
-rq <-
-  imputed %>%
+rq_us <-
+  not_imputed_us %>%
   filter(provider_id == '190199') %>%
-  filter((date_range_start >= as.Date('2019-03-04') & 
-            date_range_start <= as.Date('2019-06-10')) | 
+  filter((date_range_start >= as.Date('2019-03-04') &
+            date_range_start <= as.Date('2019-06-10')) |
            (date_range_start >= as.Date('2023-02-27'))) %>%
   mutate(year = year(date_range_start)) %>%
   group_by(city, year) %>%
@@ -277,22 +186,106 @@ rq <-
     names_prefix = 'ntv',
     values_from = 'norm'
   ) %>%
+  mutate(rq = ntv2023/ntv2019) %>%
+  data.frame() %>%
+  select(city, rq) %>%
+  arrange(desc(rq))
+
+rq_us
+
+# Calculate RQs for Canada
+#-----------------------------------------
+
+imputed_canada <- read.csv('C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/imputation_Canada_msa_SAITS_hdbscan_fin.csv') %>%
+  filter(city %in% canada_cities)
+
+head(imputed_canada)
+
+# rq2 (for Canada):
+
+# 1. sum downtown unique devices and MSA unique devices by city, year and week
+# 2. calculate normalized count by week
+# 3. divide normalized count 2023 by normalized count 2019 to get weekly RQ
+# 4. take average RQ by city
+
+rq_ca <-
+  imputed_canada %>%
+  filter(provider_id == '190199') %>%
+  filter((date_range_start >= as.Date('2019-03-04') & 
+            date_range_start <= as.Date('2019-06-10')) | 
+           (date_range_start >= as.Date('2023-02-27'))) %>%
+  mutate(week_num = isoweek(date_range_start),
+         year = year(date_range_start)) %>%
+  select(-date_range_start) %>%
+  pivot_wider(
+    id_cols = c('city', 'week_num'),
+    names_from = 'year',
+    names_prefix = 'ntv',
+    values_from = 'normalized'
+  ) %>%
   mutate(rec2023 = ntv2023/ntv2019) %>%
   data.frame() %>%
-  select(city, rec2023) %>%
-  arrange(desc(rec2023))
+  group_by(city) %>%
+  summarize(rq = mean(rec2023, na.rm = T)) %>%
+  ungroup() %>%
+  data.frame() %>%
+  arrange(desc(rq))
 
-head(rq)
+rq_ca
+
+
+# # Plot
+# imputed_plot <-
+#   plot_ly() %>%
+#   add_lines(data = imputed %>% filter(provider_id == '190199'), 
+#             x = ~date_range_start, y = ~normalized, 
+#             name = ~paste0(city, ":  provider 190199"),
+#             opacity = .7,
+#             split = ~city,
+#             text = ~paste0(city, ': ', round(normalized, 3)),
+#             line = list(shape = "linear", color = '#d6ad09')) %>%
+#   add_lines(data = imputed %>% filter(provider_id == '700199'), 
+#             x = ~date_range_start, y = ~normalized, 
+#             name = ~paste0(city, ": provider 700199"),
+#             opacity = .7,
+#             split = ~city,
+#             text = ~paste0(city, ': ', round(normalized, 3)),
+#             line = list(shape = "linear", color = '#8c0a03')) %>%
+#   layout(title = "Weekly counts normalized by MSA (imputed for Canada, HDBSCAN downtowns)",
+#          xaxis = list(title = "Week", zerolinecolor = "#ffff", 
+#                       tickformat = "%b %Y"),
+#          yaxis = list(title = "Normalized", zerolinecolor = "#ffff",
+#                       ticksuffix = "  "),
+#          shapes = list(list(y0 = 0, y1 = 1, yref = "paper",
+#                             x0 = as.Date('2021-05-17'), x1 = as.Date('2021-05-17'),
+#                             line = list(color = 'black', dash = 'dash'))))
+# 
+# imputed_plot
+# 
+# saveWidget(
+#   imputed_plot,
+#   'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/hdbscan_downtowns_by_provider.html')
+
+# Combine Canada & US RQs
+#-----------------------------------------
+
+head(rq_us)
+head(rq_ca)
+
+rq <- rbind(rq_us, rq_ca) %>%
+  arrange(desc(rq))
+
+rq
 
 write.csv(rq,
           'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/hdbscan_rankings.csv',
           row.names = F)
 
 rank_plot <- 
-  ggplot(rq, aes(x = reorder(city, rec2023), y = rec2023)) +
+  ggplot(rq, aes(x = reorder(city, rq), y = rq)) +
   geom_bar(stat="identity") +
   coord_flip() +
-  ggtitle("Recovery quotient rankings, March - mid-June 2023\n(HDBSCAN downtowns, spectus only, standardized using MSA, provider 190199\n- imputed for Canada using SAITS)") +
+  ggtitle("Recovery quotient rankings, March - mid-June 2023\n(HDBSCAN downtowns, spectus only, standardized using MSA, provider 190199,\n imputed for Canada using SAITS, rq for US and rq2 for Canada)") +
   scale_y_continuous(labels = scales::percent) +
   theme_bw() +
   theme(axis.title.x = element_blank(),
@@ -300,28 +293,7 @@ rank_plot <-
 
 rank_plot
 
-# US only
-
-rq_us <- rq %>% filter(!city %in% canada_cities)
-
-write.csv(rq_us,
-          'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/hdbscan_rankings_US.csv',
-          row.names = F)
-
-rank_plot_US <- 
-  ggplot(rq_us, 
-         aes(x = reorder(city, rec2023), y = rec2023)) +
-  geom_bar(stat="identity") +
-  coord_flip() +
-  ggtitle("Recovery quotient rankings, March - mid-June 2023\n(HDBSCAN downtowns, spectus only, standardized using MSA, provider 190199)") +
-  scale_y_continuous(labels = scales::percent) +
-  theme_bw() +
-  theme(axis.title.x = element_blank(),
-        axis.title.y = element_blank())
-
-rank_plot_US
-
-# Compare to current rankings on website
+# Compare to old rankings on website
 #-----------------------------------------
 
 site_rank <- read.csv("C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/ranking_data_from_website.csv")
@@ -338,8 +310,8 @@ setdiff(rq_cities, site_cities)
 comparison <-
   rq %>%
   inner_join(site_rank %>% filter(Season == 'Season_13') %>%
-               select(city, rec2023_site = seasonal_average)) %>%
-  mutate(diff = rec2023 - rec2023_site) %>%
+               select(city, rq_site = seasonal_average)) %>%
+  mutate(diff = rq - rq_site) %>%
   arrange(desc(diff))
 
 head(comparison)
@@ -348,18 +320,18 @@ write.csv(comparison,
           'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/hdbscan_site_rank_comparison.csv',
           row.names = F)
 
-comparison_plot <- 
-  ggplot(comparison, 
+comparison_plot <-
+  ggplot(comparison,
          aes(x = reorder(city, diff), y = diff)) +
   geom_bar(stat="identity") +
   coord_flip() +
-  ggtitle("Change from current RQ on website to updated HDBSCAN RQ\n(negative = new RQ is lower than old RQ)") +
+  ggtitle("Change from old RQ on website to updated HDBSCAN RQ\n(negative = new RQ is lower than old RQ)") +
   scale_y_continuous(labels = scales::percent) +
   theme_bw() +
   theme(axis.title.x = element_blank(),
         axis.title.y = element_blank())
 
-comparison_plot
+comparison_plot # export to "C:\Users\jpg23\UDP\downtown_recovery\sensitivity_analysis\hdbscan_compare_to_old_rankings.png"
 
 # Export
 #-----------------------------------------
@@ -386,21 +358,13 @@ final_export <-
       city == 'Dallas' ~ 'Dallas, TX',
       TRUE ~ display_title
     )) %>%
-  rename(seasonal_average = rec2023)
+  rename(seasonal_average = rq)
 
 # check
 final_export %>% filter(city %in% c('Oklahoma City', 'Orlando', 'Cleveland', 'Dallas'))
 
+final_export
+
 write.csv(final_export,
           'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/final_hdbscan_for_website.csv',
-          row.names = F)
-
-# Filter to US only
-
-final_export_US <- final_export %>% filter(!city %in% canada_cities)
-
-final_export_US
-
-write.csv(final_export_US,
-          'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/final_hdbscan_for_website_US_only.csv',
           row.names = F)

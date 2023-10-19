@@ -448,9 +448,13 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 # LOAD IMPUTED DATA!!! USE IT BELOW
 ##########################################
 
-imputed <- ??? # from byeonghwa
+# imputed <- read.csv("C:/Users/jpg23/data/downtownrecovery/employment_zones/imputation_Canada_msa_SAITS_ez_all_fin.csv") %>%
+#   rename(new_ez = city)
 
-# filter to only provider 190199
+head(imputed)
+unique(imputed$provider_id)
+unique(imputed$city)
+
 
 
 
@@ -484,18 +488,18 @@ imputed <- ??? # from byeonghwa
 
 norm_plotly_imp <-
   plot_ly() %>%
-  add_lines(data = imputed_190, 
-            x = ~date_range_start, y = ~normalized, 
-            name = ~paste0(new_ez, ":  provider 190199"),
+  add_lines(data = imputed,
+            x = ~date_range_start, y = ~n_devices,
+            name = ~paste0(new_ez, ":  Downtown"),
             opacity = .7,
             split = ~new_ez,
             line = list(shape = "linear", color = '#d6ad09')) %>%
-  add_lines(data = imputed %>% filter(provider_id == '700199'), 
-            x = ~date_range_start, y = ~normalized, 
-            name = ~paste0(new_ez, ": provider 700199"),
-            opacity = .7,
-            split = ~new_ez,
-            line = list(shape = "linear", color = '#8c0a03')) %>%
+  # add_lines(data = imputed,
+  #           x = ~date_range_start, y = ~msa_count,
+  #           name = ~paste0(new_ez, ":  MSA"),
+  #           opacity = .7,
+  #           split = ~new_ez,
+  #           line = list(shape = "linear", color = '#8c0a03')) %>%
   layout(title = "Normalized trends by consolidated EZ - IMPUTED",
          xaxis = list(title = "Date", zerolinecolor = "#ffff", 
                       tickformat = "%b %Y"),
