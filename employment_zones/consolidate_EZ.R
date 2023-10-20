@@ -11,8 +11,10 @@
 #-----------------------------------------
 
 source('~/git/timathomas/functions/functions.r')
+
 ipak(c('tidyverse', 'lubridate', 'ggplot2', 'plotly', 'cancensus', 'ggmap', 
-       'sf', 'leaflet', 'BAMMtools', 'gtools', 'htmlwidgets'))
+       'sf', 'leaflet', 'BAMMtools', 'gtools', 'htmlwidgets', 'basemaps'))
+
 ipak_gh(c("statnmap/HatchedPolygons"))
 
 # #-----------------------------------------
@@ -86,10 +88,6 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 #   arrange(date) %>%
 #   select(-event_date)
 # 
-# # Toronto downtown
-# 
-# # LOAD BYEONGHWA'S IMPUTED HDBSCAN DATA
-# 
 # town_centre <-
 #   list.files(path = paste0(filepath, 'town_centre_fixed')) %>%
 #   map_df(~read_delim(
@@ -103,57 +101,7 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 #   mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
 #   arrange(date) %>%
 #   select(-event_date)
-# 
-# #-----------------------------------------
-# # Calculate downtown recovery rate
-# #-----------------------------------------
-# 
-# # DO THIS WHEN I HAVE THE NEW DOWNTOWN DATA!
-# 
-# 
-# 
-# # dnew <- downtown0 %>%
-# #   mutate(
-# #     date_range_start = floor_date(
-# #       date,
-# #       unit = "week",
-# #       week_start = getOption("lubridate.week.start", 1))) %>%
-# #   # Calculate # of devices by week and provider
-# #   group_by(date_range_start, provider_id) %>%
-# #   summarize(n_devices = sum(approx_distinct_devices_count, na.rm = T)) %>%
-# #   ungroup() %>%
-# #   mutate(mytext = paste0('<br>Week of ', date_range_start, ': ', n_devices))
-# #
-# # plot_ly() %>%
-# #   add_lines(data = dnew %>% filter(provider_id == '700199'),
-# #             x = ~date_range_start, y = ~n_devices,
-# #             name = "700199",
-# #             opacity = .9,
-# #             text = ~mytext,
-# #             line = list(shape = "linear", color = 'purple')) %>%
-# #   add_lines(data = dnew %>% filter(provider_id == '190199'),
-# #             x = ~date_range_start, y = ~n_devices,
-# #             name = "190199",
-# #             opacity = .8,
-# #             text = ~mytext,
-# #             line = list(shape = "linear", color = 'darkgreen')) %>%
-# #   add_lines(data = dnew %>% filter(provider_id == '230599'),
-# #             x = ~date_range_start, y = ~n_devices,
-# #             name = "230599",
-# #             opacity = .9,
-# #             text = ~mytext,
-# #             line = list(shape = "linear", color = 'orange'))
-# #
-# # downtown <-
-# #   downtown0 %>%
-# #   filter(((provider_id == '700199' & date < as.Date('2021-05-17')) |
-# #             (provider_id == '190199' & date >= as.Date('2021-05-17')))) %>%
-# #   select(-c(provider_id, city)) %>%
-# #   rename(n_devices = approx_distinct_devices_count) %>%
-# #   left_join(userbase)
-# #
-# # head(downtown)
-# 
+# # 
 # #-----------------------------------------
 # # Aggregate region-wide data
 # #-----------------------------------------
@@ -372,7 +320,8 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 # 
 # all_export_final <-
 #   all_export2 %>%
-#   left_join(msa_weekly, by = c('date_range_start', 'provider_id'))
+#   left_join(msa_weekly, by = c('date_range_start', 'provider_id')) %>%
+#   mutate(normalized = n_devices/msa_count)
 # 
 # head(all_export_final)
 # unique(all_export_final$new_ez)
@@ -439,74 +388,94 @@ ipak_gh(c("statnmap/HatchedPolygons"))
 # 
 # norm_plotly
 
+#-----------------------------------------
+# Load imputed data
+#-----------------------------------------
 
+# Imputed data
+imputed0 <- read.csv("C:/Users/jpg23/data/downtownrecovery/employment_zones/imputation_Canada_msa_SAITS_ez_fin.csv") %>%
+  rename(new_ez = city) %>%
+  filter(!new_ez %in% c('Caledonia - South Downsview - South', 
+                        'North Oakville East Employment District',
+                        'Southwest Milton'))
 
+imputed_t <- read.csv('C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/imputation_Canada_msa_SAITS_hdbscan_fin.csv') %>%
+  # filter out week with weird dip to not affect results
+  filter(city == 'Toronto' & date_range_start != as.Date('2021-05-10')) %>%
+  mutate(new_ez = 'Downtown') %>%
+  select(-city)
 
+head(imputed0)
+head(imputed_t)
 
-
-##########################################
-# LOAD IMPUTED DATA!!! USE IT BELOW
-##########################################
-
-# imputed <- read.csv("C:/Users/jpg23/data/downtownrecovery/employment_zones/imputation_Canada_msa_SAITS_ez_all_fin.csv") %>%
-#   rename(new_ez = city)
+imputed <- rbind(imputed0, imputed_t)
 
 head(imputed)
 unique(imputed$provider_id)
-unique(imputed$city)
-
-
-
-
-
-
-
-
-
-# EVERYTHING ELSE -- GO THROUGH CAREFULLY AND MAKE SURE IT STILL APPLIES.
-# MIGHT NEED TO ADAPT THINGS (like changing 'ez' to 'new_ez'). ALSO MAKE SURE
-# I CALCULATE RECOVERY RATES IN THE NEW WAY:
-
-
-# To calculate recovery rates:
-
-# 1. filter to only March - June 18, 2019 and 2023
-# 2. sum downtown unique devices and MSA unique devices by city and year
-# 3. calculate normalized count by dividing downtown/MSA for each year
-#    (for overall time period)
-# 4. divide normalized 2023 by normalized 2019
-
-
-
-
-
-
-
-#-----------------------------------------
-# Explore imputed data
-#-----------------------------------------
+unique(imputed$new_ez)
 
 norm_plotly_imp <-
   plot_ly() %>%
-  add_lines(data = imputed,
-            x = ~date_range_start, y = ~n_devices,
-            name = ~paste0(new_ez, ":  Downtown"),
+  add_lines(data = imputed %>% filter(provider_id == '190199'),
+            x = ~date_range_start, y = ~normalized,
+            name = ~paste0(new_ez, ': ', provider_id),
             opacity = .7,
             split = ~new_ez,
             line = list(shape = "linear", color = '#d6ad09')) %>%
-  # add_lines(data = imputed,
-  #           x = ~date_range_start, y = ~msa_count,
-  #           name = ~paste0(new_ez, ":  MSA"),
-  #           opacity = .7,
-  #           split = ~new_ez,
-  #           line = list(shape = "linear", color = '#8c0a03')) %>%
+  add_lines(data = imputed %>% filter(provider_id == '700199'),
+            x = ~date_range_start, y = ~normalized,
+            name = ~paste0(new_ez, ': ', provider_id),
+            opacity = .7,
+            split = ~new_ez,
+            line = list(shape = "linear", color = '#8c0a03')) %>%  
   layout(title = "Normalized trends by consolidated EZ - IMPUTED",
          xaxis = list(title = "Date", zerolinecolor = "#ffff", 
                       tickformat = "%b %Y"),
-         yaxis = list(title = "Devices", zerolinecolor = "#ffff",
+         yaxis = list(title = "Normalized", zerolinecolor = "#ffff",
                       ticksuffix = "  "))
 
 norm_plotly_imp
+
+saveWidget(
+  norm_plotly_imp,
+  'C:/Users/jpg23/UDP/downtown_recovery/employment_zones/imputed_norm_by_EZ.html')
+
+#-----------------------------------------
+# Calculate recovery rates
+#-----------------------------------------
+
+head(imputed)
+
+rq <-
+  imputed %>%
+  filter(provider_id == '190199') %>%
+  # filter to beginning of March - mid-June, 2019 & 2021 & 2023 (approx. dates)
+  filter((date_range_start >= as.Date('2019-03-04') & 
+            date_range_start <= as.Date('2019-06-10')) | 
+           (date_range_start >= as.Date('2021-03-01') &
+              date_range_start <= as.Date('2021-06-07')) |
+           (date_range_start >= as.Date('2023-02-27'))) %>%
+  mutate(week_num = isoweek(date_range_start),
+         year = year(date_range_start)) %>%
+  select(-date_range_start) %>%
+  pivot_wider(
+    id_cols = c('new_ez', 'week_num'),
+    names_from = 'year',
+    names_prefix = 'ntv',
+    values_from = 'normalized'
+  ) %>%
+  mutate(rec23_19 = ntv2023/ntv2019,
+         rec21_19 = ntv2021/ntv2019,
+         rec23_21 = ntv2023/ntv2021) %>%
+  data.frame() %>%
+  group_by(new_ez) %>%
+  summarize(rq23_19 = mean(rec23_19, na.rm = T),
+            rq21_19 = mean(rec21_19, na.rm = T),
+            rq23_21 = mean(rec23_21, na.rm = T)) %>%
+  ungroup() %>%
+  data.frame()
+
+rq
 
 #-----------------------------------------
 # Add spatial data
@@ -514,25 +483,30 @@ norm_plotly_imp
 
 # New HDBSCAN downtown polygon
 dpt <- st_read("C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/new_downtowns/HDBSCAN_downtowns.geojson") %>%
-  filter(city == 'Toronto') %>%
-  st_transform(st_crs(region_sf0))
+  filter(city == 'Toronto')
 
 dpt
 plot(dpt)
 
 # New consolidated EZs
-new_sf <- st_read("C:/Users/jpg23/UDP/downtown_recovery/employment_zones/gtha-da-2021_fixed/gtha-da-2021_fixed.shp") %>%
+new_sf0 <- st_read("C:/Users/jpg23/UDP/downtown_recovery/employment_zones/gtha-da-2021_fixed/gtha-da-2021_fixed.shp") %>%
   filter(!is.na(Precinct)) %>%
   rename(new_ez = Precinct) %>%
   select(-DAUID) %>%
   group_by(new_ez) %>%
   summarize()
 
-head(new_sf)
-plot(new_sf)
+head(new_sf0)
+plot(new_sf0)
+
+new_sf <- 
+  rbind(new_sf0, dpt %>% mutate(new_ez = 'Downtown') %>% select(-city)) %>%
+  filter(!new_ez %in% c('Caledonia - South Downsview - South',
+                        'North Oakville East Employment District',
+                        'Southwest Milton'))
 
 sf_ez <- unique(new_sf$new_ez)
-imp_ez <- unique(imputed_190$new_ez)
+imp_ez <- unique(imputed$new_ez)
 
 setdiff(sf_ez, imp_ez)
 setdiff(imp_ez, sf_ez)
@@ -542,292 +516,35 @@ toronto <- st_read('C:/Users/jpg23/data/downtownrecovery/shapefiles/employment_l
 
 plot(toronto)
 
-final_sf <-
-  new_sf %>%
-  left_join(imputed_190)
+final_sf <- new_sf %>% left_join(rq)
 
-head(final_sf)
-
-#-----------------------------------------
-# Create plots
-#-----------------------------------------
-
-
-
-# To calculate recovery rates:
-
-# 1. filter to only March - June 18, 2019 and 2023
-# 2. sum downtown unique devices and MSA unique devices by city and year
-# 3. calculate normalized count by dividing downtown/MSA for each year
-#    (for overall time period)
-# 4. divide normalized 2023 by normalized 2019
-
-
-
-all_cr_for_plot <-
-  imputed_190 %>%
-  mutate(
-    week_num = isoweek(date_range_start),
-    year = year(date_range_start)) %>%
-  select(-date_range_start) %>%
-  pivot_wider(
-    id_cols = c('new_ez', 'week_num'),
-    names_from = 'year',
-    names_prefix = 'ntv',
-    values_from = 'normalized') %>%
-  mutate(rec2020 = ntv2020/ntv2019,
-         rec2021 = ntv2021/ntv2019,
-         rec2022 = ntv2022/ntv2019,
-         rec2023 = ntv2023/ntv2019) %>%
-  select(-starts_with('ntv')) %>%
-  pivot_longer(
-    cols = rec2020:rec2023,
-    names_to = 'year',
-    values_to = 'rq') %>%
-  filter(week_num < 53) %>%
-  mutate(year = substr(year, 4, 7),
-         week = as.Date(paste(year, week_num, 1, sep = '_'),
-                        format = '%Y_%W_%w')) %>% # Monday of week
-  arrange(year, week_num) %>%
-  filter(!(year == 2023 & week_num > 22)) %>%
-  mutate(rq_rolling = zoo::rollmean(rq, k = 11, fill = NA, align = 'right')) %>%
-  ungroup() %>%
-  data.frame() %>%
-  filter(!(year == 2020 & week_num < 12))
-
-head(all_cr_for_plot)
-tail(all_cr_for_plot)
-
-all_cr_plot <-
-  all_cr_for_plot %>%
-  ggplot(aes(x = week, y = rq_rolling)) +
-  geom_line(size = .8) +
-  ggtitle('Recovery rate for all employment zones in Toronto region (11 week rolling average)') +
-  scale_x_date(date_breaks = "4 month", date_labels = "%b %Y") +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1),
-                     limits = c(0.5, 1.3),
-                     breaks = seq(.5, 1.3, .2)) +
-  xlab('Month') +
-  ylab('Recovery rate') +
-  theme(
-    # axis.text.x = element_text(angle = 90),
-    panel.grid.major = element_line(color = 'light gray',
-                                    linewidth = .5,
-                                    linetype = 1),
-    panel.grid.minor.x = element_blank(),
-    panel.background = element_blank(),
-    plot.title = element_text(hjust = .5),
-    axis.ticks = element_blank(),
-    axis.title.y = element_text(margin = margin(r = 15)),
-    axis.title.x = element_text(margin = margin(t = 15))
-  )
-
-all_cr_plot
-
-# Now by employment zone
-each_cr_for_plot <-
-  rec_rate_cr %>%
-  filter(year > 2018) %>%
-  dplyr::group_by(year, week_num, ez) %>%
-  dplyr::summarize(n_devices = sum(n_devices, na.rm = T),
-            userbase = sum(userbase, na.rm = T)) %>%
-  dplyr::ungroup() %>%
-  mutate(normalized = n_devices/userbase) %>%
-  pivot_wider(
-    id_cols = c('week_num', 'ez'),
-    names_from = 'year',
-    names_prefix = 'ntv',
-    values_from = 'normalized') %>%
-  mutate(rec2020 = ntv2020/ntv2019,
-         rec2021 = ntv2021/ntv2019,
-         rec2022 = ntv2022/ntv2019,
-         rec2023 = ntv2023/ntv2019) %>%
-  select(-starts_with('ntv')) %>%
-  pivot_longer(
-    cols = rec2020:rec2023,
-    names_to = 'year',
-    values_to = 'rq') %>%
-  filter(week_num < 53) %>%
-  mutate(year = substr(year, 4, 7),
-         week = as.Date(paste(year, week_num, 1, sep = '_'),
-                        format = '%Y_%W_%w')) %>% # Monday of week
-  filter(!(year == 2023 & week_num > 22)) %>%
-  arrange(ez, year, week_num) %>%
-  dplyr::group_by(ez) %>%
-  mutate(rq_rolling = zoo::rollmean(rq, k = 11, fill = NA, align = 'right')) %>%
-  dplyr::ungroup() %>%
-  data.frame() %>%
-  filter(!(year == 2020 & week_num < 12)) %>%
-  filter(!is.na(ez)) %>%
-  mutate(
-    mytext = paste0(ez, '<br>Week of ', week, ': ',
-                    scales::percent(rq_rolling, accuracy = 2)),
-    # in_city = case_when(
-    #   !is.na(as.numeric(str_replace(ez, '.*: ', ''))) ~ 'no',
-    #   TRUE ~ 'yes'
-    in_city = case_when(
-      ez %in% region_sf$Precinct ~ 'no',
-      TRUE ~ 'yes'
-    ))
-
-head(each_cr_for_plot)
-table(each_cr_for_plot$in_city)
-
-# Within city
-e_in <- each_cr_for_plot %>% filter(in_city == 'yes') %>% arrange(ez)
-  
-# Outside city
-# mixedrank = function(x) order(gtools::mixedorder(x))
-
-e_out <- 
-  each_cr_for_plot %>% 
-  filter(in_city == 'no') # %>%
-  # arrange(mixedrank(ez))
-  # mutate(ez_num0 = str_replace(ez, ':.*', ''),
-  #        ez_num = factor(ez_num0,
-  #                        levels = str_sort(unique(ez_num0), numeric = T))) %>%
-  # arrange(ez_num)
-
-# Plotly
-each_cr_plotly <-
-  plot_ly() %>%
-  add_lines(data = e_in,
-            x = ~week, y = ~rq_rolling,
-            split = ~ez,
-            name = ~ez,
-            text = ~mytext,
-            hoverinfo = 'text',
-            opacity = .5,
-            line = list(shape = "linear", color = '#8c0a03')) %>%
-  add_lines(data = e_out,
-            x = ~week, y = ~rq_rolling,
-            split = ~ez,
-            name = ~ez,
-            text = ~mytext,
-            hoverinfo = 'text',
-            opacity = .5,
-            line = list(shape = "linear", color = '#DB9703')) %>%
-  layout(title = "Recovery rate for employment zones in Toronto region (11 week rolling average)",
-         xaxis = list(title = "Week", zerolinecolor = "#ffff",
-                      tickformat = "%b %Y"),
-         yaxis = list(title = "Recovery rate", zerolinecolor = "#ffff",
-                      tickformat = ".0%", ticksuffix = "  "))
-
-each_cr_plotly
-
-saveWidget(
-  each_cr_plotly,
-  'C:/Users/jpg23/UDP/downtown_recovery/employment_zones/trends_by_EZ.html')
-
-# #-----------------------------------------
-# # Add year and week_num to region data
-# #-----------------------------------------
-# 
-# rec_rate_region <-
-#   region %>%
-#   # Determine week and year # for each date
-#   mutate(
-#     date_range_start = floor_date(
-#       date,
-#       unit = "week",
-#       week_start = getOption("lubridate.week.start", 1)),
-#     week_num = isoweek(date_range_start),
-#     year = year(date_range_start)) %>%
-#   # Calculate # of devices by big_area, week and year
-#   dplyr::group_by(ez, year, week_num) %>%
-#   dplyr::summarize(n_devices = sum(n_devices, na.rm = T),
-#                    userbase = sum(userbase, na.rm = T)) %>%
-#   dplyr::ungroup() 
-# 
-# head(rec_rate_region)
+final_sf %>% data.frame()
 
 #-----------------------------------------
 # Map EZ recovery rates (static): 
 # 2023 vs 2019
 #-----------------------------------------
 
-head(rec_rate_cr)
-
-for_maps0 <-
-  rec_rate_cr %>%
-  mutate(
-    week = as.Date(
-      paste(as.character(year), as.character(week_num), 1, sep = '_'),
-      format = '%Y_%W_%w'))
-
-# Make sure I'm comparing the same number of weeks:
-only_23_19 <- 
-  for_maps0 %>%
-  filter((year == 2023 & week >= as.Date('2023-01-01') & 
-            week <= as.Date('2023-05-28'))) # moved this earlier to have same # of weeks
-
-only_19_23 <- 
-  for_maps0 %>%
-  filter((year == 2019 & week >= as.Date('2019-01-01') & 
-            week <= as.Date('2019-05-31')))
-
-n_distinct(only_23_19$week_num)
-n_distinct(only_19_23$week_num) # yes :)
-
-for_maps_23_19 <-
-  for_maps0 %>%
-  filter((year == 2023 & week >= as.Date('2023-01-01') & 
-            week <= as.Date('2023-05-28')) |
-           (year == 2019 & week >= as.Date('2019-01-01') & 
-              week <= as.Date('2019-05-31'))) %>%
-  dplyr::group_by(ez, year) %>%
-  dplyr::summarize(n_devices = sum(n_devices, na.rm = T),
-            userbase = sum(userbase, na.rm = T)) %>%
-  mutate(normalized = n_devices/userbase) %>%
-  select(-c(n_devices, userbase)) %>%
-  pivot_wider(
-    names_from = year,
-    names_prefix = 'normalized_',
-    values_from = normalized
-  ) %>%
-  mutate(rate = normalized_2023/normalized_2019) %>%
-  filter(!is.na(ez)) %>%
-  data.frame()
-
-head(for_maps_23_19)
-
-summary(for_maps_23_19$rate)
-
-# Join spatial data with device count data.
-
-nrow(cr_sf)
-nrow(for_maps_23_19)
-
-n_distinct(for_maps_23_19$ez)
-n_distinct(cr_sf$ez)
-
-setdiff(cr_sf$ez, for_maps_23_19$ez) # North Leslie
-for_maps0 %>% filter(ez == 'North Leslie') # only available week of 2020-01-20
-
-summary(for_maps_23_19$rate)
-getJenksBreaks(for_maps_23_19$rate, 7)
-hist(for_maps_23_19$rate, breaks = 50)
+summary(rq$rq23_19)
+getJenksBreaks(rq$rq23_19, 7)
+hist(rq$rq23_19, breaks = 50)
 
 ez_final_23_19 <-
-  left_join(cr_sf, for_maps_23_19) %>%
-  filter(!is.na(rate)) %>%
+  final_sf %>%
   mutate(
     rate_cat = factor(case_when(
-      rate < .7 ~ '50 - 69%',
-      rate < 1 ~ '70 - 99%',
-      rate < 1.5 ~ '100 - 149%',
-      rate < 2 ~ '150 - 199%',
-      rate < 4 ~ '200 - 399%',
-      TRUE ~ '400 - 1,451%'
+      rq23_19 < .8 ~ '64 - 79.9%',
+      rq23_19 < 1 ~ '80 - 99.9%',
+      rq23_19 < 1.15 ~ '100 - 114.9%',
+      rq23_19 < 1.25 ~ '115 - 124.9%',
+      rq23_19 < 1.5 ~ '125 - 149.9%',
+      TRUE ~ '150 - 250%'
     ),
-    levels = c('50 - 69%', '70 - 99%', '100 - 149%', '150 - 199%', '200 - 399%',
-               '400 - 1,451%')))
+    levels = c('64 - 79.9%', '80 - 99.9%', '100 - 114.9%', '115 - 124.9%', 
+               '125 - 149.9%', '150 - 250%')))
 
-nrow(ez_final_23_19)
-head(ez_final_23_19)
-
-st_write(ez_final_23_19,
-         'C:/Users/jpg23/UDP/downtown_recovery/employment_zones/static_map_layers/ez_23_19.shp')
+head(ez_final_23_19 %>% data.frame())
+table(ez_final_23_19$rate_cat)
 
 pal <- c(
   "#e41822",
@@ -838,33 +555,16 @@ pal <- c(
   "#033384"
 )
 
-basemap <-
-  get_stamenmap(
-    bbox = c(left = -80,
-             bottom = 43.14,
-             right = -78.65,
-             top = 43.95),
-    zoom = 11,
-    maptype = "terrain-lines") # https://r-graph-gallery.com/324-map-background-with-the-ggmap-library.html
-
-basemap_attributes <- attributes(basemap)
-
-basemap_transparent <- matrix(adjustcolor(basemap, alpha.f = 0.2),
-                              nrow = nrow(basemap))
-
-attributes(basemap_transparent) <- basemap_attributes
-
 ez_map_23_19 <-
-  ggmap(basemap_transparent) +
-  geom_sf(data = ez_final_23_19 %>% filter(ez != 'Downtown'), 
-          aes(fill = rate_cat), 
-          inherit.aes = FALSE,
-          # alpha = .9, 
+  ggplot() +
+  geom_sf(data = ez_final_23_19 %>% filter(new_ez != 'Downtown'),
+          aes(fill = rate_cat),
           color = NA) +
   ggtitle('Recovery rate for all employment zones in Toronto region,\nJanuary - May (2023 versus 2019)') +
   scale_fill_manual(values = pal, name = 'Recovery rate') +
   guides(fill = guide_legend(barwidth = 0.5, barheight = 10, 
                              ticks = F, byrow = T)) +
+  geom_sf(data = toronto, fill = NA, linewidth = .7) +
   theme(
     panel.border = element_blank(), 
     panel.grid.major = element_blank(),
@@ -895,7 +595,9 @@ ggsave('C:/Users/jpg23/UDP/downtown_recovery/employment_zones/static_map_23v19.p
 
 ez_label_23_19 <-
   ez_final_23_19 %>%
-  mutate(label = paste0(ez, ": ", round(rate * 100), "%"))
+  mutate(label = paste0(new_ez, ": ", round(rq23_19 * 100), "%"))
+
+head(ez_label_23_19 %>% data.frame())
 
 leaflet_pal_23_19 <- colorFactor(
   pal,
@@ -906,9 +608,11 @@ leaflet_pal_23_19 <- colorFactor(
 # Hatched polygon (downtown)
 dt_hatch_23_19 <-
   ez_label_23_19 %>%
-  filter(ez == 'Downtown') %>%
+  filter(new_ez == 'Downtown') %>%
   hatched.SpatialPolygons(density = 500, angle = 45, fillOddEven = TRUE) %>%
-  cbind(ez_label_23_19 %>% filter(ez == 'Downtown') %>% select(rate, rate_cat, label))
+  cbind(ez_label_23_19 %>% filter(new_ez == 'Downtown') %>% select(rate_cat, label))
+
+dt_hatch_23_19
 
 interactive_23_19 <-
   leaflet(
@@ -924,7 +628,7 @@ interactive_23_19 <-
                    group = "Roads"
   ) %>%
   addPolygons(
-    data = ez_label_23_19 %>% filter(ez != 'Downtown'),
+    data = ez_label_23_19 %>% filter(new_ez != 'Downtown'),
     label = ~label,
     labelOptions = labelOptions(textsize = "12px"),
     fillOpacity = .8,
@@ -974,87 +678,46 @@ saveWidget(
 # 2023 vs 2021
 #-----------------------------------------
 
-# Make sure I'm comparing the same number of weeks:
-only_23_21 <- 
-  for_maps0 %>%
-  filter((year == 2023 & week >= as.Date('2023-01-01') & 
-            week <= as.Date('2023-05-31')))
-
-only_21_23 <- 
-  for_maps0 %>%
-  filter((year == 2021 & week >= as.Date('2021-01-01') & 
-            week <= as.Date('2021-05-31')))
-
-n_distinct(only_23_21$week_num)
-n_distinct(only_21_23$week_num) # yes :)
-
-for_maps_23_21 <-
-  for_maps0 %>%
-  filter((year == 2023 & week >= as.Date('2023-01-01') & 
-            week <= as.Date('2023-05-31')) |
-           (year == 2021 & week >= as.Date('2021-01-01') & 
-              week <= as.Date('2021-05-31'))) %>%
-  dplyr::group_by(ez, year) %>%
-  dplyr::summarize(n_devices = sum(n_devices, na.rm = T),
-                   userbase = sum(userbase, na.rm = T)) %>%
-  mutate(normalized = n_devices/userbase) %>%
-  select(-c(n_devices, userbase)) %>%
-  pivot_wider(
-    names_from = year,
-    names_prefix = 'normalized_',
-    values_from = normalized
-  ) %>%
-  mutate(rate = normalized_2023/normalized_2021) %>%
-  filter(!is.na(ez)) %>%
-  data.frame()
-
-head(for_maps_23_21)
-
-summary(for_maps_23_21$rate)
-
-# Join spatial data with device count data.
-
-nrow(cr_sf)
-nrow(for_maps_23_21)
-
-n_distinct(for_maps_23_21$ez)
-n_distinct(cr_sf$ez)
-
-summary(for_maps_23_21$rate)
-getJenksBreaks(for_maps_23_21$rate, 7)
+summary(rq$rq23_21)
+getJenksBreaks(rq$rq23_21, 10)
+hist(rq$rq23_21, breaks = 50)
 
 ez_final_23_21 <-
-  left_join(cr_sf, for_maps_23_21) %>%
-  filter(!is.na(rate)) %>%
+  final_sf %>%
   mutate(
     rate_cat = factor(case_when(
-      rate < .8 ~ '47 - 79%',
-      rate < 1 ~ '80 - 99%',
-      rate < 1.2 ~ '100 - 119%',
-      rate < 1.5 ~ '120 - 149%',
-      rate < 2 ~ '150 - 199%',
-      TRUE ~ '200 - 964%'
+      rq23_21 < .9 ~ '67 - 89.9%',
+      rq23_21 < 1 ~ '90 - 99.9%',
+      rq23_21 < 1.4 ~ '100 - 139.9%',
+      rq23_21 < 1.8 ~ '140 - 179.9%',
+      rq23_21 < 3.3 ~ '180 - 329.9%',
+      TRUE ~ '330 - 530%'
     ),
-    levels = c('47 - 79%', '80 - 99%', '100 - 119%', '120 - 149%', '150 - 199%',
-               '200 - 964%')))
+    levels = c('67 - 89.9%', '90 - 99.9%', '100 - 139.9%', '140 - 179.9%',
+               '180 - 329.9%', '330 - 530%')))
 
-nrow(ez_final_23_21)
-head(ez_final_23_21)
+head(ez_final_23_21 %>% data.frame())
+table(ez_final_23_21$rate_cat)
 
-st_write(ez_final_23_21,
-         'C:/Users/jpg23/UDP/downtown_recovery/employment_zones/static_map_layers/ez_23_21.shp')
+pal <- c(
+  "#e41822",
+  "#faa09d",
+  "#5bc4fb",
+  "#2c92d7",
+  "#0362b0",
+  "#033384"
+)
 
 ez_map_23_21 <-
-  ggmap(basemap_transparent) +
-  geom_sf(data = ez_final_23_21 %>% filter(ez != 'Downtown'), 
-          aes(fill = rate_cat), 
-          inherit.aes = FALSE,
-          # alpha = .9, 
+  ggplot() +
+  geom_sf(data = ez_final_23_21 %>% filter(new_ez != 'Downtown'),
+          aes(fill = rate_cat),
           color = NA) +
   ggtitle('Recovery rate for all employment zones in Toronto region,\nJanuary - May (2023 versus 2021)') +
   scale_fill_manual(values = pal, name = 'Recovery rate') +
   guides(fill = guide_legend(barwidth = 0.5, barheight = 10, 
                              ticks = F, byrow = T)) +
+  geom_sf(data = toronto, fill = NA, linewidth = .7) +
   theme(
     panel.border = element_blank(), 
     panel.grid.major = element_blank(),
@@ -1085,7 +748,9 @@ ggsave('C:/Users/jpg23/UDP/downtown_recovery/employment_zones/static_map_23v21.p
 
 ez_label_23_21 <-
   ez_final_23_21 %>%
-  mutate(label = paste0(ez, ": ", round(rate * 100), "%"))
+  mutate(label = paste0(new_ez, ": ", round(rq23_21 * 100), "%"))
+
+head(ez_label_23_21 %>% data.frame())
 
 leaflet_pal_23_21 <- colorFactor(
   pal,
@@ -1096,9 +761,11 @@ leaflet_pal_23_21 <- colorFactor(
 # Hatched polygon (downtown)
 dt_hatch_23_21 <-
   ez_label_23_21 %>%
-  filter(ez == 'Downtown') %>%
+  filter(new_ez == 'Downtown') %>%
   hatched.SpatialPolygons(density = 500, angle = 45, fillOddEven = TRUE) %>%
-  cbind(ez_label_23_21 %>% filter(ez == 'Downtown') %>% select(rate, rate_cat, label))
+  cbind(ez_label_23_21 %>% filter(new_ez == 'Downtown') %>% select(rate_cat, label))
+
+dt_hatch_23_21
 
 interactive_23_21 <-
   leaflet(
@@ -1114,7 +781,7 @@ interactive_23_21 <-
                    group = "Roads"
   ) %>%
   addPolygons(
-    data = ez_label_23_21 %>% filter(ez != 'Downtown'),
+    data = ez_label_23_21 %>% filter(new_ez != 'Downtown'),
     label = ~label,
     labelOptions = labelOptions(textsize = "12px"),
     fillOpacity = .8,
@@ -1159,80 +826,42 @@ saveWidget(
   interactive_23_21,
   'C:/Users/jpg23/UDP/downtown_recovery/employment_zones/interactive_map_23v21.html')
 
+
+
+
+
+
+
+
+
+
+
 #-----------------------------------------
 # Map EZ recovery rates (static): 
 # 2021 vs 2019
 #-----------------------------------------
 
-# Make sure I'm comparing the same number of weeks:
-only_21_19 <- 
-  for_maps0 %>%
-  filter((year == 2021 & week >= as.Date('2021-01-01') & 
-            week <= as.Date('2021-05-29'))) # had to move date back so there are same # of weeks
-
-only_19_21 <- 
-  for_maps0 %>%
-  filter((year == 2019 & week >= as.Date('2019-01-01') & 
-            week <= as.Date('2019-05-31')))
-
-n_distinct(only_21_19$week_num)
-n_distinct(only_19_21$week_num) # yes :)
-
-for_maps_21_19 <-
-  for_maps0 %>%
-  filter((year == 2021 & week >= as.Date('2021-01-01') & 
-            week <= as.Date('2021-05-29')) |
-           (year == 2019 & week >= as.Date('2019-01-01') & 
-              week <= as.Date('2019-05-31'))) %>%
-  dplyr::group_by(ez, year) %>%
-  dplyr::summarize(n_devices = sum(n_devices, na.rm = T),
-                   userbase = sum(userbase, na.rm = T)) %>%
-  mutate(normalized = n_devices/userbase) %>%
-  select(-c(n_devices, userbase)) %>%
-  pivot_wider(
-    names_from = year,
-    names_prefix = 'normalized_',
-    values_from = normalized
-  ) %>%
-  mutate(rate = normalized_2021/normalized_2019) %>%
-  filter(!is.na(ez)) %>%
-  data.frame()
-
-head(for_maps_21_19)
-
-summary(for_maps_21_19$rate)
-
-# Join spatial data with device count data.
-
-nrow(cr_sf)
-nrow(for_maps_21_19)
-
-n_distinct(for_maps_21_19$ez)
-n_distinct(cr_sf$ez)
-
-summary(for_maps_21_19$rate)
-getJenksBreaks(for_maps_21_19$rate, 7)
+summary(rq$rq21_19)
+getJenksBreaks(rq$rq21_19, 15)
+getJenksBreaks(rq$rq21_19, 5)
+hist(rq$rq21_19, breaks = 50)
 
 ez_final_21_19 <-
-  left_join(cr_sf, for_maps_21_19) %>%
-  filter(!is.na(rate)) %>%
+  final_sf %>%
   mutate(
     rate_cat = factor(case_when(
-      rate < .4 ~ '27 - 39%',
-      rate < .7 ~ '40 - 69%',
-      rate < 1 ~ '70 - 99%',
-      rate < 1.3 ~ '100 - 129%',
-      rate < 1.8 ~ '130 - 179%',
-      TRUE ~ '180 - 357%'
+      rq21_19 < .5 ~ '24 - 49.9%',
+      rq21_19 < .8 ~ '50 - 79.9%',
+      rq21_19 < 1 ~ '80 - 99.9%',
+      rq21_19 < 1.1 ~ '100 - 109.9%',
+      rq21_19 < 1.2 ~ '110 - 119.9%',
+      TRUE ~ '120 - 146%'
     ),
-    levels = c('27 - 39%', '40 - 69%', '70 - 99%', '100 - 129%', '130 - 179%',
-               '180 - 357%')))
+    levels = c('24 - 49.9%', '50 - 79.9%', '80 - 99.9%', '100 - 109.9%',
+               '110 - 119.9%', '120 - 146%')))
 
-nrow(ez_final_21_19)
-head(ez_final_21_19)
-
-st_write(ez_final_21_19,
-         'C:/Users/jpg23/UDP/downtown_recovery/employment_zones/static_map_layers/ez_21_19.shp')
+head(ez_final_21_19 %>% data.frame())
+table(ez_final_21_19$rate_cat)
 
 pal_21_19 <- c(
   "#e41822",
@@ -1244,16 +873,15 @@ pal_21_19 <- c(
 )
 
 ez_map_21_19 <-
-  ggmap(basemap_transparent) +
-  geom_sf(data = ez_final_21_19 %>% filter(ez != 'Downtown'), 
-          aes(fill = rate_cat), 
-          inherit.aes = FALSE,
-          # alpha = .9, 
+  ggplot() +
+  geom_sf(data = ez_final_21_19 %>% filter(new_ez != 'Downtown'),
+          aes(fill = rate_cat),
           color = NA) +
   ggtitle('Recovery rate for all employment zones in Toronto region,\nJanuary - May (2021 versus 2019)') +
   scale_fill_manual(values = pal_21_19, name = 'Recovery rate') +
   guides(fill = guide_legend(barwidth = 0.5, barheight = 10, 
                              ticks = F, byrow = T)) +
+  geom_sf(data = toronto, fill = NA, linewidth = .7) +
   theme(
     panel.border = element_blank(), 
     panel.grid.major = element_blank(),
@@ -1284,7 +912,9 @@ ggsave('C:/Users/jpg23/UDP/downtown_recovery/employment_zones/static_map_21v19.p
 
 ez_label_21_19 <-
   ez_final_21_19 %>%
-  mutate(label = paste0(ez, ": ", round(rate * 100), "%"))
+  mutate(label = paste0(new_ez, ": ", round(rq21_19 * 100), "%"))
+
+head(ez_label_21_19 %>% data.frame())
 
 leaflet_pal_21_19 <- colorFactor(
   pal_21_19,
@@ -1295,9 +925,11 @@ leaflet_pal_21_19 <- colorFactor(
 # Hatched polygon (downtown)
 dt_hatch_21_19 <-
   ez_label_21_19 %>%
-  filter(ez == 'Downtown') %>%
+  filter(new_ez == 'Downtown') %>%
   hatched.SpatialPolygons(density = 500, angle = 45, fillOddEven = TRUE) %>%
-  cbind(ez_label_21_19 %>% filter(ez == 'Downtown') %>% select(rate, rate_cat, label))
+  cbind(ez_label_21_19 %>% filter(new_ez == 'Downtown') %>% select(rate_cat, label))
+
+dt_hatch_21_19
 
 interactive_21_19 <-
   leaflet(
@@ -1313,7 +945,7 @@ interactive_21_19 <-
                    group = "Roads"
   ) %>%
   addPolygons(
-    data = ez_label_21_19 %>% filter(ez != 'Downtown'),
+    data = ez_label_21_19 %>% filter(new_ez != 'Downtown'),
     label = ~label,
     labelOptions = labelOptions(textsize = "12px"),
     fillOpacity = .8,

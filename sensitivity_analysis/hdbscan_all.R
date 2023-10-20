@@ -237,22 +237,22 @@ rq_ca
 # # Plot
 # imputed_plot <-
 #   plot_ly() %>%
-#   add_lines(data = imputed %>% filter(provider_id == '190199'), 
-#             x = ~date_range_start, y = ~normalized, 
+#   add_lines(data = imputed %>% filter(provider_id == '190199'),
+#             x = ~date_range_start, y = ~normalized,
 #             name = ~paste0(city, ":  provider 190199"),
 #             opacity = .7,
 #             split = ~city,
 #             text = ~paste0(city, ': ', round(normalized, 3)),
 #             line = list(shape = "linear", color = '#d6ad09')) %>%
-#   add_lines(data = imputed %>% filter(provider_id == '700199'), 
-#             x = ~date_range_start, y = ~normalized, 
+#   add_lines(data = imputed %>% filter(provider_id == '700199'),
+#             x = ~date_range_start, y = ~normalized,
 #             name = ~paste0(city, ": provider 700199"),
 #             opacity = .7,
 #             split = ~city,
 #             text = ~paste0(city, ': ', round(normalized, 3)),
 #             line = list(shape = "linear", color = '#8c0a03')) %>%
 #   layout(title = "Weekly counts normalized by MSA (imputed for Canada, HDBSCAN downtowns)",
-#          xaxis = list(title = "Week", zerolinecolor = "#ffff", 
+#          xaxis = list(title = "Week", zerolinecolor = "#ffff",
 #                       tickformat = "%b %Y"),
 #          yaxis = list(title = "Normalized", zerolinecolor = "#ffff",
 #                       ticksuffix = "  "),
