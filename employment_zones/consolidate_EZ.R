@@ -826,16 +826,6 @@ saveWidget(
   interactive_23_21,
   'C:/Users/jpg23/UDP/downtown_recovery/employment_zones/interactive_map_23v21.html')
 
-
-
-
-
-
-
-
-
-
-
 #-----------------------------------------
 # Map EZ recovery rates (static): 
 # 2021 vs 2019
@@ -989,3 +979,27 @@ interactive_21_19
 saveWidget(
   interactive_21_19,
   'C:/Users/jpg23/UDP/downtown_recovery/employment_zones/interactive_map_21v19.html')
+
+
+#-----------------------------------------
+# Export geojson for Laura
+#-----------------------------------------
+
+head(ez_final_23_19)
+head(ez_final_23_21)
+head(ez_final_21_19)
+
+for_laura <-
+  ez_final_23_19 %>%
+  rename(cat_23_19 = rate_cat) %>%
+  left_join(
+    ez_final_23_21 %>% select(new_ez, cat_23_21 = rate_cat) %>% st_drop_geometry()
+  ) %>%
+  left_join(
+    ez_final_21_19 %>% select(new_ez, cat_21_19 = rate_cat) %>% st_drop_geometry()
+  )
+
+head(for_laura)
+
+st_write(for_laura,
+         'C:/Users/jpg23/UDP/downtown_recovery/employment_zones/final_sf.geojson')
