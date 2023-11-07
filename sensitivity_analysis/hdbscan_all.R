@@ -81,11 +81,11 @@ ipak(c('tidyverse', 'lubridate', 'ggplot2', 'plotly',
 # #-----------------------------------------
 # 
 # msa <-
-#   list.files(path = paste0(filepath, 'MSA')) %>% 
+#   list.files(path = paste0(filepath, 'MSA')) %>%
 #   map_df(~read_delim(
 #     paste0(filepath, 'MSA/', .),
 #     delim = '\001',
-#     col_names = c('msa_name', 'provider_id', 'approx_distinct_devices_count', 
+#     col_names = c('msa_name', 'provider_id', 'approx_distinct_devices_count',
 #                   'event_date'),
 #     col_types = c('ccii')
 #   )) %>%
@@ -266,6 +266,42 @@ rq_ca
 #   imputed_plot,
 #   'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/hdbscan_downtowns_by_provider.html')
 
+# Export weekly RQs for Amir
+#-----------------------------------------
+
+rq_amir <-
+  imputed_canada %>%
+  rbind(not_imputed_us %>% select(-c(downtown_devices, msa_count))) %>%
+  filter(provider_id == '190199') %>%
+  filter(date_range_start >= as.Date('2023-01-02') |
+           (date_range_start >= as.Date('2018-12-31') & 
+              date_range_start <= as.Date('2019-06-10'))) %>%
+  mutate(week_num = isoweek(date_range_start),
+         year = year(date_range_start)) %>%
+  select(-date_range_start) %>%
+  pivot_wider(
+    id_cols = c('city', 'week_num'),
+    names_from = 'year',
+    names_prefix = 'ntv',
+    values_from = 'normalized'
+  ) %>%
+  mutate(
+    rq23 = case_when(
+      !is.na(ntv2019) ~ ntv2023/ntv2019,
+      TRUE ~ ntv2023/ntv2018),
+    date_range_start = as.Date(paste(2023, week_num, 1, sep="-"), "%Y-%U-%u")
+    ) %>%
+  data.frame() %>%
+  select(city, date_range_start, rq23)
+
+head(rq_amir)
+tail(rq_amir)
+range(rq_amir$date_range_start)
+
+write.csv(rq_amir,
+          'C:/Users/jpg23/UDP/downtown_recovery/sensitivity_analysis/hdbscan_weekly_rq_for_amir.csv',
+          row.names = F)
+
 # Combine Canada & US RQs
 #-----------------------------------------
 
@@ -306,6 +342,22 @@ rq_cities <- unique(rq$city)
 
 setdiff(site_cities, rq_cities)
 setdiff(rq_cities, site_cities)
+
+# How did the rankings change?
+
+rank_comparison <-
+  rq %>% mutate(rank = row_number()) %>% select(city, rank) %>%
+  inner_join(site_rank %>% filter(Season == 'Season_13') %>% 
+               arrange(desc(seasonal_average)) %>%
+               mutate(rank_site = row_number()) %>%
+               select(city, rank_site)) %>%
+  mutate(rank_diff = rank - rank_site) %>%
+  arrange(rank_diff) %>%
+  select(city, rank_diff)
+
+rank_comparison
+
+# How did the RQs change?
 
 comparison <-
   rq %>%

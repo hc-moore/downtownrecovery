@@ -14,6 +14,9 @@ ipak(c('tidyverse', 'sf', 'lubridate', 'leaflet', 'plotly', 'htmlwidgets',
 # Load imputed MSA data for Canada
 #=====================================
 
+canada_dt <- c('Calgary', 'Edmonton', 'Halifax', 'Mississauga', 'Montreal',
+               'Ottawa', 'Quebec', 'Toronto', 'Vancouver', 'Winnipeg', 'London')
+
 imputed <- read.csv('C:/Users/jpg23/data/downtownrecovery/imputed_canada_190199/imputation_Canada_msa_Byeonghwa_us_ca_SAITS.csv') %>%
   filter(city %in% canada_dt) %>%
   mutate(mytext = case_when(
@@ -175,9 +178,6 @@ head(orig_spec1)
 head(orig_spec2)
 
 # Combine pre-2023 and 2023 original downtowns
-
-canada_dt <- c('Calgary', 'Edmonton', 'Halifax', 'Mississauga', 'Montreal',
-               'Ottawa', 'Quebec', 'Toronto', 'Vancouver', 'Winnipeg', 'London')
 
 downtown <- rbind(orig_spec1, orig_spec2) %>%
   # keep provider 190199 only: US cities (all dates) AND Canadian cities after 5/17/21
