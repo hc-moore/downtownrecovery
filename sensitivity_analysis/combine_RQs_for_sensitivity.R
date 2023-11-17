@@ -110,7 +110,7 @@ commercial
 
 # ???
 
-office <- ???
+# office <- ???
 
 ### 3. our original zip code boundary
 #-------------------------------------------------------
@@ -281,7 +281,7 @@ head(hdbscan)
 ### 5. city-defined downtowns
 #-------------------------------------------------------
 
-city_defined <- ???
+# city_defined <- ???
 
 
 # Combine into one dataset
@@ -296,8 +296,8 @@ nrow(hdbscan)
 all_rq <-
   commercial %>%
   # left_join(office) %>%
-  left_join(old_zip) %>%
-  left_join(hdbscan %>% rename(rq_hdbscan = seasonal_average)) # %>%
+  full_join(old_zip) %>%
+  full_join(hdbscan %>% rename(rq_hdbscan = seasonal_average)) # %>%
   # left_join(city_defined)
 
 all_rq
