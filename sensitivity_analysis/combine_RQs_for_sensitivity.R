@@ -64,6 +64,93 @@ comm_rq_us <-
 
 comm_rq_us
 
+# Load Honolulu data
+#=====================================
+
+downtown_filepath <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/sensitivity_analysis/'
+
+honolulu_comm <-
+  list.files(path = paste0(downtown_filepath, 'honolulu_commercial')) %>% 
+  map_df(~read_delim(
+    paste0(downtown_filepath, 'honolulu_commercial/', .),
+    delim = '\001',
+    col_names = c('city', 'provider_id', 'approx_distinct_devices_count', 
+                  'event_date'),
+    col_types = c('ccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
+  arrange(date) %>%
+  select(-event_date)
+
+# Join with MSA data
+msa <-
+  list.files(path = paste0(downtown_filepath, 'MSA')) %>%
+  map_df(~read_delim(
+    paste0(downtown_filepath, 'MSA/', .),
+    delim = '\001',
+    col_names = c('msa_name', 'provider_id', 'approx_distinct_devices_count',
+                  'event_date'),
+    col_types = c('ccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
+  arrange(date) %>%
+  select(-event_date) %>%
+  rename(msa_count = approx_distinct_devices_count) %>%
+  filter(provider_id != '230599')
+
+head(honolulu_comm)
+msa %>% filter(str_detect(msa_name, 'Honolulu')) %>% head()
+
+hono_msa <-
+  honolulu_comm %>%
+  filter(provider_id == '190199') %>%
+  select(-provider_id) %>%
+  left_join(
+    msa %>% 
+      filter(msa_name == 'Urban Honolulu, HI' & provider_id == '190199') %>%
+      select(msa_count, date)
+  )
+
+head(hono_msa)
+
+hono_weekly <- hono_msa %>%
+  mutate(date_range_start =
+           floor_date(date, unit = "week",
+                      week_start = getOption("lubridate.week.start", 1))) %>%
+  group_by(city, date_range_start) %>%
+  summarize(downtown_devices = sum(approx_distinct_devices_count, na.rm = T),
+            msa_count = sum(msa_count, na.rm = T)) %>%
+  ungroup() %>%
+  data.frame()
+
+head(hono_weekly)
+
+hono_rq <-
+  hono_weekly %>%
+  filter((date_range_start >= as.Date('2019-03-04') &
+            date_range_start <= as.Date('2019-06-10')) |
+           (date_range_start >= as.Date('2023-02-27'))) %>%
+  mutate(year = year(date_range_start)) %>%
+  group_by(city, year) %>%
+  summarize(dt = sum(downtown_devices, na.rm = T),
+            msa = sum(msa_count, na.rm = T)) %>%
+  ungroup() %>%
+  mutate(norm = dt/msa) %>%
+  pivot_wider(
+    id_cols = c('city'),
+    names_from = 'year',
+    names_prefix = 'ntv',
+    values_from = 'norm'
+  ) %>%
+  mutate(rq_comm = ntv2023/ntv2019) %>%
+  data.frame() %>%
+  select(city, rq_comm) %>%
+  arrange(desc(rq_comm))
+
+hono_rq
+
 # Load Canada data
 #=====================================
 
@@ -100,7 +187,7 @@ comm_rq_ca
 # Combine US & Canada commercial data
 #=====================================
 
-commercial <- rbind(comm_rq_us, comm_rq_ca) %>%
+commercial <- rbind(comm_rq_us, comm_rq_ca, hono_rq) %>%
   arrange(desc(rq_comm))
 
 commercial
@@ -155,7 +242,6 @@ zip_rq_ca
 # Load downtown data for US
 #=====================================
 
-downtown_filepath <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/sensitivity_analysis/'
 newprov_filepath <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/new_provider_230599/'
 
 # Original polygons (spectus only) - pre-2023
@@ -197,24 +283,8 @@ head(orig_spec2)
 downtown_zip <- rbind(orig_spec1, orig_spec2) %>%
   filter(!(city %in% canada_dt))
 
-# Load MSA data
+# Join with MSA
 #=====================================
-
-msa <-
-  list.files(path = paste0(downtown_filepath, 'MSA')) %>%
-  map_df(~read_delim(
-    paste0(downtown_filepath, 'MSA/', .),
-    delim = '\001',
-    col_names = c('msa_name', 'provider_id', 'approx_distinct_devices_count',
-                  'event_date'),
-    col_types = c('ccii')
-  )) %>%
-  data.frame() %>%
-  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
-  arrange(date) %>%
-  select(-event_date) %>%
-  rename(msa_count = approx_distinct_devices_count) %>%
-  filter(provider_id != '230599')
 
 msa_names <- read.csv('C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/msa_names.csv')
 
