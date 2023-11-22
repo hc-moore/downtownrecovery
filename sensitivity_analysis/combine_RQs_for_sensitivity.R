@@ -18,9 +18,6 @@ source('~/git/timathomas/functions/functions.r')
 
 ipak(c('tidyverse', 'lubridate'))
 
-# ipak(c('tidyverse', 'lubridate', 'ggplot2', 'plotly', 
-#        'sf', 'leaflet', 'BAMMtools', 'gtools', 'htmlwidgets'))
-
 # Load recovery rates data
 #-------------------------------------------------------------------------------
 
@@ -351,7 +348,163 @@ head(hdbscan)
 ### 5. city-defined downtowns
 #-------------------------------------------------------
 
-# city_defined <- ???
+# 1/1/2019 - 12/26/2021
+city_defined1 <- 
+  list.files(path = paste0(downtown_filepath, 'sarah_citydefined_1')) %>% 
+  map_df(~read_delim(
+    paste0(downtown_filepath, 'sarah_citydefined_1/', .),
+    delim = '\001',
+    col_names = c('city', 'provider_id', 'approx_distinct_devices_count', 
+                  'event_date'),
+    col_types = c('ccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
+  arrange(date) %>%
+  select(-event_date) %>%
+  filter(date < as.Date('2021-12-27') & !is.na(city))
+
+# 12/27/2021 - 6/18/23
+city_defined2 <- 
+  list.files(path = paste0(downtown_filepath, 'sarah_citydefined_2')) %>% 
+  map_df(~read_delim(
+    paste0(newprov_filepath, 'sarah_citydefined_2/', .),
+    delim = '\001',
+    col_names = c('city', 'provider_id', 'approx_distinct_devices_count', 
+                  'event_date'),
+    col_types = c('ccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
+  arrange(date) %>%
+  select(-event_date) %>%
+  filter(!is.na(city))
+
+# Dallas, Atlanta, Portland, Wichita 
+city_defined3 <- 
+  list.files(path = paste0(downtown_filepath, 'sarah_citydefined_3')) %>% 
+  map_df(~read_delim(
+    paste0(newprov_filepath, 'sarah_citydefined_3/', .),
+    delim = '\001',
+    col_names = c('city', 'provider_id', 'approx_distinct_devices_count', 
+                  'event_date'),
+    col_types = c('ccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
+  arrange(date) %>%
+  select(-event_date)
+
+city_defined_both <- 
+  rbind(city_defined1, city_defined2, city_defined3) %>%
+  mutate(city = case_when(
+    city == 'Washington DC' ~ 'Washington DC',
+    city == 'Quebec City QC' ~ 'Quebec',
+    city == 'New York City NY' ~ 'New York',
+    city == 'St. Louis MO' ~ 'St Louis',
+    city == 'Colorado Springs, CO' ~ 'Colorado Springs',
+    city == 'Tuscon AZ' ~ 'Tucson',
+    city == 'Philidelphia PA ' ~ 'Philadelphia',
+    TRUE ~ str_remove(city, '\\s\\w{2}\\s*$')))
+
+head(city_defined_both)
+
+city_cd <- unique(city_defined_both$city)
+city_msa <- unique(msa_names$city)
+
+setdiff(city_cd, city_msa)
+setdiff(city_msa, city_cd)
+
+
+## MAKE SURE DALLAS, ATLANTA, PORTLAND & WICHITA ARE ALL IN THERE!
+
+
+n_distinct(city_defined_both$city)
+n_distinct(msa_names$city)
+
+city_defined_msa <- 
+  city_defined_both %>% 
+  left_join(msa_names) %>%
+  left_join(msa, by = c('msa_name', 'provider_id', 'date'))
+
+head(city_defined_msa)
+
+
+# Calculate RQs for US
+#=====================================
+
+city_defined_us <- 
+  city_defined_msa %>%
+  filter(!city %in% canada_dt & provider_id == '190199') %>%
+  mutate(date_range_start =
+           floor_date(date, unit = "week",
+                      week_start = getOption("lubridate.week.start", 1))) %>%
+  group_by(city, date_range_start) %>%
+  summarize(downtown_devices = sum(approx_distinct_devices_count, na.rm = T),
+            msa_count = sum(msa_count, na.rm = T)) %>%
+  ungroup() %>%
+  data.frame()
+
+head(city_defined_us)
+
+citydefined_rq_us <-
+  city_defined_us %>%
+  filter((date_range_start >= as.Date('2019-03-04') &
+            date_range_start <= as.Date('2019-06-10')) |
+           (date_range_start >= as.Date('2023-02-27'))) %>%
+  mutate(year = year(date_range_start)) %>%
+  group_by(city, year) %>%
+  summarize(dt = sum(downtown_devices, na.rm = T),
+            msa = sum(msa_count, na.rm = T)) %>%
+  ungroup() %>%
+  mutate(norm = dt/msa) %>%
+  pivot_wider(
+    id_cols = c('city'),
+    names_from = 'year',
+    names_prefix = 'ntv',
+    values_from = 'norm'
+  ) %>%
+  mutate(rq_citydefined = ntv2023/ntv2019) %>%
+  data.frame() %>%
+  select(city, rq_citydefined) %>%
+  arrange(desc(rq_citydefined))
+
+citydefined_rq_us
+  
+# Calculate RQs for Canada
+#=====================================
+  
+
+
+### HAVE BYEONGHWA IMPUTE THIS DATA!!!
+
+
+city_defined_ca <- 
+  imputed_citydefined %>%
+  filter(city %in% canada_dt & provider_id == '190199' &
+           (date_range_start >= as.Date('2019-03-04') & 
+            date_range_start <= as.Date('2019-06-10')) |
+           (date_range_start >= as.Date('2023-02-27'))) %>%
+  mutate(week_num = isoweek(date_range_start),
+         year = year(date_range_start)) %>%
+  select(-date_range_start) %>%
+  pivot_wider(
+    id_cols = c('city', 'week_num'),
+    names_from = 'year',
+    names_prefix = 'ntv',
+    values_from = 'normalized'
+  ) %>%
+  mutate(rec2023 = ntv2023/ntv2019) %>%
+  data.frame() %>%
+  group_by(city) %>%
+  summarize(rq_citydefined = mean(rec2023, na.rm = T)) %>%
+  ungroup() %>%
+  data.frame() %>%
+  arrange(desc(rq_citydefined))
+  
+city_defined <- rbind(city_defined_us, city_defined_ca) %>%
+  arrange(desc(rq_citydefined))
+
 
 
 # Combine into one dataset
@@ -361,14 +514,14 @@ nrow(commercial)
 # nrow(office)
 nrow(old_zip)
 nrow(hdbscan)
-# nrow(city_defined)
+nrow(city_defined)
 
 all_rq <-
   commercial %>%
   # left_join(office) %>%
   full_join(old_zip) %>%
-  full_join(hdbscan %>% rename(rq_hdbscan = seasonal_average)) # %>%
-  # left_join(city_defined)
+  full_join(hdbscan %>% rename(rq_hdbscan = seasonal_average)) %>%
+  full_join(city_defined)
 
 all_rq
 
