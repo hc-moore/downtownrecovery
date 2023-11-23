@@ -16,7 +16,7 @@
 
 source('~/git/timathomas/functions/functions.r')
 
-ipak(c('tidyverse', 'lubridate'))
+ipak(c('tidyverse', 'lubridate', 'plotly'))
 
 # Load recovery rates data
 #-------------------------------------------------------------------------------
@@ -364,7 +364,7 @@ city_defined1 <-
   select(-event_date) %>%
   filter(date < as.Date('2021-12-27') & !is.na(city))
 
-# 12/27/2021 - 6/18/23
+# 12/27/2021 - 5/7/2023
 city_defined2 <- 
   list.files(path = paste0(downtown_filepath, 'sarah_citydefined_2')) %>% 
   map_df(~read_delim(
@@ -378,9 +378,9 @@ city_defined2 <-
   mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
   arrange(date) %>%
   select(-event_date) %>%
-  filter(!is.na(city))
+  filter(date < as.Date('2023-05-07') & !is.na(city))
 
-# Dallas, Atlanta, Portland, Wichita 
+# 5/7/2023 - 6/18/2023
 city_defined3 <- 
   list.files(path = paste0(downtown_filepath, 'sarah_citydefined_3')) %>% 
   map_df(~read_delim(
@@ -393,10 +393,26 @@ city_defined3 <-
   data.frame() %>%
   mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
   arrange(date) %>%
+  select(-event_date) %>%
+  filter(!is.na(city))
+
+# Dallas, Atlanta, Portland, Wichita 
+city_defined4 <- 
+  list.files(path = paste0(downtown_filepath, 'sarah_citydefined_4')) %>% 
+  map_df(~read_delim(
+    paste0(newprov_filepath, 'sarah_citydefined_4/', .),
+    delim = '\001',
+    col_names = c('city', 'provider_id', 'approx_distinct_devices_count', 
+                  'event_date'),
+    col_types = c('ccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
+  arrange(date) %>%
   select(-event_date)
 
 city_defined_both <- 
-  rbind(city_defined1, city_defined2, city_defined3) %>%
+  rbind(city_defined1, city_defined2, city_defined3, city_defined4) %>%
   mutate(city = case_when(
     city == 'Washington DC' ~ 'Washington DC',
     city == 'Quebec City QC' ~ 'Quebec',
@@ -409,6 +425,29 @@ city_defined_both <-
 
 head(city_defined_both)
 
+# Make sure the data look right
+check_citydefined <-
+  plot_ly() %>%
+  add_lines(data = city_defined_both %>% filter(provider_id == '700199'),
+            x = ~date, y = ~approx_distinct_devices_count,
+            split = ~city,
+            name = ~city,
+            opacity = .6,
+            line = list(shape = "linear", color = 'purple')) %>%
+  add_lines(data = city_defined_both %>% filter(provider_id == '190199'),
+            x = ~date, y = ~approx_distinct_devices_count,
+            split = ~city,
+            name = ~city,
+            opacity = .6,
+            line = list(shape = "linear", color = 'orange')) %>%
+  layout(title = "Unique devices by provider and date (city-defined)",
+         xaxis = list(title = "Date", zerolinecolor = "#ffff",
+                      tickformat = "%b %Y"),
+         yaxis = list(title = "# of unique devices", zerolinecolor = "#ffff",
+                      ticksuffix = "  "))
+
+check_citydefined
+
 city_cd <- unique(city_defined_both$city)
 city_msa <- unique(msa_names$city)
 
@@ -417,6 +456,7 @@ setdiff(city_msa, city_cd)
 
 
 ## MAKE SURE DALLAS, ATLANTA, PORTLAND & WICHITA ARE ALL IN THERE!
+## AND MAKE SURE EVERY DATE IS REPRESENTED! (MAKE A PLOT)
 
 
 n_distinct(city_defined_both$city)
@@ -425,17 +465,7 @@ n_distinct(msa_names$city)
 city_defined_msa <- 
   city_defined_both %>% 
   left_join(msa_names) %>%
-  left_join(msa, by = c('msa_name', 'provider_id', 'date'))
-
-head(city_defined_msa)
-
-
-# Calculate RQs for US
-#=====================================
-
-city_defined_us <- 
-  city_defined_msa %>%
-  filter(!city %in% canada_dt & provider_id == '190199') %>%
+  left_join(msa, by = c('msa_name', 'provider_id', 'date')) %>%
   mutate(date_range_start =
            floor_date(date, unit = "week",
                       week_start = getOption("lubridate.week.start", 1))) %>%
@@ -445,10 +475,21 @@ city_defined_us <-
   ungroup() %>%
   data.frame()
 
+head(city_defined_msa)
+
+
+
+### EXPORT WEEKLY NORMALIZED DATA (?) FOR BYEONGHWA TO IMPUTE CANADA!!
+
+
+# Calculate RQs for US
+#=====================================
+
 head(city_defined_us)
 
 citydefined_rq_us <-
   city_defined_us %>%
+  filter(!city %in% canada_dt & provider_id == '190199') %>%
   filter((date_range_start >= as.Date('2019-03-04') &
             date_range_start <= as.Date('2019-06-10')) |
            (date_range_start >= as.Date('2023-02-27'))) %>%
