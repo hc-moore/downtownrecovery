@@ -368,7 +368,7 @@ city_defined1 <-
 city_defined2 <- 
   list.files(path = paste0(downtown_filepath, 'sarah_citydefined_2')) %>% 
   map_df(~read_delim(
-    paste0(newprov_filepath, 'sarah_citydefined_2/', .),
+    paste0(downtown_filepath, 'sarah_citydefined_2/', .),
     delim = '\001',
     col_names = c('city', 'provider_id', 'approx_distinct_devices_count', 
                   'event_date'),
@@ -384,7 +384,23 @@ city_defined2 <-
 city_defined3 <- 
   list.files(path = paste0(downtown_filepath, 'sarah_citydefined_3')) %>% 
   map_df(~read_delim(
-    paste0(newprov_filepath, 'sarah_citydefined_3/', .),
+    paste0(downtown_filepath, 'sarah_citydefined_3/', .),
+    delim = '\001',
+    col_names = c('city', 'provider_id', 'approx_distinct_devices_count', 
+                  'event_date'),
+    col_types = c('ccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
+  arrange(date) %>%
+  select(-event_date) %>%
+  filter(!is.na(city) & str_detect(city, '\\s\\w{2}$'))
+
+# Dallas, Atlanta, Portland, Wichita
+city_defined4 <- 
+  list.files(path = paste0(downtown_filepath, 'sarah_citydefined_4')) %>% 
+  map_df(~read_delim(
+    paste0(downtown_filepath, 'sarah_citydefined_4/', .),
     delim = '\001',
     col_names = c('city', 'provider_id', 'approx_distinct_devices_count', 
                   'event_date'),
@@ -396,21 +412,6 @@ city_defined3 <-
   select(-event_date) %>%
   filter(!is.na(city))
 
-# Dallas, Atlanta, Portland, Wichita 
-city_defined4 <- 
-  list.files(path = paste0(downtown_filepath, 'sarah_citydefined_4')) %>% 
-  map_df(~read_delim(
-    paste0(newprov_filepath, 'sarah_citydefined_4/', .),
-    delim = '\001',
-    col_names = c('city', 'provider_id', 'approx_distinct_devices_count', 
-                  'event_date'),
-    col_types = c('ccii')
-  )) %>%
-  data.frame() %>%
-  mutate(date = as.Date(as.character(event_date), format = "%Y%m%d")) %>%
-  arrange(date) %>%
-  select(-event_date)
-
 city_defined_both <- 
   rbind(city_defined1, city_defined2, city_defined3, city_defined4) %>%
   mutate(city = case_when(
@@ -421,9 +422,11 @@ city_defined_both <-
     city == 'Colorado Springs, CO' ~ 'Colorado Springs',
     city == 'Tuscon AZ' ~ 'Tucson',
     city == 'Philidelphia PA ' ~ 'Philadelphia',
-    TRUE ~ str_remove(city, '\\s\\w{2}\\s*$')))
+    TRUE ~ str_remove(city, '\\s\\w{2}\\s*$'))) %>%
+  filter(!is.na(city))
 
 head(city_defined_both)
+unique(city_defined_both$city)
 
 # Make sure the data look right
 check_citydefined <-
@@ -431,13 +434,13 @@ check_citydefined <-
   add_lines(data = city_defined_both %>% filter(provider_id == '700199'),
             x = ~date, y = ~approx_distinct_devices_count,
             split = ~city,
-            name = ~city,
+            name = ~paste0(city, ' - ', provider_id),
             opacity = .6,
             line = list(shape = "linear", color = 'purple')) %>%
   add_lines(data = city_defined_both %>% filter(provider_id == '190199'),
             x = ~date, y = ~approx_distinct_devices_count,
             split = ~city,
-            name = ~city,
+            name = ~paste0(city, ' - ', provider_id),
             opacity = .6,
             line = list(shape = "linear", color = 'orange')) %>%
   layout(title = "Unique devices by provider and date (city-defined)",
@@ -454,11 +457,6 @@ city_msa <- unique(msa_names$city)
 setdiff(city_cd, city_msa)
 setdiff(city_msa, city_cd)
 
-
-## MAKE SURE DALLAS, ATLANTA, PORTLAND & WICHITA ARE ALL IN THERE!
-## AND MAKE SURE EVERY DATE IS REPRESENTED! (MAKE A PLOT)
-
-
 n_distinct(city_defined_both$city)
 n_distinct(msa_names$city)
 
@@ -469,26 +467,29 @@ city_defined_msa <-
   mutate(date_range_start =
            floor_date(date, unit = "week",
                       week_start = getOption("lubridate.week.start", 1))) %>%
-  group_by(city, date_range_start) %>%
+  group_by(city, provider_id, date_range_start) %>%
   summarize(downtown_devices = sum(approx_distinct_devices_count, na.rm = T),
             msa_count = sum(msa_count, na.rm = T)) %>%
   ungroup() %>%
-  data.frame()
+  data.frame() %>%
+  filter(!is.na(provider_id) & provider_id != '230599') %>%
+  mutate(normalized = downtown_devices/msa_count)
 
 head(city_defined_msa)
 
-
-
-### EXPORT WEEKLY NORMALIZED DATA (?) FOR BYEONGHWA TO IMPUTE CANADA!!
-
+write.csv(
+  city_defined_msa,
+  'citydefined_for_imputation.csv',
+  row.names = F
+)
 
 # Calculate RQs for US
 #=====================================
 
-head(city_defined_us)
+head(city_defined_msa)
 
 citydefined_rq_us <-
-  city_defined_us %>%
+  city_defined_msa %>%
   filter(!city %in% canada_dt & provider_id == '190199') %>%
   filter((date_range_start >= as.Date('2019-03-04') &
             date_range_start <= as.Date('2019-06-10')) |
@@ -515,10 +516,7 @@ citydefined_rq_us
 # Calculate RQs for Canada
 #=====================================
   
-
-
-### HAVE BYEONGHWA IMPUTE THIS DATA!!!
-
+imputed_citydefined <- ## HAVE BYEONGHWA IMPUTE THIS DATA!!!
 
 city_defined_ca <- 
   imputed_citydefined %>%
@@ -545,7 +543,6 @@ city_defined_ca <-
   
 city_defined <- rbind(city_defined_us, city_defined_ca) %>%
   arrange(desc(rq_citydefined))
-
 
 
 # Combine into one dataset
