@@ -477,11 +477,11 @@ city_defined_msa <-
 
 head(city_defined_msa)
 
-write.csv(
-  city_defined_msa,
-  'citydefined_for_imputation.csv',
-  row.names = F
-)
+# write.csv(
+#   city_defined_msa,
+#   'C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/citydefined_for_imputation.csv',
+#   row.names = F
+# )
 
 # Calculate RQs for US
 #=====================================
@@ -516,17 +516,79 @@ citydefined_rq_us
 # Calculate RQs for Canada
 #=====================================
   
-imputed_citydefined <- ## HAVE BYEONGHWA IMPUTE THIS DATA!!!
+imputed_citydefined_nohalmis <- read.csv('C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/imputation_citydefined_SAITS.csv')
+  
+imputed_hal_mis <- read.csv('C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/imputation_citydefined_SAITS(halifex, mississauga).csv') %>%
+  separate(date_range_start, into = c("day", "month", "year"), sep = "/") %>%
+  mutate(date_range_start = paste(year, month, day, sep = "-")) %>%
+  select(-c(day, month, year))
 
-city_defined_ca <- 
+imputed_citydefined0 <- 
+  imputed_citydefined_nohalmis %>%
+  select(-matches('Halifax|Mississauga')) %>%
+  full_join(imputed_hal_mis)
+
+colnames(imputed_citydefined0) <- 
+  gsub("normalized.", "", colnames(imputed_citydefined0)) 
+
+colnames(imputed_citydefined0) <- 
+  gsub(".7", "_7", colnames(imputed_citydefined0))
+
+colnames(imputed_citydefined0) <- 
+  gsub("\\.19", "_19", colnames(imputed_citydefined0))
+
+names(imputed_citydefined0)
+
+imputed_citydefined <- imputed_citydefined0 %>%
+  pivot_longer(
+    cols = contains('199'),
+    names_to = c('city', 'provider_id'),
+    names_pattern = '(.*)_(.*)',
+    values_to = 'normalized'
+  ) %>%
+  mutate(city = str_replace_all(city, '\\.', ' '))
+
+head(imputed_citydefined)
+
+good_cities <- unique(city_defined_msa$city)
+imputed_cities <- unique(imputed_citydefined$city)
+
+# Make sure the cities are spelled consistently
+setdiff(good_cities, imputed_cities)
+setdiff(imputed_cities, good_cities)
+
+# Plot normalized counts - does imputation look correct?
+check_citydefined_imp <-
+  plot_ly() %>%
+  add_lines(data = imputed_citydefined %>% filter(provider_id == '700199'),
+            x = ~date_range_start, y = ~normalized,
+            split = ~city,
+            name = ~paste0(city, ' - ', provider_id),
+            opacity = .6,
+            line = list(shape = "linear", color = 'purple')) %>%
+  add_lines(data = imputed_citydefined %>% filter(provider_id == '190199'),
+            x = ~date_range_start, y = ~normalized,
+            split = ~city,
+            name = ~paste0(city, ' - ', provider_id),
+            opacity = .6,
+            line = list(shape = "linear", color = 'orange')) %>%
+  layout(title = "IMPUTED FOR CANADA: Normalized unique devices by provider and week (city-defined)",
+         xaxis = list(title = "Date", zerolinecolor = "#ffff",
+                      tickformat = "%b %Y"),
+         yaxis = list(title = "Normalized # of unique devices", zerolinecolor = "#ffff",
+                      ticksuffix = "  "))
+
+check_citydefined_imp
+
+citydefined_rq_ca <- 
   imputed_citydefined %>%
   filter(city %in% canada_dt & provider_id == '190199' &
-           (date_range_start >= as.Date('2019-03-04') & 
+           ((date_range_start >= as.Date('2019-03-04') & 
             date_range_start <= as.Date('2019-06-10')) |
-           (date_range_start >= as.Date('2023-02-27'))) %>%
+           (date_range_start >= as.Date('2023-02-27')))) %>%
   mutate(week_num = isoweek(date_range_start),
          year = year(date_range_start)) %>%
-  select(-date_range_start) %>%
+  select(-c(date_range_start, provider_id)) %>%
   pivot_wider(
     id_cols = c('city', 'week_num'),
     names_from = 'year',
@@ -541,8 +603,16 @@ city_defined_ca <-
   data.frame() %>%
   arrange(desc(rq_citydefined))
   
-city_defined <- rbind(city_defined_us, city_defined_ca) %>%
+# Combine Canada & US RQs
+#=====================================
+
+citydefined_rq_us
+citydefined_rq_ca
+
+city_defined <- rbind(citydefined_rq_us, citydefined_rq_ca) %>%
   arrange(desc(rq_citydefined))
+
+city_defined
 
 
 # Combine into one dataset

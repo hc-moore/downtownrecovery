@@ -19,11 +19,11 @@ ipak(c('tidyverse', 'lubridate', 'ggplot2', 'plotly',
 # filepath <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/sensitivity_analysis/'
 # 
 # not_t_m <-
-#   list.files(path = paste0(filepath, 'hdbscan_all')) %>% 
+#   list.files(path = paste0(filepath, 'hdbscan_all')) %>%
 #   map_df(~read_delim(
 #     paste0(filepath, 'hdbscan_all/', .),
 #     delim = '\001',
-#     col_names = c('city', 'provider_id', 'approx_distinct_devices_count', 
+#     col_names = c('city', 'provider_id', 'approx_distinct_devices_count',
 #                   'event_date'),
 #     col_types = c('ccii')
 #   )) %>%
@@ -37,11 +37,11 @@ ipak(c('tidyverse', 'lubridate', 'ggplot2', 'plotly',
 # unique(not_t_m$provider_id)
 # 
 # t_m <-
-#   list.files(path = paste0(filepath, 'hdbscan_t_m')) %>% 
+#   list.files(path = paste0(filepath, 'hdbscan_t_m')) %>%
 #   map_df(~read_delim(
 #     paste0(filepath, 'hdbscan_t_m/', .),
 #     delim = '\001',
-#     col_names = c('city', 'provider_id', 'approx_distinct_devices_count', 
+#     col_names = c('city', 'provider_id', 'approx_distinct_devices_count',
 #                   'event_date'),
 #     col_types = c('ccii')
 #   )) %>%
@@ -55,12 +55,12 @@ ipak(c('tidyverse', 'lubridate', 'ggplot2', 'plotly',
 # unique(t_m$provider_id)
 # 
 # # Stack them
-# dt <- 
+# dt <-
 #   rbind(not_t_m, t_m) %>%
 #   mutate(city = str_remove(city, '\\s\\w{2}$'),
 #          city = case_when(
 #            city == 'Indianapolis city (balance)' ~ 'Indianapolis',
-#            city == 'Nashville-Davidson metropolitan government (balance)' ~ 
+#            city == 'Nashville-Davidson metropolitan government (balance)' ~
 #              'Nashville',
 #            city == "Ottawa - Gatineau (Ontario part / partie de l'Ontario)" ~
 #              'Ottawa',
@@ -118,11 +118,47 @@ ipak(c('tidyverse', 'lubridate', 'ggplot2', 'plotly',
 # 
 # dt1 %>% filter(is.na(msa_name)) # should be no rows
 # 
-# final_df <- 
-#   dt1 %>% 
+# final_df <-
+#   dt1 %>%
 #   left_join(msa, by = c('msa_name', 'provider_id', 'date'))
 # 
 # head(final_df)
+# 
+# canada_cities <- c('Calgary', 'Edmonton', 'Halifax', 'London', 'Mississauga',
+#                    'Montreal', 'Ottawa', 'Quebec', 'Toronto', 'Vancouver',
+#                    'Winnipeg')
+# 
+# # Export for Amir's weekend vs weekday analysis
+# for_amir <-
+#   final_df %>%
+#   filter(provider_id == '190199' &
+#            !(city %in% canada_cities & date < as.Date('2021-05-17'))) %>%
+#   mutate(normalized = downtown_devices/msa_count)
+# 
+# head(for_amir)
+# 
+# amir_plot <-
+#   plot_ly() %>%
+#   add_lines(data = for_amir %>% filter(!city %in% canada_cities),
+#             x = ~date, y = ~downtown_devices,
+#             name = ~city,
+#             opacity = .7,
+#             split = ~city,
+#             text = ~paste0(city, ': ', downtown_devices),
+#             line = list(shape = "linear", color = '#d6ad09')) %>%
+#   add_lines(data = for_amir %>% filter(city %in% canada_cities),
+#             x = ~date, y = ~downtown_devices,
+#             name = ~city,
+#             opacity = .7,
+#             split = ~city,
+#             text = ~paste0(city, ': ', downtown_devices),
+#             line = list(shape = "linear", color = 'purple'))
+# 
+# amir_plot
+# 
+# write.csv(for_amir,
+#           'C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/for_amir_weekend_weekday.csv',
+#           row.names = F)
 # 
 # # Export normalized counts for imputation
 # #-----------------------------------------
