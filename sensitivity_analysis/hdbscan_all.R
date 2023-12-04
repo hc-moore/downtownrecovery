@@ -128,33 +128,60 @@ ipak(c('tidyverse', 'lubridate', 'ggplot2', 'plotly',
 #                    'Montreal', 'Ottawa', 'Quebec', 'Toronto', 'Vancouver',
 #                    'Winnipeg')
 # 
+# unique(final_df$provider_id)
+# 
 # # Export for Amir's weekend vs weekday analysis
 # for_amir <-
 #   final_df %>%
-#   filter(provider_id == '190199' &
+#   filter(# provider_id == '190199' &
 #            !(city %in% canada_cities & date < as.Date('2021-05-17'))) %>%
 #   mutate(normalized = downtown_devices/msa_count)
 # 
 # head(for_amir)
 # 
-# amir_plot <-
+# amir_plot_190 <-
 #   plot_ly() %>%
-#   add_lines(data = for_amir %>% filter(!city %in% canada_cities),
+#   add_lines(data = for_amir %>% filter(!city %in% canada_cities &
+#                                          provider_id == '190199'),
 #             x = ~date, y = ~downtown_devices,
 #             name = ~city,
 #             opacity = .7,
 #             split = ~city,
 #             text = ~paste0(city, ': ', downtown_devices),
 #             line = list(shape = "linear", color = '#d6ad09')) %>%
-#   add_lines(data = for_amir %>% filter(city %in% canada_cities),
+#   add_lines(data = for_amir %>% filter(city %in% canada_cities &
+#                                          provider_id == '190199'),
 #             x = ~date, y = ~downtown_devices,
 #             name = ~city,
 #             opacity = .7,
 #             split = ~city,
 #             text = ~paste0(city, ': ', downtown_devices),
-#             line = list(shape = "linear", color = 'purple'))
+#             line = list(shape = "linear", color = 'purple')) %>%
+#   layout(title = "190199")
 # 
-# amir_plot
+# amir_plot_190
+# 
+# amir_plot_700 <-
+#   plot_ly() %>%
+#   add_lines(data = for_amir %>% filter(!city %in% canada_cities &
+#                                          provider_id == '700199'),
+#             x = ~date, y = ~downtown_devices,
+#             name = ~city,
+#             opacity = .7,
+#             split = ~city,
+#             text = ~paste0(city, ': ', downtown_devices),
+#             line = list(shape = "linear", color = '#d6ad09')) %>%
+#   add_lines(data = for_amir %>% filter(city %in% canada_cities &
+#                                          provider_id == '700199'),
+#             x = ~date, y = ~downtown_devices,
+#             name = ~city,
+#             opacity = .7,
+#             split = ~city,
+#             text = ~paste0(city, ': ', downtown_devices),
+#             line = list(shape = "linear", color = 'purple')) %>%
+#   layout(title = "700199")  
+# 
+# amir_plot_700
 # 
 # write.csv(for_amir,
 #           'C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/for_amir_weekend_weekday.csv',
