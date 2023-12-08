@@ -133,8 +133,8 @@ ipak(c('tidyverse', 'lubridate', 'ggplot2', 'plotly',
 # # Export for Amir's weekend vs weekday analysis
 # for_amir <-
 #   final_df %>%
-#   filter(# provider_id == '190199' &
-#            !(city %in% canada_cities & date < as.Date('2021-05-17'))) %>%
+#   # filter(# provider_id == '190199' &
+#   #          !(city %in% canada_cities & date < as.Date('2021-05-17'))) %>%
 #   mutate(normalized = downtown_devices/msa_count)
 # 
 # head(for_amir)
@@ -179,7 +179,7 @@ ipak(c('tidyverse', 'lubridate', 'ggplot2', 'plotly',
 #             split = ~city,
 #             text = ~paste0(city, ': ', downtown_devices),
 #             line = list(shape = "linear", color = 'purple')) %>%
-#   layout(title = "700199")  
+#   layout(title = "700199")
 # 
 # amir_plot_700
 # 
