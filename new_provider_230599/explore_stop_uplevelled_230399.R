@@ -177,3 +177,54 @@ stops_norm_plot
 saveWidget(
   stops_norm_plot,
   'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/stops_plot_norm.html')
+
+
+# Plot weekly % change in normalized
+# stops
+#=====================================
+
+weekly_change <-
+  final_df %>%
+  # filter(date != as.Date('2023-08-23') & date != as.Date('2023-12-15')) %>%
+  mutate(
+    date_range_start = floor_date(
+      date,
+      unit = "week",
+      week_start = getOption("lubridate.week.start", 1))) %>%
+  group_by(city, date_range_start) %>%
+  summarize(n_stops = sum(n_stops, na.rm = T),
+            n_stops_msa = sum(n_stops_msa, na.rm = T)) %>%
+  ungroup() %>%
+  mutate(normalized_stops = n_stops/n_stops_msa) %>%
+  data.frame() %>%
+  # Add lag variable (previous week's normalized_stops)
+  arrange(city, date_range_start) %>%
+  group_by(city) %>%
+  mutate(prev_norm_stops = lag(normalized_stops, n = 1),
+         perc_change = (normalized_stops - prev_norm_stops)/prev_norm_stops) %>%
+  ungroup() %>%
+  data.frame() %>%
+  select(city, date_range_start, perc_change)
+
+head(weekly_change)
+
+weekly_change_plot <-
+  plot_ly() %>%
+  add_lines(data = weekly_change,
+            x = ~date_range_start, y = ~perc_change,
+            name = ~city,
+            opacity = .7,
+            split = ~city,
+            text = ~paste0(city, ': ', round(perc_change, 3)),
+            line = list(shape = "linear", color = '#e89b1e')) %>%
+  layout(title = "Weekly percent change in total stops from provider 230399 (stop_uplevelled table), normalized by MSA",
+         xaxis = list(title = "Week", zerolinecolor = "#ffff",
+                      tickformat = "%Y-%m-%d"),
+         yaxis = list(title = "Percent change from previous week", zerolinecolor = "#ffff",
+                      ticksuffix = "  "))
+
+weekly_change_plot
+
+saveWidget(
+  weekly_change_plot,
+  'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/weekly_change_plot.html')
