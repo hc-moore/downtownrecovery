@@ -283,3 +283,50 @@ monthly_change_plot
 saveWidget(
   monthly_change_plot,
   'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/monthly_change_plot.html')
+
+
+# Plot avg. weekly % change for
+# June-July-August and Sept-Oct-Nov
+#=====================================
+
+head(weekly_change)
+
+seasons <-
+  weekly_change %>%
+  mutate(
+    period = case_when(
+      month(date_range_start) %in% c(6, 7, 8) ~ 'summer',
+      month(date_range_start) %in% c(9, 10, 11) ~ 'fall',
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  filter(!is.na(period)) %>%
+  group_by(period, city) %>%
+  summarize(avg_weekly_perc_change = mean(perc_change, na.rm = T)) %>%
+  data.frame()
+
+head(seasons)
+
+summer_ranking <-
+  seasons %>%
+  filter(period == 'summer') %>%
+  arrange(desc(avg_weekly_perc_change)) %>%
+  select(-period)
+
+summer_ranking
+
+write.csv(summer_ranking, 
+          'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/summer_ranking.csv',
+          row.names = F)
+
+fall_ranking <-
+  seasons %>%
+  filter(period == 'fall') %>%
+  arrange(desc(avg_weekly_perc_change)) %>%
+  select(-period)
+
+fall_ranking
+
+write.csv(fall_ranking, 
+          'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/fall_ranking.csv',
+          row.names = F)
