@@ -185,7 +185,6 @@ saveWidget(
 
 weekly_change <-
   final_df %>%
-  # filter(date != as.Date('2023-08-23') & date != as.Date('2023-12-15')) %>%
   mutate(
     date_range_start = floor_date(
       date,
@@ -199,6 +198,10 @@ weekly_change <-
   data.frame() %>%
   # Add lag variable (previous week's normalized_stops)
   arrange(city, date_range_start) %>%
+  # Filter out weeks that contain 8/23 & 12/15
+  filter(date_range_start != as.Date('2023-08-21') &
+           date_range_start != as.Date('2023-08-14') &
+           date_range_start != as.Date('2023-12-11')) %>%
   group_by(city) %>%
   mutate(prev_norm_stops = lag(normalized_stops, n = 1),
          perc_change = (normalized_stops - prev_norm_stops)/prev_norm_stops) %>%
@@ -228,3 +231,56 @@ weekly_change_plot
 saveWidget(
   weekly_change_plot,
   'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/weekly_change_plot.html')
+
+# Plot monthly % change in normalized
+# stops
+#=====================================
+
+monthly_change <-
+  final_df %>%
+  # Filter out problematic dates
+  filter(date != as.Date('2023-08-22') &
+           date != as.Date('2023-08-23') &
+           date != as.Date('2023-12-15')) %>%
+  mutate(
+    date_range_start = floor_date(
+      date,
+      unit = "month",
+      week_start = getOption("lubridate.month.start", 1))) %>%
+  group_by(city, date_range_start) %>%
+  summarize(n_stops = sum(n_stops, na.rm = T),
+            n_stops_msa = sum(n_stops_msa, na.rm = T)) %>%
+  ungroup() %>%
+  mutate(normalized_stops = n_stops/n_stops_msa) %>%
+  data.frame() %>%
+  # Add lag variable (previous week's normalized_stops)
+  arrange(city, date_range_start) %>%
+  group_by(city) %>%
+  mutate(prev_norm_stops = lag(normalized_stops, n = 1),
+         perc_change = (normalized_stops - prev_norm_stops)/prev_norm_stops) %>%
+  ungroup() %>%
+  data.frame() %>%
+  select(city, date_range_start, perc_change)
+
+head(monthly_change)
+
+monthly_change_plot <-
+  plot_ly() %>%
+  add_lines(data = monthly_change,
+            x = ~date_range_start, y = ~perc_change,
+            name = ~city,
+            opacity = .7,
+            split = ~city,
+            text = ~paste0(city, ': ', round(perc_change, 3)),
+            line = list(shape = "linear", color = '#e89b1e')) %>%
+  layout(title = "Monthly percent change in total stops from provider 230399 (stop_uplevelled table), normalized by MSA",
+         xaxis = list(title = "Month", zerolinecolor = "#ffff",
+                      tickformat = "%b %Y"),
+         yaxis = list(title = "Percent change from previous month", zerolinecolor = "#ffff",
+                      ticksuffix = "  "))
+
+monthly_change_plot
+
+saveWidget(
+  monthly_change_plot,
+  'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/monthly_change_plot.html')
