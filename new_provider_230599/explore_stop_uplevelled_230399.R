@@ -245,8 +245,7 @@ monthly_change <-
   mutate(
     date_range_start = floor_date(
       date,
-      unit = "month",
-      week_start = getOption("lubridate.month.start", 1))) %>%
+      unit = "month")) %>%
   group_by(city, date_range_start) %>%
   summarize(n_stops = sum(n_stops, na.rm = T),
             n_stops_msa = sum(n_stops_msa, na.rm = T)) %>%
