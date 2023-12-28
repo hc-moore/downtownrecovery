@@ -330,3 +330,87 @@ fall_ranking
 write.csv(fall_ranking, 
           'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/fall_ranking.csv',
           row.names = F)
+
+
+# Plot monthly chunks - moving average
+#=====================================
+
+head(final_df)
+
+chunks <-
+  final_df %>%
+  # Filter out problematic dates
+  filter(date != as.Date('2023-08-22') &
+           date != as.Date('2023-08-23') &
+           date != as.Date('2023-12-15')) %>%
+  mutate(month = month(date)) %>%
+  select(city, month, n_stops, n_stops_msa) %>%
+  group_by(city, month) %>%
+  summarize(n_stops = sum(n_stops, na.rm = T),
+            n_stops_msa = sum(n_stops_msa, na.rm = T)) %>%
+  ungroup() %>%
+  mutate(n_stops_norm = n_stops/n_stops_msa)
+
+chunks1 <-
+  chunks %>%
+  left_join(
+    chunks %>% filter(month == 6) %>% select(city, june_stops_norm = n_stops_norm),
+    by = c('city')
+  ) %>%
+  mutate(change_from_june = (n_stops_norm - june_stops_norm)/june_stops_norm) %>%
+  filter(!month %in% c(6, 12)) %>%
+  select(city, month, change_from_june) %>%
+  data.frame()
+
+head(chunks1)  
+
+chunk_plot <-
+  plot_ly() %>%
+  add_lines(data = chunks1,
+            x = ~month, y = ~change_from_june,
+            name = ~city,
+            opacity = .7,
+            split = ~city,
+            text = ~paste0(city, ': ', round(change_from_june, 3)),
+            line = list(shape = "linear", color = '#e89b1e')) %>%
+  layout(title = "Percent change in total stops compared to June 2023, from provider 230399 (stop_uplevelled table), normalized by MSA",
+         xaxis = list(title = "", zerolinecolor = "#ffff",
+                      ticktext = list("July", "August", "September", "October", "November"),
+                      tickvals = list(7, 8, 9, 10, 11),
+                      tickmode = "array"),
+         yaxis = list(title = "Percent change from June 2023", zerolinecolor = "#ffff",
+                      ticksuffix = "  "))
+
+chunk_plot
+
+saveWidget(
+  chunk_plot,
+  'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/chunk_plot.html')
+
+
+# Plot rankings based on Nov. chunks
+#=====================================
+
+head(chunks1)
+
+chunk_rank <-
+  chunks1 %>%
+  filter(month == 11) %>%
+  arrange(change_from_june)
+
+chunk_rank_plot <- plot_ly(
+  chunk_rank, 
+  y = ~reorder(city, -change_from_june), 
+  x = ~change_from_june, 
+  type = 'bar' 
+  #text = ~city
+  ) %>%
+  layout(title = "% change from June to Nov 2023",
+         xaxis = list(title = ""),
+         yaxis = list(title = "", dtick = 1)) # , showticklabels = FALSE))
+
+chunk_rank_plot
+
+saveWidget(
+  chunk_rank_plot,
+  'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/chunk_rank_plot.html')
