@@ -252,7 +252,7 @@ monthly_change <-
   ungroup() %>%
   mutate(normalized_stops = n_stops/n_stops_msa) %>%
   data.frame() %>%
-  # Add lag variable (previous week's normalized_stops)
+  # Add lag variable (previous month's normalized_stops)
   arrange(city, date_range_start) %>%
   group_by(city) %>%
   mutate(prev_norm_stops = lag(normalized_stops, n = 1),
@@ -467,6 +467,7 @@ saveWidget(
 
 
 # Plot rankings based on Nov. chunks
+# (compare to June)
 #=====================================
 
 head(chunks1)
@@ -492,3 +493,94 @@ chunk_rank_plot
 saveWidget(
   chunk_rank_plot,
   'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/chunk_rank_plot.html')
+
+
+# Plot rankings based on Nov. chunks
+# (compare to July)
+#=====================================
+
+chunks_july <-
+  chunks %>%
+  left_join(
+    chunks %>% filter(month == 7) %>% select(city, july_stops_norm = n_stops_norm),
+    by = c('city')
+  ) %>%
+  mutate(change_from_july = (n_stops_norm - july_stops_norm)/july_stops_norm) %>%
+  filter(!month %in% c(6, 7, 12)) %>%
+  select(city, month, change_from_july) %>%
+  data.frame()
+
+head(chunks_july)
+
+chunk_rank_july <-
+  chunks_july %>%
+  filter(month == 11) %>%
+  arrange(change_from_july)
+
+chunk_rank_plot_july <- plot_ly(
+  chunk_rank_july, 
+  y = ~reorder(city, -change_from_july), 
+  x = ~change_from_july, 
+  type = 'bar' 
+  #text = ~city
+) %>%
+  layout(title = "% change from July to Nov 2023",
+         xaxis = list(title = ""),
+         yaxis = list(title = "", dtick = 1)) # , showticklabels = FALSE))
+
+chunk_rank_plot_july
+
+saveWidget(
+  chunk_rank_plot_july,
+  'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/chunk_rank_plot_july.html')
+
+
+# Plot CUMULATIVE monthly % change in 
+# normalized stops
+#=====================================
+
+head(monthly_change)
+
+cumulative_monthly <-
+  monthly_change %>%
+  mutate(month = month(date_range_start)) %>%
+  arrange(city, month) %>%
+  filter(!month %in% c(6, 12)) %>%
+  group_by(city) %>% 
+  mutate(cum_change = cumsum(perc_change))
+
+head(cumulative_monthly, 10)
+
+cumulative_area_plot <- plot_ly() %>%
+  add_trace(
+    type = 'scatter',
+    mode = 'lines',
+    fill = 'tonexty',  # Set to 'tonexty' for stacked area chart
+    data = cumulative_monthly,
+    sort = FALSE,
+    x = ~month,
+    y = ~cum_change,
+    name = ~city,
+    stackgroup = 'one'
+  ) %>%
+  layout(
+    title = "Cumulative monthly percent change in total stops, normalized by MSA,<br>from provider 230399 (stop_uplevelled table), July - November 2023",
+    xaxis = list(
+      title = "",
+      zerolinecolor = "#ffff",
+      ticktext = list("July", "August", "September", "October", "November"),
+      tickvals = list(7, 8, 9, 10, 11),
+      tickmode = "array"
+    ),
+    yaxis = list(
+      title = "Cumulative percent change from June onwards",
+      zerolinecolor = "#ffff",
+      ticksuffix = "  "
+    )
+  )
+
+cumulative_area_plot
+
+saveWidget(
+  cumulative_area_plot,
+  'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/cumulative_area_plot.html')
