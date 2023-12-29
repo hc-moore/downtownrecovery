@@ -285,6 +285,45 @@ saveWidget(
   'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/monthly_change_plot.html')
 
 
+# Area plot of monthly % change
+#=====================================
+
+monthly_area_plot <- plot_ly() %>%
+  add_trace(
+    type = 'scatter',
+    mode = 'lines',
+    fill = 'tonexty',  # Set to 'tonexty' for stacked area chart
+    data = monthly_change,
+    sort = FALSE,
+    x = ~date_range_start,
+    y = ~perc_change,
+    name = ~city,
+    stackgroup = 'one' #,
+    # text = ~paste0(city, ': ', round(n_stops_norm, 3))
+  ) %>%
+  layout(
+    title = "Monthly percent change (from previous month) in total stops,<br>normalized by MSA, from provider 230399 (stop_uplevelled table), June - November 2023",
+    xaxis = list(
+      title = "",
+      zerolinecolor = "#ffff",
+      ticktext = list("June", "July", "August", "September", "October", "November"),
+      tickvals = list(6, 7, 8, 9, 10, 11),
+      tickmode = "array"
+    ),
+    yaxis = list(
+      title = "Percent change from previous month",
+      zerolinecolor = "#ffff",
+      ticksuffix = "  "
+    )
+  )
+
+monthly_area_plot
+
+saveWidget(
+  monthly_area_plot,
+  'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/monthly_area_plot.html')
+
+
 # Plot avg. weekly % change for
 # June-July-August and Sept-Oct-Nov
 #=====================================
@@ -386,6 +425,45 @@ chunk_plot
 saveWidget(
   chunk_plot,
   'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/chunk_plot.html')
+
+
+# Monthly chunks - area plot
+#=====================================
+
+chunk_area_plot <- plot_ly() %>%
+  add_trace(
+    type = 'scatter',
+    mode = 'lines',
+    fill = 'tonexty',  # Set to 'tonexty' for stacked area chart
+    data = chunks %>% filter(month != 12),
+    sort = FALSE,
+    x = ~month,
+    y = ~n_stops_norm,
+    name = ~city,
+    stackgroup = 'one' #,
+    # text = ~paste0(city, ': ', round(n_stops_norm, 3))
+  ) %>%
+  layout(
+    title = "Monthly stops by city, normalized by MSA, from provider 230399 (stop_uplevelled table), June - November 2023",
+    xaxis = list(
+      title = "",
+      zerolinecolor = "#ffff",
+      ticktext = list("June", "July", "August", "September", "October", "November"),
+      tickvals = list(6, 7, 8, 9, 10, 11),
+      tickmode = "array"
+    ),
+    yaxis = list(
+      title = "", # Monthly normalized stops
+      zerolinecolor = "#ffff",
+      ticksuffix = "  "
+    )
+  )
+
+chunk_area_plot
+
+saveWidget(
+  chunk_area_plot,
+  'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/chunk_area_plot.html')
 
 
 # Plot rankings based on Nov. chunks
