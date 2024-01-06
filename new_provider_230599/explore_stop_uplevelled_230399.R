@@ -586,10 +586,11 @@ saveWidget(
   'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/cumulative_area_plot.html')
 
 
-# Run regression (normalized stops vs time)
+# Run regression (normalized total 
+# stops vs time)
 #=====================================
 
-city_regs <-
+city_regs_tot <-
   final_df %>% 
   select(city, date, normalized_stops) %>%
   nest(data = -city) %>% 
@@ -605,8 +606,59 @@ city_regs <-
   )) %>%
   arrange(desc(stat_sig_05), desc(estimate))
 
-View(city_regs)
+View(city_regs_tot)
 
-write.csv(city_regs,
-          'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/regression_rank.csv',
+write.csv(city_regs_tot,
+          'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/norm_total_stops_regression_rank.csv',
+          row.names = F)
+
+
+# Run regression (normalized distinct
+# stops vs time)
+#=====================================
+
+city_regs_distinct <-
+  final_df %>% 
+  select(city, date, normalized_distinct) %>%
+  nest(data = -city) %>% 
+  mutate(model = map(data, ~lm(normalized_distinct ~ date, data = .)), 
+         tidied = map(model, tidy)) %>% 
+  unnest(tidied) %>%
+  filter(term == 'date') %>%
+  select(city, estimate, std.error, statistic, p.value) %>%
+  data.frame() %>%
+  mutate(stat_sig_05 = case_when(
+    p.value < .05 ~ 'yes',
+    TRUE ~ 'no'
+  )) %>%
+  arrange(desc(stat_sig_05), desc(estimate))
+
+View(city_regs_distinct)
+
+write.csv(city_regs_distinct,
+          'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/norm_unique_stops_regression_rank.csv',
+          row.names = F)
+
+
+# Compare rankings (total vs unique)
+#=====================================
+
+compare_reg_rank <-
+  city_regs_tot %>%
+  filter(stat_sig_05 == 'yes') %>%
+  mutate(total_stops_rank = row_number()) %>%
+  select(city, total_stops_rank) %>%
+  inner_join(
+    city_regs_distinct %>%
+    filter(stat_sig_05 == 'yes') %>%
+    mutate(unique_stops_rank = row_number()) %>%
+    select(city, unique_stops_rank)    
+  ) %>%
+  mutate(rank_diff = total_stops_rank - unique_stops_rank) %>%
+  arrange(rank_diff)
+
+compare_reg_rank
+
+write.csv(compare_reg_rank,
+          'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/compare_regression_rank.csv',
           row.names = F)
