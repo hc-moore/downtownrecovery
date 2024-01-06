@@ -7,7 +7,7 @@
 #=====================================
 
 source('~/git/timathomas/functions/functions.r')
-ipak(c('tidyverse', 'sf', 'lubridate', 'leaflet', 'plotly', 'htmlwidgets'))
+ipak(c('tidyverse', 'sf', 'lubridate', 'leaflet', 'plotly', 'htmlwidgets', 'broom'))
 
 # Load downtown & MSA data
 #=====================================
@@ -584,3 +584,29 @@ cumulative_area_plot
 saveWidget(
   cumulative_area_plot,
   'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/cumulative_area_plot.html')
+
+
+# Run regression (normalized stops vs time)
+#=====================================
+
+city_regs <-
+  final_df %>% 
+  select(city, date, normalized_stops) %>%
+  nest(data = -city) %>% 
+  mutate(model = map(data, ~lm(normalized_stops ~ date, data = .)), 
+         tidied = map(model, tidy)) %>% 
+  unnest(tidied) %>%
+  filter(term == 'date') %>%
+  select(city, estimate, std.error, statistic, p.value) %>%
+  data.frame() %>%
+  mutate(stat_sig_05 = case_when(
+    p.value < .05 ~ 'yes',
+    TRUE ~ 'no'
+  )) %>%
+  arrange(desc(stat_sig_05), desc(estimate))
+
+View(city_regs)
+
+write.csv(city_regs,
+          'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/regression_rank.csv',
+          row.names = F)
