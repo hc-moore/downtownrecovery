@@ -7,14 +7,19 @@
 #=====================================
 
 source('~/git/timathomas/functions/functions.r')
-ipak(c('tidyverse', 'sf', 'lubridate', 'leaflet', 'plotly', 'htmlwidgets', 'broom'))
+ipak(c('tidyverse', 'sf', 'lubridate', 'leaflet', 'plotly', 'htmlwidgets', 
+       'broom', 'forecast'))
+
+# install.packages("forecast", repos="http://cran.us.r-project.org")
+# library(forecast)
 
 # Load downtown & MSA data
 #=====================================
 
 filepath <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/stop_uplevelled_230399_2023/'
 
-dt <-
+# First load June onwards
+dt_j <-
   list.files(path = paste0(filepath, 'downtown/')) %>% 
   map_df(~read_delim(
     paste0(filepath, 'downtown/', .),
@@ -27,7 +32,7 @@ dt <-
   arrange(date) %>%
   select(-c(zone_date, provider_id))
 
-msa <-
+msa_j <-
   list.files(path = paste0(filepath, 'msa/')) %>% 
   map_df(~read_delim(
     paste0(filepath, 'msa/', .),
@@ -41,8 +46,51 @@ msa <-
   select(-c(zone_date, provider_id)) %>%
   rename(n_stops_msa = n_stops, n_distinct_devices_msa = n_distinct_devices)
 
-glimpse(dt)
-glimpse(msa)
+# Now load March-June
+dt_mj <-
+  list.files(path = paste0(filepath, 'downtown_march_june/')) %>% 
+  map_df(~read_delim(
+    paste0(filepath, 'downtown_march_june/', .),
+    delim = '\001',
+    col_names = c('city', 'zone_date', 'provider_id', 'n_stops', 'n_distinct_devices'),
+    col_types = c('cccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
+  arrange(date) %>%
+  select(-c(zone_date, provider_id))
+
+msa_mj <-
+  list.files(path = paste0(filepath, 'msa_march_june/')) %>% 
+  map_df(~read_delim(
+    paste0(filepath, 'msa_march_june/', .),
+    delim = '\001',
+    col_names = c('msa_name', 'zone_date', 'provider_id', 'n_stops', 'n_distinct_devices'),
+    col_types = c('cccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
+  arrange(date) %>%
+  select(-c(zone_date, provider_id)) %>%
+  rename(n_stops_msa = n_stops, n_distinct_devices_msa = n_distinct_devices)
+
+glimpse(dt_j)
+glimpse(msa_j)
+
+range(dt_j$date)
+range(msa_j$date)
+
+glimpse(dt_mj)
+glimpse(msa_mj)
+
+range(dt_mj$date)
+range(msa_mj$date)
+
+dt <- rbind(dt_mj, dt_j)
+msa <- rbind(msa_mj, msa_j)
+
+range(dt$date)
+range(msa$date)
 
 # Join them
 #=====================================
@@ -69,6 +117,7 @@ final_df <-
          normalized_stops = n_stops/n_stops_msa)
 
 head(final_df)
+
 
 # Plot daily unique devices
 #=====================================
@@ -123,6 +172,7 @@ unique_norm_plot
 saveWidget(
   unique_norm_plot,
   'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/unique_plot_norm.html')
+
 
 # Plot daily normalized stops
 #=====================================
@@ -306,8 +356,8 @@ monthly_area_plot <- plot_ly() %>%
     xaxis = list(
       title = "",
       zerolinecolor = "#ffff",
-      ticktext = list("June", "July", "August", "September", "October", "November"),
-      tickvals = list(6, 7, 8, 9, 10, 11),
+      ticktext = list("April", "May", "June", "July", "August", "September", "October", "November"),
+      tickvals = list(4, 5, 6, 7, 8, 9, 10, 11),
       tickmode = "array"
     ),
     yaxis = list(
@@ -393,12 +443,12 @@ chunks <-
 chunks1 <-
   chunks %>%
   left_join(
-    chunks %>% filter(month == 6) %>% select(city, june_stops_norm = n_stops_norm),
+    chunks %>% filter(month == 3) %>% select(city, march_stops_norm = n_stops_norm),
     by = c('city')
   ) %>%
-  mutate(change_from_june = (n_stops_norm - june_stops_norm)/june_stops_norm) %>%
-  filter(!month %in% c(6, 12)) %>%
-  select(city, month, change_from_june) %>%
+  mutate(change_from_march = (n_stops_norm - march_stops_norm)/march_stops_norm) %>%
+  filter(!month %in% c(3, 12)) %>%
+  select(city, month, change_from_march) %>%
   data.frame()
 
 head(chunks1)  
@@ -406,18 +456,18 @@ head(chunks1)
 chunk_plot <-
   plot_ly() %>%
   add_lines(data = chunks1,
-            x = ~month, y = ~change_from_june,
+            x = ~month, y = ~change_from_march,
             name = ~city,
             opacity = .7,
             split = ~city,
-            text = ~paste0(city, ': ', round(change_from_june, 3)),
+            text = ~paste0(city, ': ', round(change_from_march, 3)),
             line = list(shape = "linear", color = '#e89b1e')) %>%
-  layout(title = "Percent change in total stops compared to June 2023, from provider 230399 (stop_uplevelled table), normalized by MSA",
+  layout(title = "Percent change in total stops compared to March 2023, from provider 230399 (stop_uplevelled table), normalized by MSA",
          xaxis = list(title = "", zerolinecolor = "#ffff",
-                      ticktext = list("July", "August", "September", "October", "November"),
-                      tickvals = list(7, 8, 9, 10, 11),
+                      ticktext = list("April", "May", "June", "July", "August", "September", "October", "November"),
+                      tickvals = list(4, 5, 6, 7, 8, 9, 10, 11),
                       tickmode = "array"),
-         yaxis = list(title = "Percent change from June 2023", zerolinecolor = "#ffff",
+         yaxis = list(title = "Percent change from March 2023", zerolinecolor = "#ffff",
                       ticksuffix = "  "))
 
 chunk_plot
@@ -444,12 +494,12 @@ chunk_area_plot <- plot_ly() %>%
     # text = ~paste0(city, ': ', round(n_stops_norm, 3))
   ) %>%
   layout(
-    title = "Monthly stops by city, normalized by MSA, from provider 230399 (stop_uplevelled table), June - November 2023",
+    title = "Monthly stops by city, normalized by MSA, from provider 230399 (stop_uplevelled table), March - November 2023",
     xaxis = list(
       title = "",
       zerolinecolor = "#ffff",
-      ticktext = list("June", "July", "August", "September", "October", "November"),
-      tickvals = list(6, 7, 8, 9, 10, 11),
+      ticktext = list("March", "April", "May", "June", "July", "August", "September", "October", "November"),
+      tickvals = list(3, 4, 5, 6, 7, 8, 9, 10, 11),
       tickmode = "array"
     ),
     yaxis = list(
@@ -467,7 +517,7 @@ saveWidget(
 
 
 # Plot rankings based on Nov. chunks
-# (compare to June)
+# (compare to March)
 #=====================================
 
 head(chunks1)
@@ -475,16 +525,16 @@ head(chunks1)
 chunk_rank <-
   chunks1 %>%
   filter(month == 11) %>%
-  arrange(change_from_june)
+  arrange(change_from_march)
 
 chunk_rank_plot <- plot_ly(
   chunk_rank, 
-  y = ~reorder(city, -change_from_june), 
-  x = ~change_from_june, 
+  y = ~reorder(city, -change_from_march), 
+  x = ~change_from_march, 
   type = 'bar' 
   #text = ~city
   ) %>%
-  layout(title = "% change from June to Nov 2023",
+  layout(title = "% change from March to Nov 2023",
          xaxis = list(title = ""),
          yaxis = list(title = "", dtick = 1)) # , showticklabels = FALSE))
 
@@ -495,44 +545,44 @@ saveWidget(
   'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/chunk_rank_plot.html')
 
 
-# Plot rankings based on Nov. chunks
-# (compare to July)
-#=====================================
-
-chunks_july <-
-  chunks %>%
-  left_join(
-    chunks %>% filter(month == 7) %>% select(city, july_stops_norm = n_stops_norm),
-    by = c('city')
-  ) %>%
-  mutate(change_from_july = (n_stops_norm - july_stops_norm)/july_stops_norm) %>%
-  filter(!month %in% c(6, 7, 12)) %>%
-  select(city, month, change_from_july) %>%
-  data.frame()
-
-head(chunks_july)
-
-chunk_rank_july <-
-  chunks_july %>%
-  filter(month == 11) %>%
-  arrange(change_from_july)
-
-chunk_rank_plot_july <- plot_ly(
-  chunk_rank_july, 
-  y = ~reorder(city, -change_from_july), 
-  x = ~change_from_july, 
-  type = 'bar' 
-  #text = ~city
-) %>%
-  layout(title = "% change from July to Nov 2023",
-         xaxis = list(title = ""),
-         yaxis = list(title = "", dtick = 1)) # , showticklabels = FALSE))
-
-chunk_rank_plot_july
-
-saveWidget(
-  chunk_rank_plot_july,
-  'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/chunk_rank_plot_july.html')
+# # Plot rankings based on Nov. chunks
+# # (compare to July)
+# #=====================================
+# 
+# chunks_july <-
+#   chunks %>%
+#   left_join(
+#     chunks %>% filter(month == 7) %>% select(city, july_stops_norm = n_stops_norm),
+#     by = c('city')
+#   ) %>%
+#   mutate(change_from_july = (n_stops_norm - july_stops_norm)/july_stops_norm) %>%
+#   filter(!month %in% c(6, 7, 12)) %>%
+#   select(city, month, change_from_july) %>%
+#   data.frame()
+# 
+# head(chunks_july)
+# 
+# chunk_rank_july <-
+#   chunks_july %>%
+#   filter(month == 11) %>%
+#   arrange(change_from_july)
+# 
+# chunk_rank_plot_july <- plot_ly(
+#   chunk_rank_july, 
+#   y = ~reorder(city, -change_from_july), 
+#   x = ~change_from_july, 
+#   type = 'bar' 
+#   #text = ~city
+# ) %>%
+#   layout(title = "% change from July to Nov 2023",
+#          xaxis = list(title = ""),
+#          yaxis = list(title = "", dtick = 1)) # , showticklabels = FALSE))
+# 
+# chunk_rank_plot_july
+# 
+# saveWidget(
+#   chunk_rank_plot_july,
+#   'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/chunk_rank_plot_july.html')
 
 
 # Plot CUMULATIVE monthly % change in 
@@ -545,7 +595,7 @@ cumulative_monthly <-
   monthly_change %>%
   mutate(month = month(date_range_start)) %>%
   arrange(city, month) %>%
-  filter(!month %in% c(6, 12)) %>%
+  filter(!month %in% c(3, 12)) %>%
   group_by(city) %>% 
   mutate(cum_change = cumsum(perc_change))
 
@@ -564,16 +614,16 @@ cumulative_area_plot <- plot_ly() %>%
     stackgroup = 'one'
   ) %>%
   layout(
-    title = "Cumulative monthly percent change in total stops, normalized by MSA,<br>from provider 230399 (stop_uplevelled table), July - November 2023",
+    title = "Cumulative monthly percent change in total stops, normalized by MSA,<br>from provider 230399 (stop_uplevelled table), April - November 2023",
     xaxis = list(
       title = "",
       zerolinecolor = "#ffff",
-      ticktext = list("July", "August", "September", "October", "November"),
-      tickvals = list(7, 8, 9, 10, 11),
+      ticktext = list("April", "May", "June", "July", "August", "September", "October", "November"),
+      tickvals = list(4, 5, 6, 7, 8, 9, 10, 11),
       tickmode = "array"
     ),
     yaxis = list(
-      title = "Cumulative percent change from June onwards",
+      title = "Cumulative percent change from March onwards",
       zerolinecolor = "#ffff",
       ticksuffix = "  "
     )
@@ -662,3 +712,21 @@ compare_reg_rank
 write.csv(compare_reg_rank,
           'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/compare_regression_rank.csv',
           row.names = F)
+
+
+# Remove outliers
+#=====================================
+
+final_df_no_outliers <- final_df0 %>%
+  group_by(city) %>%
+  mutate(
+    ts_data = ts(normalized_distinct, start = c(min(date), 1)),
+    ts_data_no_outliers = tsclean(ts_data)
+  ) %>%
+  ungroup() %>%
+  data.frame() %>%
+  select(-c(ts_data, normalized_distinct)) %>%
+  rename(normalized_distinct = ts_data_no_outliers)
+
+# Check the resulting dataframe
+head(final_df_no_outliers)
