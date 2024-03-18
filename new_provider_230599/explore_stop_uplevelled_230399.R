@@ -152,7 +152,7 @@ dt_no_outliers <- dt %>%
   )
   
 # Plot with vs without outliers
-plot_ly() %>%
+dt_outliers_unique <- plot_ly() %>%
   add_lines(data = dt_no_outliers,
             x = ~date, y = ~n_distinct_devices,
             name = ~paste0(city, ': downtown'),
@@ -167,6 +167,31 @@ plot_ly() %>%
             split = ~city,
             text = ~paste0(city, ' downtown: ', round(n_distinct_devices_cleaned, 3)),
             line = list(shape = "linear", color = '#445e3d'))
+
+saveWidget(
+  dt_outliers_unique,
+  '/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/dt_unique_devices_with_without_outliers.html')
+
+dt_outliers_total <- plot_ly() %>%
+  add_lines(data = dt_no_outliers,
+            x = ~date, y = ~n_stops,
+            name = ~paste0(city, ': downtown'),
+            opacity = .7,
+            split = ~city,
+            text = ~paste0(city, ' downtown: ', round(n_stops, 3)),
+            line = list(shape = "linear", color = '#b4e0a8')) %>%  
+  add_lines(data = dt_no_outliers,
+            x = ~date, y = ~n_stops_cleaned,
+            name = ~paste0(city, ': downtown'),
+            opacity = .7,
+            split = ~city,
+            text = ~paste0(city, ' downtown: ', round(n_stops_cleaned, 3)),
+            line = list(shape = "linear", color = '#445e3d'))
+
+saveWidget(
+  dt_outliers_total,
+  '/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/dt_total_devices_with_without_outliers.html')
+
 
 # Join them
 #=====================================
@@ -255,6 +280,11 @@ unique_norm_plot <-
 
 unique_norm_plot
 
+saveWidget(
+  unique_norm_plot,
+  '/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/normalized_unique_devices_with_without_outliers.html')
+
+
 # Plot normalized total stops
 #=====================================
 
@@ -281,6 +311,10 @@ stops_norm_plot <-
                       ticksuffix = "  "))
 
 stops_norm_plot
+
+saveWidget(
+  stops_norm_plot,
+  '/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/normalized_stops_devices_with_without_outliers.html')
 
 
 # Export final data
