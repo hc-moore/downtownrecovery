@@ -6,23 +6,22 @@
 # Load packages
 #=====================================
 
+# install.packages("forecast", repos="http://cran.us.r-project.org")
+
 source('~/git/timathomas/functions/functions.r')
 ipak(c('tidyverse', 'sf', 'lubridate', 'leaflet', 'plotly', 'htmlwidgets', 
        'broom', 'forecast'))
 
-# install.packages("forecast", repos="http://cran.us.r-project.org")
-# library(forecast)
-
 # Load downtown & MSA data
 #=====================================
 
-filepath <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/stop_uplevelled_230399_2023/'
+filepath <- '/Users/jpg23/data/downtownrecovery/spectus_exports/'
 
-# First load June onwards
-dt_j <-
-  list.files(path = paste0(filepath, 'downtown/')) %>% 
+# Downtown 3/1/23 - 3/7/24
+dt <-
+  list.files(path = paste0(filepath, 'stop_uplevelled_230399_dec_feb/downtowns/')) %>% 
   map_df(~read_delim(
-    paste0(filepath, 'downtown/', .),
+    paste0(filepath, 'stop_uplevelled_230399_dec_feb/downtowns/', .),
     delim = '\001',
     col_names = c('city', 'zone_date', 'provider_id', 'n_stops', 'n_distinct_devices'),
     col_types = c('cccii')
@@ -30,12 +29,14 @@ dt_j <-
   data.frame() %>%
   mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
   arrange(date) %>%
-  select(-c(zone_date, provider_id))
+  select(-c(zone_date, provider_id)) %>%
+  filter(date <= as.Date('2024-03-01'))
 
-msa_j <-
-  list.files(path = paste0(filepath, 'msa/')) %>% 
+# MSA 3/1/23 - 5/31/23
+msa1 <-
+  list.files(path = paste0(filepath, 'stop_uplevelled_230399_2023/msa_march_june/')) %>% 
   map_df(~read_delim(
-    paste0(filepath, 'msa/', .),
+    paste0(filepath, 'stop_uplevelled_230399_2023/msa_march_june/', .),
     delim = '\001',
     col_names = c('msa_name', 'zone_date', 'provider_id', 'n_stops', 'n_distinct_devices'),
     col_types = c('cccii')
@@ -46,24 +47,27 @@ msa_j <-
   select(-c(zone_date, provider_id)) %>%
   rename(n_stops_msa = n_stops, n_distinct_devices_msa = n_distinct_devices)
 
-# Now load March-June
-dt_mj <-
-  list.files(path = paste0(filepath, 'downtown_march_june/')) %>% 
+# MSA 6/1/23 - 12/16/23
+msa2 <-
+  list.files(path = paste0(filepath, 'stop_uplevelled_230399_2023/msa/')) %>%
   map_df(~read_delim(
-    paste0(filepath, 'downtown_march_june/', .),
+    paste0(filepath, 'stop_uplevelled_230399_2023/msa/', .),
     delim = '\001',
-    col_names = c('city', 'zone_date', 'provider_id', 'n_stops', 'n_distinct_devices'),
+    col_names = c('msa_name', 'zone_date', 'provider_id', 'n_stops', 'n_distinct_devices'),
     col_types = c('cccii')
   )) %>%
   data.frame() %>%
   mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
   arrange(date) %>%
-  select(-c(zone_date, provider_id))
+  select(-c(zone_date, provider_id)) %>%
+  rename(n_stops_msa = n_stops, n_distinct_devices_msa = n_distinct_devices) %>%
+  filter(date < as.Date('2023-12-17'))
 
-msa_mj <-
-  list.files(path = paste0(filepath, 'msa_march_june/')) %>% 
+# MSA 12/17/23 - 2/25/24
+msa3 <-
+  list.files(path = paste0(filepath, 'stop_uplevelled_230399_dec_feb/msa/')) %>% 
   map_df(~read_delim(
-    paste0(filepath, 'msa_march_june/', .),
+    paste0(filepath, 'stop_uplevelled_230399_dec_feb/msa/', .),
     delim = '\001',
     col_names = c('msa_name', 'zone_date', 'provider_id', 'n_stops', 'n_distinct_devices'),
     col_types = c('cccii')
@@ -74,23 +78,246 @@ msa_mj <-
   select(-c(zone_date, provider_id)) %>%
   rename(n_stops_msa = n_stops, n_distinct_devices_msa = n_distinct_devices)
 
-glimpse(dt_j)
-glimpse(msa_j)
+# MSA 2/27/24 - 3/1/24
+msa4 <-
+  list.files(path = paste0(filepath, 'stop_uplevelled_230399_feb_march_2024/msa/')) %>% 
+  map_df(~read_delim(
+    paste0(filepath, 'stop_uplevelled_230399_feb_march_2024/msa/', .),
+    delim = '\001',
+    col_names = c('msa_name', 'zone_date', 'provider_id', 'n_stops', 'n_distinct_devices'),
+    col_types = c('cccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
+  arrange(date) %>%
+  select(-c(zone_date, provider_id)) %>%
+  rename(n_stops_msa = n_stops, n_distinct_devices_msa = n_distinct_devices)
 
-range(dt_j$date)
-range(msa_j$date)
 
-glimpse(dt_mj)
-glimpse(msa_mj)
 
-range(dt_mj$date)
-range(msa_mj$date)
 
-dt <- rbind(dt_mj, dt_j)
-msa <- rbind(msa_mj, msa_j)
+
+
+############
+
+# # downtown
+# dt3 <-
+#   list.files(path = paste0(filepath, 'stop_uplevelled_230399_feb_march_2024/downtown/')) %>% 
+#   map_df(~read_delim(
+#     paste0(filepath, 'stop_uplevelled_230399_feb_march_2024/downtown/', .),
+#     delim = '\001',
+#     col_names = c('city', 'zone_date', 'provider_id', 'n_stops', 'n_distinct_devices'),
+#     col_types = c('cccii')
+#   )) %>%
+#   data.frame() %>%
+#   mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
+#   arrange(date) %>%
+#   select(-c(zone_date, provider_id))
+
+# # Downtown 3/1/23 - 12/17/23
+# dt1 <-
+#   list.files(path = paste0(filepath, 'stop_uplevelled_230399_2023/downtown_march_june_HDBSCAN/')) %>% 
+#   map_df(~read_delim(
+#     paste0(filepath, 'stop_uplevelled_230399_2023/downtown_march_june_HDBSCAN/', .),
+#     delim = '\001',
+#     col_names = c('city', 'zone_date', 'provider_id', 'n_stops', 'n_distinct_devices'),
+#     col_types = c('cccii')
+#   )) %>%
+#   data.frame() %>%
+#   mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
+#   arrange(date) %>%
+#   select(-c(zone_date, provider_id))
+
+# # First load June onwards
+# dt_j <-
+#   list.files(path = paste0(filepath, 'downtown/')) %>% 
+#   map_df(~read_delim(
+#     paste0(filepath, 'downtown/', .),
+#     delim = '\001',
+#     col_names = c('city', 'zone_date', 'provider_id', 'n_stops', 'n_distinct_devices'),
+#     col_types = c('cccii')
+#   )) %>%
+#   data.frame() %>%
+#   mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
+#   arrange(date) %>%
+#   select(-c(zone_date, provider_id))
+# 
+# msa_j <-
+#   list.files(path = paste0(filepath, 'stop_uplevelled_230399_2023/msa/')) %>%
+#   map_df(~read_delim(
+#     paste0(filepath, 'stop_uplevelled_230399_2023/msa/', .),
+#     delim = '\001',
+#     col_names = c('msa_name', 'zone_date', 'provider_id', 'n_stops', 'n_distinct_devices'),
+#     col_types = c('cccii')
+#   )) %>%
+#   data.frame() %>%
+#   mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
+#   arrange(date) %>%
+#   select(-c(zone_date, provider_id)) %>%
+#   rename(n_stops_msa = n_stops, n_distinct_devices_msa = n_distinct_devices)
+# 
+# # Now load March-June
+# # dt_mj <-
+# #   list.files(path = paste0(filepath, 'downtown_march_june/')) %>% 
+# #   map_df(~read_delim(
+# #     paste0(filepath, 'downtown_march_june/', .),
+# #     delim = '\001',
+# #     col_names = c('city', 'zone_date', 'provider_id', 'n_stops', 'n_distinct_devices'),
+# #     col_types = c('cccii')
+# #   )) %>%
+# #   data.frame() %>%
+# #   mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
+# #   arrange(date) %>%
+# #   select(-c(zone_date, provider_id))
+# #
+# # msa_mj <-
+# #   list.files(path = paste0(filepath, 'msa_march_june/')) %>% 
+# #   map_df(~read_delim(
+# #     paste0(filepath, 'msa_march_june/', .),
+# #     delim = '\001',
+# #     col_names = c('msa_name', 'zone_date', 'provider_id', 'n_stops', 'n_distinct_devices'),
+# #     col_types = c('cccii')
+# #   )) %>%
+# #   data.frame() %>%
+# #   mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
+# #   arrange(date) %>%
+# #   select(-c(zone_date, provider_id)) %>%
+# #   rename(n_stops_msa = n_stops, n_distinct_devices_msa = n_distinct_devices)
+# 
+# # Now load Dec 2023 - Feb 2024
+# 
+# filepath_dec_feb <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/stop_uplevelled_230399_dec_feb/'
+# 
+# dt_df <-
+#   list.files(path = paste0(filepath, 'downtowns/')) %>% 
+#   map_df(~read_delim(
+#     paste0(filepath, 'downtowns/', .),
+#     delim = '\001',
+#     col_names = c('city', 'zone_date', 'provider_id', 'n_stops', 'n_distinct_devices'),
+#     col_types = c('cccii')
+#   )) %>%
+#   data.frame() %>%
+#   mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
+#   arrange(date) %>%
+#   select(-c(zone_date, provider_id))
+# 
+# msa_df <-
+#   list.files(path = paste0(filepath, 'msa/')) %>% 
+#   map_df(~read_delim(
+#     paste0(filepath, 'msa/', .),
+#     delim = '\001',
+#     col_names = c('msa_name', 'zone_date', 'provider_id', 'n_stops', 'n_distinct_devices'),
+#     col_types = c('cccii')
+#   )) %>%
+#   data.frame() %>%
+#   mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
+#   arrange(date) %>%
+#   select(-c(zone_date, provider_id)) %>%
+#   rename(n_stops_msa = n_stops, n_distinct_devices_msa = n_distinct_devices)
+# 
+# glimpse(dt_j)
+# glimpse(msa_j)
+# 
+# range(dt_j$date)
+# range(msa_j$date)
+# 
+# glimpse(dt_mj)
+# glimpse(msa_mj)
+# 
+# range(dt_mj$date)
+# range(msa_mj$date)
+# 
+# glimpse(dt_df)
+# glimpse(msa_df)
+# 
+# range(dt_df$date)
+# range(msa_df$date)
+
+#### MAKE SURE THERE ARE NO OVERLAPPING DATES (dt_j & dt_df; msa_j & msa_df)
+
+# dt <- rbind(dt_mj, dt_j, dt_df)
+# msa <- rbind(msa_mj, msa_j, msa_df)
+
+# Downtown
+plot_ly() %>%
+  add_lines(data = dt,
+            x = ~date, y = ~n_distinct_devices,
+            name = ~paste0(city, ': downtown'),
+            opacity = .7,
+            split = ~city,
+            text = ~paste0(city, ' downtown: ', round(n_distinct_devices, 3)),
+            line = list(shape = "linear", color = '#445e3d'))
+
+# MSA
+plot_ly() %>%
+  add_lines(data = msa1,
+            x = ~date, y = ~n_distinct_devices_msa,
+            name = ~paste0(msa_name, ': MSA'),
+            opacity = .7,
+            split = ~msa_name,
+            text = ~paste0(msa_name, ' MSA: ', round(n_distinct_devices_msa, 3)),
+            line = list(shape = "linear", color = 'maroon')) %>%
+  add_lines(data = msa2,
+            x = ~date, y = ~n_distinct_devices_msa,
+            name = ~paste0(msa_name, ': MSA'),
+            opacity = .7,
+            split = ~msa_name,
+            text = ~paste0(msa_name, ' MSA: ', round(n_distinct_devices_msa, 3)),
+            line = list(shape = "linear", color = 'lightblue')) %>%
+  add_lines(data = msa3,
+            x = ~date, y = ~n_distinct_devices_msa,
+            name = ~paste0(msa_name, ': MSA'),
+            opacity = .7,
+            split = ~msa_name,
+            text = ~paste0(msa_name, ' MSA: ', round(n_distinct_devices_msa, 3)),
+            line = list(shape = "linear", color = 'orange')) %>%
+  add_lines(data = msa3,
+            x = ~date, y = ~n_distinct_devices_msa,
+            name = ~paste0(msa_name, ': MSA'),
+            opacity = .7,
+            split = ~msa_name,
+            text = ~paste0(msa_name, ' MSA: ', round(n_distinct_devices_msa, 3)),
+            line = list(shape = "linear", color = 'lightpink'))  
+
+msa <- rbind(msa1, msa2, msa3, msa4)
 
 range(dt$date)
 range(msa$date)
+
+# Remove outliers in downtown data
+#=====================================
+
+dt_no_outliers <- dt %>%
+  group_by(city) %>%
+  mutate(
+    n_stops_cleaned = tsclean(n_stops),
+    n_distinct_devices_cleaned = tsclean(n_distinct_devices)
+  ) # %>%  
+  # mutate(
+  #   ts_distinct = ts(n_distinct_devices, start = c(min(date), 1)),
+  #   ts_distinct_no_outliers = tsclean(ts_distinct)
+  # ) %>%
+  # ungroup() %>%
+  # data.frame() %>%
+  # select(-c(ts_distinct, n_distinct_devices)) %>%
+  # rename(n_distinct_devices = ts_distinct_no_outliers)
+  
+# Plot with vs without outliers
+plot_ly() %>%
+  add_lines(data = dt_no_outliers,
+            x = ~date, y = ~n_distinct_devices,
+            name = ~paste0(city, ': downtown'),
+            opacity = .7,
+            split = ~city,
+            text = ~paste0(city, ' downtown: ', round(n_distinct_devices, 3)),
+            line = list(shape = "linear", color = '#b4e0a8')) %>%  
+  add_lines(data = dt_no_outliers,
+            x = ~date, y = ~n_distinct_devices_cleaned,
+            name = ~paste0(city, ': downtown'),
+            opacity = .7,
+            split = ~city,
+            text = ~paste0(city, ' downtown: ', round(n_distinct_devices_cleaned, 3)),
+            line = list(shape = "linear", color = '#445e3d'))
 
 # Join them
 #=====================================
