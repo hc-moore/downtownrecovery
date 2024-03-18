@@ -317,11 +317,20 @@ saveWidget(
   '/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/normalized_stops_devices_with_without_outliers.html')
 
 
+# Remove Canadian cities
+#=====================================
+
+no_canada <- final_df_no_outliers %>%
+  filter(!city %in% c('Edmonton', 'Winnipeg', 'Vancouver', 'London', 'Ottawa',
+                      'Halifax', 'Calgary', 'Toronto', 'Quebec', 'Montreal'))
+
+unique(no_canada$city)
+
 # Export final data
 #=====================================
 
-write.csv(final_df_no_outliers,
-          '/Users/jpg23/data/downtownrecovery/stop_uplevelled_2023_2024/stopuplevelled_march2023_march2024_outliers_removed.csv',
+write.csv(no_canada,
+          '/Users/jpg23/data/downtownrecovery/stop_uplevelled_2023_2024/stopuplevelled_march2023_march2024_outliers_removed_US_only.csv',
           row.names = F)
 
 
