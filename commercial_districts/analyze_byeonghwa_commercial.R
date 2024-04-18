@@ -1,6 +1,6 @@
 #===============================================================================
 # Calculate recovery rates for commercial districts in Portland, SF, NYC,
-# Chicago and Toronto
+# Chicago and Toronto - using Byeonghwa's polygons
 #===============================================================================
 
 # Load packages
@@ -17,9 +17,9 @@ ipak(c('tidyverse', 'lubridate', 'ggplot2', 'plotly',
 filepath <- '/Users/jpg23/data/downtownrecovery/spectus_exports/'
 
 comm <-
-  list.files(path = paste0(filepath, 'commercial_districts')) %>%
+  list.files(path = paste0(filepath, 'byeonghwa_commercial')) %>%
   map_df(~read_delim(
-    paste0(filepath, 'commercial_districts/', .),
+    paste0(filepath, 'byeonghwa_commercial/', .),
     delim = '\001',
     col_names = c('city', 'district', 'provider_id', 
                   'approx_distinct_devices_count', 'event_date'),
@@ -68,28 +68,17 @@ head(msa_names)
 unique(comm$city)
 unique(msa_names$city)
 
-comm1 <- comm %>%
-  mutate(city = case_when(
-    city == 'sf' ~ 'San Francisco',
-    city == 'chicago' ~ 'Chicago',
-    city == 'nyc' ~ 'New York',
-    city == 'portland' ~ 'Portland',
-    city == 'toronto' ~ 'Toronto'
-  ))
-
-unique(comm1$city)
-
-comm2 <- comm1 %>% left_join(msa_names)
-head(comm2)
+comm1 <- comm %>% left_join(msa_names)
+head(comm1)
 head(msa)
 
-comm2 %>% filter(is.na(msa_name)) # should be no rows
+comm1 %>% filter(is.na(msa_name)) # should be no rows
 
-range(comm2$date)
+range(comm1$date)
 range(msa$date)
 
 final_df <-
-  comm2 %>%
+  comm1 %>%
   left_join(msa, by = c('msa_name', 'provider_id', 'date')) %>%
   mutate(comm_district = paste0(city, ': ', district)) %>%
   select(-c(city, district, msa_name))
@@ -117,9 +106,8 @@ head(for_imputation)
 range(for_imputation$date_range_start)
 
 write.csv(for_imputation,
-          'C:/Users/jpg23/data/downtownrecovery/commercial_districts/commercial_for_imputation.csv',
+          '/Users/jpg23/data/downtownrecovery/commercial_districts/byeonghwa_commercial_for_imputation.csv',
           row.names = F)
-
 
 # Plot data
 #-----------------------------------------
@@ -140,7 +128,7 @@ comm_plot <-
             split = ~comm_district,
             text = ~paste0(comm_district, ': ', round(normalized, 3)),
             line = list(shape = "linear", color = '#8c0a03')) %>%
-  layout(title = "Weekly counts in commercial districts normalized by MSA (not yet imputed for Toronto)",
+  layout(title = "Weekly counts in Byeonghwa's commercial districts normalized by MSA (not yet imputed for Toronto)",
          xaxis = list(title = "Week", zerolinecolor = "#ffff",
                       tickformat = "%b %Y"),
          yaxis = list(title = "Normalized", zerolinecolor = "#ffff",
@@ -150,7 +138,6 @@ comm_plot <-
                             line = list(color = 'black', dash = 'dash'))))
 
 comm_plot
-
 
 # Calculate US cities' recovery rates
 #-----------------------------------------
@@ -223,24 +210,17 @@ rq <- rbind(rq_us, rq_t) %>%
 head(rq)
 
 write.csv(rq,
-          'C:/Users/jpg23/UDP/downtown_recovery/commercial_districts/commercial_districts_RQs.csv',
+          '/Users/jpg23/UDP/downtown_recovery/commercial_districts/byeonghwa_commercial_districts_RQs.csv',
           row.names = F)
 
 # Map recovery rates by district
 #-----------------------------------------
 
-comm_sf <- st_read("C:/Users/jpg23/data/downtownrecovery/shapefiles/commercial_districts/all_cities_commercial_districts.geojson")
+comm_sf <- st_read("/Users/jpg23/UDP/downtown_recovery/commercial_districts/byeonghwa_commercial_5cities.geojson")
 head(comm_sf)
 
 comm_sf1 <- comm_sf %>%
-  mutate(city = case_when(
-    city == 'sf' ~ 'San Francisco',
-    city == 'chicago' ~ 'Chicago',
-    city == 'nyc' ~ 'New York',
-    city == 'portland' ~ 'Portland',
-    city == 'toronto' ~ 'Toronto'
-  ),
-  comm_district = paste0(city, ': ', district)) %>%
+  mutate(comm_district = paste0(city, ': ', district)) %>%
   select(comm_district)
 
 head(comm_sf1)
@@ -253,20 +233,20 @@ head(rq_sf)
 
 summary(rq_sf$rq)
 getJenksBreaks(rq_sf$rq, 7)
+hist(rq_sf$rq)
+
+# ADJUST THE BINS TO CORRESPOND WITH THE BREAKS SHOWN ABOVE!
 
 comm_sf2 <- rq_sf %>%
   mutate(
     rate_cat = factor(case_when(
       rq < .75 ~ '40 - 74%',
       rq < 1 ~ '75 - 99%',
-      rq < 1.3 ~ '100 - 129%',
-      rq < 1.85 ~ '130 - 184%',
-      rq < 2.8 ~ '185 - 279%',
-      TRUE ~ '280%+'
+      rq < 1.5 ~ '100 - 149%',
+      TRUE ~ '150%+'
     ),
-    levels = c('40 - 74%', '75 - 99%', '100 - 129%', '130 - 184%', '185 - 279%',
-               '280%+')),
-    label = paste0(comm_district, ": ", round(rq * 100), "%"))
+    levels = c('40 - 74%', '75 - 99%', '100 - 149%', '150%+')),
+    label = paste0(round(rq * 100), "%"))
 
 head(comm_sf2)
 table(comm_sf2$rate_cat)
@@ -274,10 +254,8 @@ table(comm_sf2$rate_cat)
 pal <- c(
   "#e41822",
   "#faa09d",
-  "#5bc4fb",
-  "#2c92d7",
-  "#0362b0",
-  "#033384"
+  "#96cdf2",
+  "#0e7bc4"
 )
 
 leaflet_pal <- colorFactor(
@@ -298,15 +276,7 @@ nyc_map <-
   leaflet(
     options = leafletOptions(minZoom = 9, maxZoom = 18, zoomControl = FALSE)
   ) %>%
-  # setView(lat = 28.72, lng = -81.97, zoom = 7) %>%
-  addMapPane(name = "polygons", zIndex = 410) %>%
-  addMapPane(name = "polylines", zIndex = 420) %>%
-  addMapPane(name = "Layers", zIndex = 430) %>%
   addProviderTiles("CartoDB.PositronNoLabels") %>%
-  addProviderTiles("Stamen.TonerLines",
-                   options = providerTileOptions(opacity = 0.3),
-                   group = "Roads"
-  ) %>%
   addPolygons(
     data = nyc,
     label = ~label,
@@ -320,8 +290,7 @@ nyc_map <-
       highlightOptions(
         color = "black",
         weight = 3,
-        bringToFront = TRUE),
-    options = pathOptions(pane = "polygons")
+        bringToFront = TRUE)
   ) %>%
   addLegend(
     data = nyc,
@@ -338,15 +307,7 @@ sf_map <-
   leaflet(
     options = leafletOptions(minZoom = 9, maxZoom = 18, zoomControl = FALSE)
   ) %>%
-  # setView(lat = 28.72, lng = -81.97, zoom = 7) %>%
-  addMapPane(name = "polygons", zIndex = 410) %>%
-  addMapPane(name = "polylines", zIndex = 420) %>%
-  addMapPane(name = "Layers", zIndex = 430) %>%
   addProviderTiles("CartoDB.PositronNoLabels") %>%
-  addProviderTiles("Stamen.TonerLines",
-                   options = providerTileOptions(opacity = 0.3),
-                   group = "Roads"
-  ) %>%
   addPolygons(
     data = sf,
     label = ~label,
@@ -360,8 +321,7 @@ sf_map <-
       highlightOptions(
         color = "black",
         weight = 3,
-        bringToFront = TRUE),
-    options = pathOptions(pane = "polygons")
+        bringToFront = TRUE)
   ) %>%
   addLegend(
     data = sf,
@@ -378,15 +338,7 @@ portland_map <-
   leaflet(
     options = leafletOptions(minZoom = 9, maxZoom = 18, zoomControl = FALSE)
   ) %>%
-  # setView(lat = 28.72, lng = -81.97, zoom = 7) %>%
-  addMapPane(name = "polygons", zIndex = 410) %>%
-  addMapPane(name = "polylines", zIndex = 420) %>%
-  addMapPane(name = "Layers", zIndex = 430) %>%
   addProviderTiles("CartoDB.PositronNoLabels") %>%
-  addProviderTiles("Stamen.TonerLines",
-                   options = providerTileOptions(opacity = 0.3),
-                   group = "Roads"
-  ) %>%
   addPolygons(
     data = portland,
     label = ~label,
@@ -400,8 +352,7 @@ portland_map <-
       highlightOptions(
         color = "black",
         weight = 3,
-        bringToFront = TRUE),
-    options = pathOptions(pane = "polygons")
+        bringToFront = TRUE)
   ) %>%
   addLegend(
     data = portland,
@@ -418,15 +369,7 @@ chicago_map <-
   leaflet(
     options = leafletOptions(minZoom = 9, maxZoom = 18, zoomControl = FALSE)
   ) %>%
-  # setView(lat = 28.72, lng = -81.97, zoom = 7) %>%
-  addMapPane(name = "polygons", zIndex = 410) %>%
-  addMapPane(name = "polylines", zIndex = 420) %>%
-  addMapPane(name = "Layers", zIndex = 430) %>%
   addProviderTiles("CartoDB.PositronNoLabels") %>%
-  addProviderTiles("Stamen.TonerLines",
-                   options = providerTileOptions(opacity = 0.3),
-                   group = "Roads"
-  ) %>%
   addPolygons(
     data = chicago,
     label = ~label,
@@ -440,8 +383,7 @@ chicago_map <-
       highlightOptions(
         color = "black",
         weight = 3,
-        bringToFront = TRUE),
-    options = pathOptions(pane = "polygons")
+        bringToFront = TRUE)
   ) %>%
   addLegend(
     data = chicago,
@@ -458,15 +400,7 @@ toronto_map <-
   leaflet(
     options = leafletOptions(minZoom = 9, maxZoom = 18, zoomControl = FALSE)
   ) %>%
-  # setView(lat = 28.72, lng = -81.97, zoom = 7) %>%
-  addMapPane(name = "polygons", zIndex = 410) %>%
-  addMapPane(name = "polylines", zIndex = 420) %>%
-  addMapPane(name = "Layers", zIndex = 430) %>%
   addProviderTiles("CartoDB.PositronNoLabels") %>%
-  addProviderTiles("Stamen.TonerLines",
-                   options = providerTileOptions(opacity = 0.3),
-                   group = "Roads"
-  ) %>%
   addPolygons(
     data = toronto,
     label = ~label,
@@ -480,8 +414,7 @@ toronto_map <-
       highlightOptions(
         color = "black",
         weight = 3,
-        bringToFront = TRUE),
-    options = pathOptions(pane = "polygons")
+        bringToFront = TRUE)
   ) %>%
   addLegend(
     data = toronto,
@@ -494,9 +427,10 @@ toronto_map <-
 toronto_map
 
 # Save maps
-map_path <- 'C:/Users/jpg23/UDP/downtown_recovery/commercial_districts/'
-saveWidget(nyc_map, paste0(map_path, 'nyc_commercial_RQs.html'))
-saveWidget(sf_map, paste0(map_path, 'sf_commercial_RQs.html'))
-saveWidget(portland_map, paste0(map_path, 'portland_commercial_RQs.html'))
-saveWidget(chicago_map, paste0(map_path, 'chicago_commercial_RQs.html'))
-saveWidget(toronto_map, paste0(map_path, 'toronto_commercial_RQs.html'))
+map_path <- '/Users/jpg23/UDP/downtown_recovery/commercial_districts/byeonghwa_commercial/'
+
+saveWidget(nyc_map, paste0(map_path, 'nyc_byeonghwa_commercial_RQs.html'))
+saveWidget(sf_map, paste0(map_path, 'sf_byeonghwa_commercial_RQs.html'))
+saveWidget(portland_map, paste0(map_path, 'portland_byeonghwa_commercial_RQs.html'))
+saveWidget(chicago_map, paste0(map_path, 'chicago_byeonghwa_commercial_RQs.html'))
+saveWidget(toronto_map, paste0(map_path, 'toronto_byeonghwa_commercial_RQs.html'))

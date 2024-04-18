@@ -156,9 +156,9 @@ for_imputation <-
 head(for_imputation)
 range(for_imputation$date_range_start)
 
-write.csv(for_imputation,
-          '/Users/jpg23/data/downtownrecovery/commercial_districts/commercial_for_imputation_work_vs_nonwork_hrs.csv',
-          row.names = F)
+# write.csv(for_imputation,
+#           '/Users/jpg23/data/downtownrecovery/commercial_districts/commercial_for_imputation_work_vs_nonwork_hrs.csv',
+#           row.names = F)
 
 # Plot data
 #-----------------------------------------
@@ -245,7 +245,8 @@ rq_us <-
          rq_nonwrk = norm_nonwrk_ntv2023/norm_nonwrk_ntv2019) %>%
   data.frame() %>%
   select(comm_district, rq_wrk, rq_nonwrk) %>%
-  arrange(desc(rq_wrk))
+  arrange(desc(rq_wrk)) %>%
+  filter(comm_district != 'San Francisco: NEIGHBORHOOD COMMERCIAL, CLUSTER - 19716')
 
 head(rq_us)
 
@@ -294,9 +295,9 @@ rq <- rbind(rq_us, rq_t) %>%
 
 head(rq)
 
-write.csv(rq,
-          '/Users/jpg23/UDP/downtown_recovery/commercial_districts/commercial_districts_work_nonwork_hrs_RQs.csv',
-          row.names = F)
+# write.csv(rq,
+#           '/Users/jpg23/UDP/downtown_recovery/commercial_districts/commercial_districts_work_nonwork_hrs_RQs.csv',
+#           row.names = F)
 
 # Map recovery rates by district
 #-----------------------------------------
@@ -325,30 +326,29 @@ head(rq_sf)
 
 summary(rq_sf$rq_wrk)
 getJenksBreaks(rq_sf$rq_wrk, 7)
+hist(rq_sf$rq_wrk)
 
 summary(rq_sf$rq_nonwrk)
 getJenksBreaks(rq_sf$rq_nonwrk, 7)
-
-# ADJUST THE ACTUAL BINS BELOW BASED ON THE ABOVE BREAKS! BUT MAKE SURE FIRST
-# TWO CATEGORIES STILL END AT 99% SO THEY'RE RED AND THE OTHERS ARE BLUE
+hist(rq_sf$rq_nonwrk)
 
 comm_sf2 <- rq_sf %>%
   mutate(
-    # rate_wrk_cat = factor(case_when(
-    #   rq_wrk < .75 ~ '40 - 74%',
-    #   rq_wrk < 1 ~ '75 - 99%',
-    #   rq_wrk < 1.3 ~ '100 - 129%',
-    #   TRUE ~ '280%+'
-    # ),
-    # levels = c('40 - 74%', '75 - 99%', '100 - 129%', '280%+')),
+    rate_wrk_cat = factor(case_when(
+      rq_wrk < .75 ~ '<75%',
+      rq_wrk < 1 ~ '75 - 99%',
+      rq_wrk < 1.5 ~ '100 - 149%',
+      TRUE ~ '150%+'
+    ),
+    levels = c('<75%', '75 - 99%', '100 - 149%', '150%+')),
     wrk_label = paste0(comm_district, ": ", round(rq_wrk * 100), "%"),
-    # rate_nonwrk_cat = factor(case_when(
-    #   rq_nonwrk < .75 ~ '40 - 74%',
-    #   rq_nonwrk < 1 ~ '75 - 99%',
-    #   rq_nonwrk < 1.3 ~ '100 - 129%',
-    #   TRUE ~ '280%+'
-    # ),
-    # levels = c('40 - 74%', '75 - 99%', '100 - 129%', '280%+')),
+    rate_nonwrk_cat = factor(case_when(
+      rq_nonwrk < .75 ~ '<75%',
+      rq_nonwrk < 1 ~ '75 - 99%',
+      rq_nonwrk < 1.5 ~ '100 - 149%',
+      TRUE ~ '150%+'
+    ),
+    levels = c('<75%', '75 - 99%', '100 - 149%', '150%+')),    
     nonwrk_label = paste0(comm_district, ": ", round(rq_nonwrk * 100), "%")    )
 
 head(comm_sf2)
@@ -392,15 +392,7 @@ nyc_wrk_map <-
   leaflet(
     options = leafletOptions(minZoom = 9, maxZoom = 18, zoomControl = FALSE)
   ) %>%
-  # setView(lat = 28.72, lng = -81.97, zoom = 7) %>%
-  addMapPane(name = "polygons", zIndex = 410) %>%
-  addMapPane(name = "polylines", zIndex = 420) %>%
-  addMapPane(name = "Layers", zIndex = 430) %>%
   addProviderTiles("CartoDB.PositronNoLabels") %>%
-  addProviderTiles("Stamen.TonerLines",
-                   options = providerTileOptions(opacity = 0.3),
-                   group = "Roads"
-  ) %>%
   addPolygons(
     data = nyc,
     label = ~wrk_label,
@@ -414,8 +406,7 @@ nyc_wrk_map <-
       highlightOptions(
         color = "black",
         weight = 3,
-        bringToFront = TRUE),
-    options = pathOptions(pane = "polygons")
+        bringToFront = TRUE)
   ) %>%
   addLegend(
     data = nyc,
@@ -432,15 +423,7 @@ sf_wrk_map <-
   leaflet(
     options = leafletOptions(minZoom = 9, maxZoom = 18, zoomControl = FALSE)
   ) %>%
-  # setView(lat = 28.72, lng = -81.97, zoom = 7) %>%
-  addMapPane(name = "polygons", zIndex = 410) %>%
-  addMapPane(name = "polylines", zIndex = 420) %>%
-  addMapPane(name = "Layers", zIndex = 430) %>%
   addProviderTiles("CartoDB.PositronNoLabels") %>%
-  addProviderTiles("Stamen.TonerLines",
-                   options = providerTileOptions(opacity = 0.3),
-                   group = "Roads"
-  ) %>%
   addPolygons(
     data = sf,
     label = ~wrk_label,
@@ -454,8 +437,7 @@ sf_wrk_map <-
       highlightOptions(
         color = "black",
         weight = 3,
-        bringToFront = TRUE),
-    options = pathOptions(pane = "polygons")
+        bringToFront = TRUE)
   ) %>%
   addLegend(
     data = sf,
@@ -472,15 +454,7 @@ portland_wrk_map <-
   leaflet(
     options = leafletOptions(minZoom = 9, maxZoom = 18, zoomControl = FALSE)
   ) %>%
-  # setView(lat = 28.72, lng = -81.97, zoom = 7) %>%
-  addMapPane(name = "polygons", zIndex = 410) %>%
-  addMapPane(name = "polylines", zIndex = 420) %>%
-  addMapPane(name = "Layers", zIndex = 430) %>%
   addProviderTiles("CartoDB.PositronNoLabels") %>%
-  addProviderTiles("Stamen.TonerLines",
-                   options = providerTileOptions(opacity = 0.3),
-                   group = "Roads"
-  ) %>%
   addPolygons(
     data = portland,
     label = ~wrk_label,
@@ -494,8 +468,7 @@ portland_wrk_map <-
       highlightOptions(
         color = "black",
         weight = 3,
-        bringToFront = TRUE),
-    options = pathOptions(pane = "polygons")
+        bringToFront = TRUE)
   ) %>%
   addLegend(
     data = portland,
@@ -512,15 +485,7 @@ chicago_wrk_map <-
   leaflet(
     options = leafletOptions(minZoom = 9, maxZoom = 18, zoomControl = FALSE)
   ) %>%
-  # setView(lat = 28.72, lng = -81.97, zoom = 7) %>%
-  addMapPane(name = "polygons", zIndex = 410) %>%
-  addMapPane(name = "polylines", zIndex = 420) %>%
-  addMapPane(name = "Layers", zIndex = 430) %>%
   addProviderTiles("CartoDB.PositronNoLabels") %>%
-  addProviderTiles("Stamen.TonerLines",
-                   options = providerTileOptions(opacity = 0.3),
-                   group = "Roads"
-  ) %>%
   addPolygons(
     data = chicago,
     label = ~wrk_label,
@@ -534,8 +499,7 @@ chicago_wrk_map <-
       highlightOptions(
         color = "black",
         weight = 3,
-        bringToFront = TRUE),
-    options = pathOptions(pane = "polygons")
+        bringToFront = TRUE)
   ) %>%
   addLegend(
     data = chicago,
@@ -552,15 +516,7 @@ toronto_wrk_map <-
   leaflet(
     options = leafletOptions(minZoom = 9, maxZoom = 18, zoomControl = FALSE)
   ) %>%
-  # setView(lat = 28.72, lng = -81.97, zoom = 7) %>%
-  addMapPane(name = "polygons", zIndex = 410) %>%
-  addMapPane(name = "polylines", zIndex = 420) %>%
-  addMapPane(name = "Layers", zIndex = 430) %>%
   addProviderTiles("CartoDB.PositronNoLabels") %>%
-  addProviderTiles("Stamen.TonerLines",
-                   options = providerTileOptions(opacity = 0.3),
-                   group = "Roads"
-  ) %>%
   addPolygons(
     data = toronto,
     label = ~wrk_label,
@@ -574,8 +530,7 @@ toronto_wrk_map <-
       highlightOptions(
         color = "black",
         weight = 3,
-        bringToFront = TRUE),
-    options = pathOptions(pane = "polygons")
+        bringToFront = TRUE)
   ) %>%
   addLegend(
     data = toronto,
@@ -588,7 +543,7 @@ toronto_wrk_map <-
 toronto_wrk_map
 
 # Save maps
-map_path <- 'C:/Users/jpg23/UDP/downtown_recovery/commercial_districts/work_nonwork_hrs/'
+map_path <- '/Users/jpg23/UDP/downtown_recovery/commercial_districts/work_nonwork_hrs/'
 
 saveWidget(nyc_wrk_map, paste0(map_path, 'work_hrs/nyc_wrk_commercial_RQs.html'))
 saveWidget(sf_wrk_map, paste0(map_path, 'work_hrs/sf_wrk_commercial_RQs.html'))
@@ -605,15 +560,7 @@ nyc_nonwrk_map <-
   leaflet(
     options = leafletOptions(minZoom = 9, maxZoom = 18, zoomControl = FALSE)
   ) %>%
-  # setView(lat = 28.72, lng = -81.97, zoom = 7) %>%
-  addMapPane(name = "polygons", zIndex = 410) %>%
-  addMapPane(name = "polylines", zIndex = 420) %>%
-  addMapPane(name = "Layers", zIndex = 430) %>%
   addProviderTiles("CartoDB.PositronNoLabels") %>%
-  addProviderTiles("Stamen.TonerLines",
-                   options = providerTileOptions(opacity = 0.3),
-                   group = "Roads"
-  ) %>%
   addPolygons(
     data = nyc,
     label = ~nonwrk_label,
@@ -627,8 +574,7 @@ nyc_nonwrk_map <-
       highlightOptions(
         color = "black",
         weight = 3,
-        bringToFront = TRUE),
-    options = pathOptions(pane = "polygons")
+        bringToFront = TRUE)
   ) %>%
   addLegend(
     data = nyc,
@@ -645,15 +591,7 @@ sf_nonwrk_map <-
   leaflet(
     options = leafletOptions(minZoom = 9, maxZoom = 18, zoomControl = FALSE)
   ) %>%
-  # setView(lat = 28.72, lng = -81.97, zoom = 7) %>%
-  addMapPane(name = "polygons", zIndex = 410) %>%
-  addMapPane(name = "polylines", zIndex = 420) %>%
-  addMapPane(name = "Layers", zIndex = 430) %>%
   addProviderTiles("CartoDB.PositronNoLabels") %>%
-  addProviderTiles("Stamen.TonerLines",
-                   options = providerTileOptions(opacity = 0.3),
-                   group = "Roads"
-  ) %>%
   addPolygons(
     data = sf,
     label = ~nonwrk_label,
@@ -667,8 +605,7 @@ sf_nonwrk_map <-
       highlightOptions(
         color = "black",
         weight = 3,
-        bringToFront = TRUE),
-    options = pathOptions(pane = "polygons")
+        bringToFront = TRUE)
   ) %>%
   addLegend(
     data = sf,
@@ -685,15 +622,7 @@ portland_nonwrk_map <-
   leaflet(
     options = leafletOptions(minZoom = 9, maxZoom = 18, zoomControl = FALSE)
   ) %>%
-  # setView(lat = 28.72, lng = -81.97, zoom = 7) %>%
-  addMapPane(name = "polygons", zIndex = 410) %>%
-  addMapPane(name = "polylines", zIndex = 420) %>%
-  addMapPane(name = "Layers", zIndex = 430) %>%
   addProviderTiles("CartoDB.PositronNoLabels") %>%
-  addProviderTiles("Stamen.TonerLines",
-                   options = providerTileOptions(opacity = 0.3),
-                   group = "Roads"
-  ) %>%
   addPolygons(
     data = portland,
     label = ~nonwrk_label,
@@ -707,8 +636,7 @@ portland_nonwrk_map <-
       highlightOptions(
         color = "black",
         weight = 3,
-        bringToFront = TRUE),
-    options = pathOptions(pane = "polygons")
+        bringToFront = TRUE)
   ) %>%
   addLegend(
     data = portland,
@@ -725,15 +653,7 @@ chicago_nonwrk_map <-
   leaflet(
     options = leafletOptions(minZoom = 9, maxZoom = 18, zoomControl = FALSE)
   ) %>%
-  # setView(lat = 28.72, lng = -81.97, zoom = 7) %>%
-  addMapPane(name = "polygons", zIndex = 410) %>%
-  addMapPane(name = "polylines", zIndex = 420) %>%
-  addMapPane(name = "Layers", zIndex = 430) %>%
   addProviderTiles("CartoDB.PositronNoLabels") %>%
-  addProviderTiles("Stamen.TonerLines",
-                   options = providerTileOptions(opacity = 0.3),
-                   group = "Roads"
-  ) %>%
   addPolygons(
     data = chicago,
     label = ~nonwrk_label,
@@ -747,8 +667,7 @@ chicago_nonwrk_map <-
       highlightOptions(
         color = "black",
         weight = 3,
-        bringToFront = TRUE),
-    options = pathOptions(pane = "polygons")
+        bringToFront = TRUE)
   ) %>%
   addLegend(
     data = chicago,
@@ -765,15 +684,7 @@ toronto_nonwrk_map <-
   leaflet(
     options = leafletOptions(minZoom = 9, maxZoom = 18, zoomControl = FALSE)
   ) %>%
-  # setView(lat = 28.72, lng = -81.97, zoom = 7) %>%
-  addMapPane(name = "polygons", zIndex = 410) %>%
-  addMapPane(name = "polylines", zIndex = 420) %>%
-  addMapPane(name = "Layers", zIndex = 430) %>%
   addProviderTiles("CartoDB.PositronNoLabels") %>%
-  addProviderTiles("Stamen.TonerLines",
-                   options = providerTileOptions(opacity = 0.3),
-                   group = "Roads"
-  ) %>%
   addPolygons(
     data = toronto,
     label = ~nonwrk_label,
@@ -787,8 +698,7 @@ toronto_nonwrk_map <-
       highlightOptions(
         color = "black",
         weight = 3,
-        bringToFront = TRUE),
-    options = pathOptions(pane = "polygons")
+        bringToFront = TRUE)
   ) %>%
   addLegend(
     data = toronto,
