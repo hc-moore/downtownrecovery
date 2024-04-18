@@ -329,7 +329,8 @@ getJenksBreaks(rq_sf$rq_wrk, 7)
 summary(rq_sf$rq_nonwrk)
 getJenksBreaks(rq_sf$rq_nonwrk, 7)
 
-# ADJUST THE ACTUAL BINS BELOW BASED ON THE ABOVE BREAKS!
+# ADJUST THE ACTUAL BINS BELOW BASED ON THE ABOVE BREAKS! BUT MAKE SURE FIRST
+# TWO CATEGORIES STILL END AT 99% SO THEY'RE RED AND THE OTHERS ARE BLUE
 
 comm_sf2 <- rq_sf %>%
   mutate(
@@ -337,23 +338,17 @@ comm_sf2 <- rq_sf %>%
     #   rq_wrk < .75 ~ '40 - 74%',
     #   rq_wrk < 1 ~ '75 - 99%',
     #   rq_wrk < 1.3 ~ '100 - 129%',
-    #   rq_wrk < 1.85 ~ '130 - 184%',
-    #   rq_wrk < 2.8 ~ '185 - 279%',
     #   TRUE ~ '280%+'
     # ),
-    # levels = c('40 - 74%', '75 - 99%', '100 - 129%', '130 - 184%', '185 - 279%',
-    #            '280%+')),
+    # levels = c('40 - 74%', '75 - 99%', '100 - 129%', '280%+')),
     wrk_label = paste0(comm_district, ": ", round(rq_wrk * 100), "%"),
     # rate_nonwrk_cat = factor(case_when(
     #   rq_nonwrk < .75 ~ '40 - 74%',
     #   rq_nonwrk < 1 ~ '75 - 99%',
     #   rq_nonwrk < 1.3 ~ '100 - 129%',
-    #   rq_nonwrk < 1.85 ~ '130 - 184%',
-    #   rq_nonwrk < 2.8 ~ '185 - 279%',
     #   TRUE ~ '280%+'
     # ),
-    # levels = c('40 - 74%', '75 - 99%', '100 - 129%', '130 - 184%', '185 - 279%',
-    #            '280%+')),
+    # levels = c('40 - 74%', '75 - 99%', '100 - 129%', '280%+')),
     nonwrk_label = paste0(comm_district, ": ", round(rq_nonwrk * 100), "%")    )
 
 head(comm_sf2)
@@ -363,10 +358,8 @@ table(comm_sf2$rate_nonwrk_cat)
 pal <- c(
   "#e41822",
   "#faa09d",
-  "#5bc4fb",
-  "#2c92d7",
-  "#0362b0",
-  "#033384"
+  "#96cdf2",
+  "#0e7bc4"
 )
 
 # Work hours
