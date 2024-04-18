@@ -14,7 +14,7 @@ ipak(c('tidyverse', 'lubridate', 'ggplot2', 'plotly',
 # Load commercial district data
 #-----------------------------------------
 
-filepath <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/'
+filepath <- '/Users/jpg23/data/downtownrecovery/spectus_exports/'
 
 comm <-
   list.files(path = paste0(filepath, 'commercial_districts')) %>%
@@ -37,7 +37,7 @@ table(comm$provider_id)
 # Load MSA data
 #-----------------------------------------
 
-msa_path <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/sensitivity_analysis/'
+msa_path <- '/Users/jpg23/data/downtownrecovery/spectus_exports/sensitivity_analysis/'
 
 msa <-
   list.files(path = paste0(msa_path, 'MSA')) %>%
