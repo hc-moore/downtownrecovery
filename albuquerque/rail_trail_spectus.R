@@ -51,30 +51,31 @@ dra <-
   mutate(date = as.Date(as.character(date), format = "%Y%m%d")) %>%
   arrange(date)
 
+head(dra)
+
 # Get block group population for 2022
 #-----------------------------------------
 
 blgr_acs <- get_acs(
   geography = "block group",
   variables = 'B01003_001',
-  year = 2022,    
+  year = 2019,    
   survey = "acs5",       
   state = "NM",     
-  county = "Bernalillo",
+  # county = "Bernalillo",
   geometry = FALSE
-)
+) %>%
+  mutate(home_bg = paste0('US.NM.',
+                          substr(GEOID, 3, 5),
+                          '.',
+                          substr(GEOID, 6, 11),
+                          '.',
+                          substr(GEOID, 12, 12))) %>%
+  data.frame()
 
 head(blgr_acs)
-
-blgr_acs1 <- blgr_acs %>%
-  mutate(home_bg = paste0('US.NM.',
-                         substr(GEOID, 3, 5),
-                         '.',
-                         substr(GEOID, 6, 11),
-                         '.',
-                         substr(GEOID, 12, 12))) %>%
-  select(home_bg, estimate) %>%
-  data.frame()
+  
+blgr_acs1 <- blgr_acs %>% select(home_bg, estimate)
 
 head(blgr_acs1)
 
@@ -86,7 +87,7 @@ head(blgr_acs1)
  
 #  1. join 'rt' with census data (by block group) for 2022 
 #     (blgr_acs1) -- so each block group would have the same 
-#     census population # across all dates = 'blgr_pop'
+#     census population # across all dates = 'estimate'
 
 with_pop <- rt %>% left_join(blgr_acs1, by = 'home_bg')
 
@@ -96,20 +97,23 @@ head(with_pop)
 
 #  2. join 'dra' with 'with_pop' on block group ID and date, so I have a new 
 #     column in the table that indicates the sample size for that home block 
-#     group ('blgr_sample')
+#     group ('unique_visitors')
 
 with_samp <- with_pop %>% 
   left_join(dra, by = c('home_bg' = 'block_group_id', 'date'))
 
 nrow(with_samp) == nrow(with_pop) # should be true
+head(with_samp)
 
 #  3. create block group specific 'weight' var which represents the share of the 
 #     block group population that's accounted for in the sample, which = 
-#     'blgr_sample'/'blgr_pop'
+#     'unique_visitors'/'estimate'
 
 with_samp1 <- with_samp %>%
   mutate(weight = unique_visitors/estimate) %>%
   select(-c('unique_visitors', 'estimate'))
+
+head(with_samp1)
 
 #  4. multiply daily total stops # by reciprocal of weight (so 1/weight) to get 
 #     estimate of how many total stops there were BY DAY. The weights vary by 
@@ -120,6 +124,10 @@ with_samp1 <- with_samp %>%
 with_samp2 <- with_samp1 %>%
   mutate(wt_stops = stops/weight)
 
+head(with_samp2)
+summary(with_samp2$wt_stops)
+hist(with_samp2$wt_stops)
+
 # Aggregate weighted and non-weighted
 # stops over the entire year
 #-----------------------------------------
@@ -129,7 +137,11 @@ yr_agg <- with_samp2 %>%
   group_by(home_bg, visit_block) %>%
   summarize(tot_stops = sum(stops, na.rm = T),
             tot_wt_stops = sum(wt_stops, na.rm = T)) %>%
-  data.frame()
+  data.frame() %>%
+  left_join(blgr_acs %>% select(GEOID, home_bg)) %>%
+  rename(home_block_group = GEOID) %>%
+  select(-home_bg) %>%
+  relocate(visit_block, home_block_group)
 
 head(yr_agg)
 
