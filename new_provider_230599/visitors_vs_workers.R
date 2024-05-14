@@ -12,9 +12,60 @@ ipak(c('tidyverse', 'sf', 'lubridate', 'leaflet', 'plotly', 'htmlwidgets'))
 # Load downtown & MSA data
 #=====================================
 
-filepath <- 'C:/Users/jpg23/data/downtownrecovery/spectus_exports/stop_uplevelled_230399_2023/'
+filepath <- '/Users/jpg23/data/downtownrecovery/spectus_exports/stop_uplevelled_230399_2023/'
+filepath1 <- '/Users/jpg23/data/downtownrecovery/spectus_exports/trends_work_nonwork/'
 
-dt <-
+
+#### NOTE: dt1, msa1, dt3, and msa3 all need to be re-exported!
+
+
+# 3/1/23 - 5/27/23
+dt1 <-
+  list.files(path = paste0(filepath1, 'downtown_20230301_to_20230601/')) %>% 
+  map_df(~read_delim(
+    paste0(filepath1, 'downtown_20230301_to_20230601/', .),
+    delim = '\001',
+    col_names = c('work_hrs', 'city', 'zone_date', 'n_stops', 'n_distinct_devices'),
+    col_types = c('cccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
+  arrange(date) %>%
+  select(-zone_date)
+
+# plot_ly() %>%
+#   add_lines(data = dt1,
+#             x = ~date, y = ~n_stops,
+#             name = ~city,
+#             opacity = .7,
+#             split = ~city,
+#             line = list(shape = "linear", color = '#4287f5'))
+
+# 3/1/23 - 5/30/23
+msa1 <-
+  list.files(path = paste0(filepath1, 'msa_20230301_to_20230601/')) %>% 
+  map_df(~read_delim(
+    paste0(filepath1, 'msa_20230301_to_20230601/', .),
+    delim = '\001',
+    col_names = c('work_hrs', 'msa_name', 'zone_date', 'n_stops', 'n_distinct_devices'),
+    col_types = c('cccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
+  arrange(date) %>%
+  select(-zone_date) %>%
+  rename(n_stops_msa = n_stops, n_distinct_devices_msa = n_distinct_devices)
+
+# plot_ly() %>%
+#   add_lines(data = msa1,
+#             x = ~date, y = ~n_stops_msa,
+#             name = ~msa_name,
+#             opacity = .7,
+#             split = ~msa_name,
+#             line = list(shape = "linear", color = '#4287f5'))
+
+# 6/1/23 - 1/3/24
+dt2 <-
   list.files(path = paste0(filepath, 'hourly_downtown/')) %>% 
   map_df(~read_delim(
     paste0(filepath, 'hourly_downtown/', .),
@@ -25,9 +76,11 @@ dt <-
   data.frame() %>%
   mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
   arrange(date) %>%
-  select(-zone_date)
+  select(-zone_date) %>%
+  filter(date <= as.Date('2024-01-01'))
 
-msa <-
+# 6/1/23 - 1/2/24
+msa2 <-
   list.files(path = paste0(filepath, 'hourly_msa/')) %>% 
   map_df(~read_delim(
     paste0(filepath, 'hourly_msa/', .),
@@ -39,16 +92,52 @@ msa <-
   mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
   arrange(date) %>%
   select(-zone_date) %>%
+  rename(n_stops_msa = n_stops, n_distinct_devices_msa = n_distinct_devices) %>%
+  filter(date <= as.Date('2024-01-01'))
+
+# 1/2/24 - 5/4/24
+dt3 <-
+  list.files(path = paste0(filepath1, 'downtown_20240102_to_20240507/')) %>% 
+  map_df(~read_delim(
+    paste0(filepath1, 'downtown_20240102_to_20240507/', .),
+    delim = '\001',
+    col_names = c('work_hrs', 'city', 'zone_date', 'n_stops', 'n_distinct_devices'),
+    col_types = c('cccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
+  arrange(date) %>%
+  select(-zone_date)
+
+# 1/2/24 - 4/18/24
+msa3 <-
+  list.files(path = paste0(filepath1, 'msa_20240102_to_20240507/')) %>% 
+  map_df(~read_delim(
+    paste0(filepath1, 'msa_20240102_to_20240507/', .),
+    delim = '\001',
+    col_names = c('work_hrs', 'msa_name', 'zone_date', 'n_stops', 'n_distinct_devices'),
+    col_types = c('cccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
+  arrange(date) %>%
+  select(-zone_date) %>%
   rename(n_stops_msa = n_stops, n_distinct_devices_msa = n_distinct_devices)
+
+dt <- rbind(dt1, dt2, dt3)
+msa <- rbind(msa1, msa2, msa3)
 
 head(dt)
 head(msa)
+
+range(dt$date)
+range(msa$date)
 
 
 # Join them
 #=====================================
 
-msa_names <- read.csv('C:/Users/jpg23/data/downtownrecovery/sensitivity_analysis/msa_names.csv')
+msa_names <- read.csv('/Users/jpg23/data/downtownrecovery/sensitivity_analysis/msa_names.csv')
 
 msa_cities <- unique(msa_names$city)
 dt_cities <- unique(dt$city)
@@ -56,15 +145,15 @@ dt_cities <- unique(dt$city)
 setdiff(dt_cities, msa_cities)
 setdiff(msa_cities, dt_cities)
 
-dt1 <- dt %>% left_join(msa_names)
+dt_m <- dt %>% left_join(msa_names)
 
-head(dt1)
+head(dt_m)
 head(msa)
 
-dt1 %>% filter(is.na(msa_name)) # should be no rows
+dt_m %>% filter(is.na(msa_name)) # should be no rows
 
 final_df <-
-  dt1 %>%
+  dt_m %>%
   left_join(msa, by = c('msa_name', 'date', 'work_hrs')) %>%
   mutate(
     day_of_week = wday(date, label = T),
@@ -107,7 +196,7 @@ work_plot <-
             opacity = .7,
             split = ~city,
             text = ~paste0(city, ' - work hours: ', round(norm_tot, 3)),
-            line = list(shape = "linear", color = '#4287f5')) %>%
+            line = list(shape = "linear", color = '#4287f5')) %>%f
   add_lines(data = work_not %>% filter(work_hrs == 'no'),
             x = ~date_range_start, y = ~norm_tot,
             name = ~paste0(city, ' - non-work hours'),
@@ -125,4 +214,4 @@ work_plot
 
 saveWidget(
   work_plot,
-  'C:/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/weekly_wrk_hrs_plot.html')
+  '/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/weekly_wrk_hrs_plot.html')

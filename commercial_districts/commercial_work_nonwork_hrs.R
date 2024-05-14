@@ -118,6 +118,7 @@ comm1 <- comm %>%
 unique(comm1$city)
 
 comm2 <- comm1 %>% left_join(msa_names)
+
 head(comm2)
 head(msa)
 
@@ -254,14 +255,64 @@ head(rq_us)
 # Calculate Toronto's recovery rates
 #-----------------------------------------
 
-# LOAD BYEONGHWA'S IMPUTED DATA!
-# imputed_canada <- read.csv('')
+# Load imputed data for Canada
+imputed_canada <- read.csv('/Users/jpg23/data/downtownrecovery/commercial_districts/canada_imputed_commercial_work_nonwork.csv') %>%
+  filter(str_detect(city, 'Toronto: ')) %>%
+  rename(comm_district = city)
+
+head(imputed_canada)
+
+canada_imputed_plot <-
+  plot_ly() %>%
+  add_lines(data = imputed_canada %>% filter(provider_id == '190199'),
+            x = ~date_range_start, y = ~normalized_work_hrs,
+            name = ~paste0('190199: ', comm_district, ":  working hours"),
+            opacity = .7,
+            split = ~comm_district,
+            text = ~paste0(comm_district, ': ', round(normalized_work_hrs, 3)),
+            line = list(shape = "linear", color = '#bedcfa')) %>%
+  add_lines(data = imputed_canada %>% filter(provider_id == '190199'),
+            x = ~date_range_start, y = ~normalized_nonwork_hrs,
+            name = ~paste0('190199: ', comm_district, ":  non-working hours"),
+            opacity = .7,
+            split = ~comm_district,
+            text = ~paste0(comm_district, ': ', round(normalized_nonwork_hrs, 3)),
+            line = list(shape = "linear", color = '#583863')) %>%  
+  add_lines(data = imputed_canada %>% filter(provider_id == '700199'),
+            x = ~date_range_start, y = ~normalized_work_hrs,
+            name = ~paste0('700199: ', comm_district, ":  working hours"),
+            opacity = .7,
+            split = ~comm_district,
+            text = ~paste0(comm_district, ': ', round(normalized_work_hrs, 3)),
+            line = list(shape = "linear", color = '#fcba03')) %>%
+  add_lines(data = imputed_canada %>% filter(provider_id == '700199'),
+            x = ~date_range_start, y = ~normalized_nonwork_hrs,
+            name = ~paste0('700199: ', comm_district, ":  non-working hours"),
+            opacity = .7,
+            split = ~comm_district,
+            text = ~paste0(comm_district, ': ', round(normalized_nonwork_hrs, 3)),
+            line = list(shape = "linear", color = '#0f7323')) %>%   
+  layout(title = "Weekly counts in commercial districts normalized by MSA, imputed for Toronto",
+         xaxis = list(title = "Week", zerolinecolor = "#ffff",
+                      tickformat = "%b %Y"),
+         yaxis = list(title = "Normalized distinct devices", zerolinecolor = "#ffff",
+                      ticksuffix = "  "),
+         shapes = list(list(y0 = 0, y1 = 1, yref = "paper",
+                            x0 = as.Date('2021-05-17'), x1 = as.Date('2021-05-17'),
+                            line = list(color = 'black', dash = 'dash'))))
+
+canada_imputed_plot
+
+map_path <- '/Users/jpg23/UDP/downtown_recovery/commercial_districts/work_nonwork_hrs/'
+
+saveWidget(canada_imputed_plot, 
+           paste0(map_path, 'imputed_Toronto_trend_plot.html'))
 
 # NEED TO ADJUST BELOW CODE TO ADJUST FOR 2 COLUMNS INSTEAD OF ONE!
 
 # rq_t <-
 #   imputed_canada %>%
-#   filter(str_detect(comm_district, 'Toronto: ') & provider_id == '190199') %>%
+#   filter(provider_id == '190199') %>%
 #   filter((date_range_start >= as.Date('2019-03-04') & 
 #             date_range_start <= as.Date('2019-06-10')) | 
 #            (date_range_start >= as.Date('2023-02-27'))) %>%
@@ -543,8 +594,6 @@ toronto_wrk_map <-
 toronto_wrk_map
 
 # Save maps
-map_path <- '/Users/jpg23/UDP/downtown_recovery/commercial_districts/work_nonwork_hrs/'
-
 saveWidget(nyc_wrk_map, paste0(map_path, 'work_hrs/nyc_wrk_commercial_RQs.html'))
 saveWidget(sf_wrk_map, paste0(map_path, 'work_hrs/sf_wrk_commercial_RQs.html'))
 saveWidget(portland_wrk_map, paste0(map_path, 'work_hrs/portland_wrk_commercial_RQs.html'))

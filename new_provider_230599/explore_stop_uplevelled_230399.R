@@ -1,6 +1,7 @@
 #===============================================================================
-# Explore June - Dec 2023 data from provider 230399 from stop_uplevelled table 
-# for all 60+ HDBSCAN downtowns
+# Explore data from provider 230399 from stop_uplevelled table 
+# for all 60+ HDBSCAN downtowns -- USE THIS TO UPDATE TRENDS PAGE ON
+# DOWNTOWN RECOVERY WEBSITE: https://downtownrecovery.com/charts/trends
 #===============================================================================
 
 # Load packages
@@ -10,7 +11,9 @@
 
 source('~/git/timathomas/functions/functions.r')
 ipak(c('tidyverse', 'sf', 'lubridate', 'leaflet', 'plotly', 'htmlwidgets', 
-       'broom', 'forecast'))
+       'broom', 'forecast', 'tidycensus', 'cancensus'))
+
+set_cancensus_api_key('CensusMapper_bcd591107b93e609a0bb5415f58cb31b')
 
 # Load downtown & MSA data
 #=====================================
@@ -138,8 +141,77 @@ plot_ly() %>%
 
 msa <- rbind(msa1, msa2, msa3, msa4)
 
+plot_ly() %>%
+  add_lines(data = msa,
+            x = ~date, y = ~n_distinct_devices_msa,
+            name = ~paste0(msa_name, ': MSA'),
+            opacity = .7,
+            split = ~msa_name,
+            text = ~paste0(msa_name, ' MSA: ', round(n_distinct_devices_msa, 3)),
+            line = list(shape = "linear", color = 'maroon'))
+
 range(dt$date)
 range(msa$date)
+
+# Compare to MSA populations
+#=====================================
+
+msa_us <- get_acs(geography = "cbsa", 
+              variables = "B01003_001", 
+              year = 2022,
+              survey = 'acs5') %>%
+  select(msa_name = NAME, pop = estimate) %>%
+  mutate(msa_name = str_remove(msa_name, ' Metro Area| Micro Area')) %>%
+  data.frame()
+
+# GET CANADIAN MSA POPULATION FOR 2021 (2022 NOT AVAILABLE)
+# https://cran.r-project.org/web/packages/cancensus/vignettes/cancensus.html
+msa_canada <- get_census(
+  dataset = 'CA21', 
+  # Calgary, Toronto, Ottawa, Edmonton, Montreal, Vancouver, London, Quebec,
+  # Winnipeg, Halifax
+  regions = list(CSD = c('48825', '35535', '505', '48835', '24462', '59933',
+                         '35555', '24421', '46602', '12205')), 
+  vectors = 'v_CA21_1', 
+  level = 'CMA') %>%
+  data.frame() %>%
+  select(msa_name = Region.Name, pop = Population) %>%
+  mutate(msa_name = str_remove(msa_name, '( - Gatineau)? \\(B\\)'),
+         msa_name = str_replace_all(msa_name, 'é', 'e'))
+
+msa_canada
+
+msa_both <- rbind(msa_us, msa_canada)
+
+head(msa_both)
+  
+msa_pop <- msa_both %>%  
+  inner_join(msa) %>%
+  mutate(samp_diff = pop - n_distinct_devices_msa)
+
+head(msa_pop)
+head(msa_pop %>% filter(samp_diff > 0))
+
+spectus_pop <- plot_ly() %>%
+  add_lines(data = msa_pop,
+            x = ~date, y = ~samp_diff,
+            name = ~paste0(msa_name, ': MSA'),
+            opacity = .7,
+            split = ~msa_name,
+            text = ~paste0(msa_name, ' MSA: ', round(samp_diff, 3)),
+            line = list(shape = "linear", color = '#ed5045')) %>%
+  layout(title = "Census population minus unique devices from Spectus",
+         xaxis = list(title = "Day", zerolinecolor = "#ffff",
+                      tickformat = "%Y-%m-%d"),
+         yaxis = list(title = "Difference", zerolinecolor = "#ffff",
+                      ticksuffix = "  "))  
+
+spectus_pop
+
+saveWidget(
+  spectus_pop,
+  '/Users/jpg23/UDP/downtown_recovery/provider_230399_stop_uplevelled/spectus_vs_MSA_pop.html')
+
 
 # Remove outliers in downtown data
 #=====================================
