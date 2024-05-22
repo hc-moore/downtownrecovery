@@ -19,7 +19,7 @@ filepath1 <- '/Users/jpg23/data/downtownrecovery/spectus_exports/trends_work_non
 #### NOTE: dt1, msa1, dt3, and msa3 all need to be re-exported!
 
 
-# 3/1/23 - 5/27/23
+# 3/1/23 - 6/1/23
 dt1 <-
   list.files(path = paste0(filepath1, 'downtown_20230301_to_20230601/')) %>% 
   map_df(~read_delim(

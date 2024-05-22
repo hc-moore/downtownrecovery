@@ -229,7 +229,7 @@ write.csv(rq,
 # Map recovery rates by district
 #-----------------------------------------
 
-comm_sf <- st_read("C:/Users/jpg23/data/downtownrecovery/shapefiles/commercial_districts/all_cities_commercial_districts.geojson")
+comm_sf <- st_read("/Users/jpg23/data/downtownrecovery/shapefiles/commercial_districts/all_cities_commercial_districts.geojson")
 head(comm_sf)
 
 comm_sf1 <- comm_sf %>%
