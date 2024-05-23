@@ -16,7 +16,7 @@ filepath <- '/Users/jpg23/data/downtownrecovery/spectus_exports/stop_uplevelled_
 filepath1 <- '/Users/jpg23/data/downtownrecovery/spectus_exports/trends_work_nonwork/'
 
 
-#### NOTE: dt1, msa1, dt3, and msa3 all need to be re-exported!
+#### NOTE: msa1, dt3, and msa3 all need to be re-exported! (dt1 was already)
 
 
 # 3/1/23 - 6/1/23

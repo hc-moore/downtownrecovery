@@ -223,7 +223,7 @@ rq <- rbind(rq_us, rq_t) %>%
 head(rq)
 
 write.csv(rq,
-          'C:/Users/jpg23/UDP/downtown_recovery/commercial_districts/commercial_districts_RQs.csv',
+          '/Users/jpg23/UDP/downtown_recovery/commercial_districts/commercial_districts_RQs.csv',
           row.names = F)
 
 # Map recovery rates by district
@@ -292,6 +292,11 @@ sf <- comm_sf2 %>% filter(str_detect(comm_district, 'San Francisco: '))
 portland <- comm_sf2 %>% filter(str_detect(comm_district, 'Portland: '))
 chicago <- comm_sf2 %>% filter(str_detect(comm_district, 'Chicago: '))
 toronto <- comm_sf2 %>% filter(str_detect(comm_district, 'Toronto: '))
+
+# Export San Francisco data
+st_write(
+  sf, 
+  '/Users/jpg23/UDP/downtown_recovery/commercial_districts/SF_commercial.geojson')
 
 # New York
 nyc_map <-
@@ -494,7 +499,7 @@ toronto_map <-
 toronto_map
 
 # Save maps
-map_path <- 'C:/Users/jpg23/UDP/downtown_recovery/commercial_districts/'
+map_path <- '/Users/jpg23/UDP/downtown_recovery/commercial_districts/'
 saveWidget(nyc_map, paste0(map_path, 'nyc_commercial_RQs.html'))
 saveWidget(sf_map, paste0(map_path, 'sf_commercial_RQs.html'))
 saveWidget(portland_map, paste0(map_path, 'portland_commercial_RQs.html'))
