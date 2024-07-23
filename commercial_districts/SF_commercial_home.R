@@ -7,7 +7,7 @@
 
 source('~/git/timathomas/functions/functions.r')
 
-ipak(c('tidyverse', 'lubridate', 'ggplot2', 'tigris', 'sf', 'ggspatial'))
+ipak(c('tidyverse', 'lubridate', 'ggplot2', 'tigris', 'sf', 'ggspatial', 'scales'))
 
 # Load visit district/home location data
 #----------------------------------------------------------------
@@ -46,6 +46,8 @@ head(total)
 sf_comm <- st_read('/Users/jpg23/data/downtownrecovery/shapefiles/commercial_districts/san_francisco_commercial_districts.geojson') %>%
   select(district)
 
+sf_comm$area <- st_area(sf_comm %>% st_make_valid())
+
 head(sf_comm)
 
 # Load block group data for SF
@@ -67,33 +69,33 @@ ggplot() +
   geom_sf(data = sf_comm, fill = "blue") +
   theme_minimal()
 
-# (a) Which districts intersect with each block group?
-#----------------------------------------------------------------
-
-st_crs(sf_comm) == st_crs(sf_bg)
-sf_bg1 <- sf_bg %>% st_transform(crs = st_crs(sf_comm))
-st_crs(sf_comm) == st_crs(sf_bg1)
-
-intersections <- st_intersects(sf_bg1, sf_comm %>% st_make_valid())
-
-# Create a data frame with GEOID and the intersecting district values
-intersections1 <- data.frame(
-  GEOID = sf_bg1$GEOID[rep(1:length(intersections), lengths(intersections))],
-  district = sf_comm$district[unlist(intersections)]
-) %>%
-  mutate(overlapping = 'yes')
-
-head(intersections1)
-
-ggplot() +
-  geom_sf(data = sf_bg %>% filter(GEOID == '060750126021'), fill = "gold",
-          alpha = .8) +
-  geom_sf(data = sf_comm %>% 
-            filter(district %in% 
-                     c('NEIGHBORHOOD COMMERCIAL, SHOPPING CENTER - 19586',
-                       'NEIGHBORHOOD COMMERCIAL, SMALL SCALE - 19572')), 
-          fill = "darkgreen", alpha = .8) +
-  theme_minimal()
+# # (a) Which districts intersect with each block group?
+# #----------------------------------------------------------------
+# 
+# st_crs(sf_comm) == st_crs(sf_bg)
+# sf_bg1 <- sf_bg %>% st_transform(crs = st_crs(sf_comm))
+# st_crs(sf_comm) == st_crs(sf_bg1)
+# 
+# intersections <- st_intersects(sf_bg1, sf_comm %>% st_make_valid())
+# 
+# # Create a data frame with GEOID and the intersecting district values
+# intersections1 <- data.frame(
+#   GEOID = sf_bg1$GEOID[rep(1:length(intersections), lengths(intersections))],
+#   district = sf_comm$district[unlist(intersections)]
+# ) %>%
+#   mutate(overlapping = 'yes')
+# 
+# head(intersections1)
+# 
+# ggplot() +
+#   geom_sf(data = sf_bg %>% filter(GEOID == '060750126021'), fill = "gold",
+#           alpha = .8) +
+#   geom_sf(data = sf_comm %>% 
+#             filter(district %in% 
+#                      c('NEIGHBORHOOD COMMERCIAL, SHOPPING CENTER - 19586',
+#                        'NEIGHBORHOOD COMMERCIAL, SMALL SCALE - 19572')), 
+#           fill = "darkgreen", alpha = .8) +
+#   theme_minimal()
 
 # (a) Which buffered districts intersect with each block group?
 #----------------------------------------------------------------
@@ -135,17 +137,29 @@ ggplot() +
 #----------------------------------------------------------------
 
 total_int <- total %>%
-  left_join(intersections1, 
-            by = c('home_bg' = 'GEOID', 'visit_district' = 'district')) %>%
+  # left_join(intersections1, 
+  #           by = c('home_bg' = 'GEOID', 'visit_district' = 'district')) %>%
   left_join(intersections_buff1, 
             by = c('home_bg' = 'GEOID', 'visit_district' = 'district'))
 
 head(total_int)
-head(total_int %>% filter(!is.na(overlapping)))
+# head(total_int %>% filter(!is.na(overlapping)))
+
+#-----------------------
+# How does stops/area compare for Tenderloin vs. another (e.g., Mission)?
+total_stops_area <- total_int %>%
+  group_by(visit_district) %>%
+  summarize(stops = sum(stops, na.rm = T)) %>%
+  data.frame() %>%
+  arrange(desc(stops))
+
+head(total_stops_area, 15)
+
+#-----------------------
 
 which_type <- total_int %>%
   mutate(how_far = case_when(
-    overlapping == 'yes' ~ 'overlap',
+    # overlapping == 'yes' ~ 'overlap',
     within_half_mile == 'yes' ~ 'half_mile',
     substr(home_bg, 3, 5) == '075' ~ 'sf',
     TRUE ~ 'outside_sf'
@@ -159,10 +173,24 @@ which_type <- total_int %>%
 head(which_type)
 table(which_type$how_far)
 
+# How many total stops for each type of visitor?
+tot_stops_type <- which_type %>%
+  group_by(how_far) %>%
+  summarize(stops = sum(stops, na.rm = T)) %>%
+  data.frame()
+
+ggplot(data=tot_stops_type, aes(x=how_far, y=stops)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  theme_minimal() +
+  theme(axis.title = element_blank()) +
+  scale_y_continuous(label=comma)
+
 # Join back to spatial district data
 for_maps <- sf_comm %>%
   left_join(which_type, by = c('district' = 'visit_district')) %>%
-  mutate(num_points = stops %/% 100) %>%
+  mutate(num_points = stops %/% 100,
+         stops_per_m2 = as.numeric(stops/area)) %>%
   st_make_valid()
 
 head(for_maps)
@@ -177,50 +205,52 @@ san_francisco_bbox <- st_bbox(
 
 san_francisco <- st_as_sfc(san_francisco_bbox)
 
-# Stops from overlapping home block groups
-#------------------------------------------
-
-overlap <- for_maps %>% filter(how_far == 'overlap')
-
-# Generate random points for each polygon
-overlap_pts <- lapply(1:nrow(overlap), function(i) {
-  if (overlap$num_points[i] > 0) {
-    st_sample(overlap[i, ], size = overlap$num_points[i], type = "random")
-  } else {
-    NULL
-  }
-})
-
-# Filter out NULL values and flatten the list of points
-overlap_pts_flat <- do.call(c, overlap_pts)
-
-# Create an sf object from the points
-overlap_pts_sf <- st_sf(geometry = overlap_pts_flat)
-
 map_path <- '/Users/jpg23/UDP/downtown_recovery/commercial_districts/commercial_home_locations/'
 
-st_write(overlap_pts_sf, paste0(map_path, 'overlap.geojson'))
-
-# head(overlap_pts_sf)
-
-overlap_map <- ggplot(overlap_pts_sf) +
-  annotation_map_tile(type = "cartolight", zoom = 12) +
-  geom_sf(color = "#075E62", alpha = .2, size = .3) +
-  theme_minimal() +
-  coord_sf(xlim = c(st_bbox(san_francisco)[1], st_bbox(san_francisco)[3]),
-           ylim = c(st_bbox(san_francisco)[2], st_bbox(san_francisco)[4]),
-           expand = FALSE) +
-  theme(axis.text.x = element_blank(),
-        axis.text.y = element_blank()) +
-  ggtitle('Visitor lives in block group that intersects with commercial district')
-
-ggsave(plot = overlap_map,
-       filename = paste0(map_path, 'overlap.png'))
+# # Stops from overlapping home block groups
+# #------------------------------------------
+# 
+# overlap <- for_maps %>% filter(how_far == 'overlap')
+# 
+# # Generate random points for each polygon
+# overlap_pts <- lapply(1:nrow(overlap), function(i) {
+#   if (overlap$num_points[i] > 0) {
+#     st_sample(overlap[i, ], size = overlap$num_points[i], type = "random")
+#   } else {
+#     NULL
+#   }
+# })
+# 
+# # Filter out NULL values and flatten the list of points
+# overlap_pts_flat <- do.call(c, overlap_pts)
+# 
+# # Create an sf object from the points
+# overlap_pts_sf <- st_sf(geometry = overlap_pts_flat)
+# 
+# st_write(overlap_pts_sf, paste0(map_path, 'overlap.geojson'))
+# 
+# # head(overlap_pts_sf)
+# 
+# overlap_map <- ggplot(overlap_pts_sf) +
+#   annotation_map_tile(type = "cartolight", zoom = 12) +
+#   geom_sf(color = "#075E62", alpha = .2, size = .3) +
+#   theme_minimal() +
+#   coord_sf(xlim = c(st_bbox(san_francisco)[1], st_bbox(san_francisco)[3]),
+#            ylim = c(st_bbox(san_francisco)[2], st_bbox(san_francisco)[4]),
+#            expand = FALSE) +
+#   theme(axis.text.x = element_blank(),
+#         axis.text.y = element_blank()) +
+#   ggtitle('Visitor lives in block group that intersects with commercial district')
+# 
+# ggsave(plot = overlap_map,
+#        filename = paste0(map_path, 'overlap.png'))
 
 # Stops from home block groups within .5 miles
 #------------------------------------------
 
 half_mile <- for_maps %>% filter(how_far == 'half_mile')
+
+st_write(half_mile, paste0(map_path, 'half_mile_polygons.geojson'))
 
 # Generate random points for each polygon
 half_mile_pts <- lapply(1:nrow(half_mile), function(i) {
@@ -237,7 +267,7 @@ half_mile_pts_flat <- do.call(c, half_mile_pts)
 # Create an sf object from the points
 half_mile_pts_sf <- st_sf(geometry = half_mile_pts_flat)
 
-st_write(half_mile_pts_sf, paste0(map_path, 'half_mile.geojson'))
+st_write(half_mile_pts_sf, paste0(map_path, 'half_mile_inclusive.geojson'))
 
 # head(half_mile_pts_sf)
 
@@ -259,6 +289,8 @@ ggsave(plot = half_mile_map,
 #------------------------------------------
 
 sf <- for_maps %>% filter(how_far == 'sf')
+
+st_write(sf, paste0(map_path, 'SF_polygons.geojson'))
 
 # Generate random points for each polygon
 sf_pts <- lapply(1:nrow(sf), function(i) {
@@ -297,6 +329,8 @@ ggsave(plot = sf_map,
 #------------------------------------------
 
 outside_sf <- for_maps %>% filter(how_far == 'outside_sf')
+
+st_write(outside_sf, paste0(map_path, 'outside_sf_polygons.geojson'))
 
 # Generate random points for each polygon
 outside_sf_pts <- lapply(1:nrow(outside_sf), function(i) {

@@ -15,10 +15,6 @@ ipak(c('tidyverse', 'sf', 'lubridate', 'leaflet', 'plotly', 'htmlwidgets'))
 filepath <- '/Users/jpg23/data/downtownrecovery/spectus_exports/stop_uplevelled_230399_2023/'
 filepath1 <- '/Users/jpg23/data/downtownrecovery/spectus_exports/trends_work_nonwork/'
 
-
-#### NOTE: msa1, dt3, and msa3 all need to be re-exported! (dt1 was already)
-
-
 # 3/1/23 - 6/1/23
 dt1 <-
   list.files(path = paste0(filepath1, 'downtown_20230301_to_20230601/')) %>% 
@@ -31,7 +27,8 @@ dt1 <-
   data.frame() %>%
   mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
   arrange(date) %>%
-  select(-zone_date)
+  select(-zone_date) %>%
+  filter(date < as.Date('2023-06-01'))
 
 # plot_ly() %>%
 #   add_lines(data = dt1,
@@ -54,7 +51,8 @@ msa1 <-
   mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
   arrange(date) %>%
   select(-zone_date) %>%
-  rename(n_stops_msa = n_stops, n_distinct_devices_msa = n_distinct_devices)
+  rename(n_stops_msa = n_stops, n_distinct_devices_msa = n_distinct_devices) %>%
+  filter(date < as.Date('2023-06-01'))
 
 # plot_ly() %>%
 #   add_lines(data = msa1,
@@ -123,6 +121,14 @@ msa3 <-
   arrange(date) %>%
   select(-zone_date) %>%
   rename(n_stops_msa = n_stops, n_distinct_devices_msa = n_distinct_devices)
+
+range(dt1$date)
+range(dt2$date)
+range(dt3$date)
+
+range(msa1$date)
+range(msa2$date)
+range(msa3$date)
 
 dt <- rbind(dt1, dt2, dt3)
 msa <- rbind(msa1, msa2, msa3)
@@ -196,7 +202,7 @@ work_plot <-
             opacity = .7,
             split = ~city,
             text = ~paste0(city, ' - work hours: ', round(norm_tot, 3)),
-            line = list(shape = "linear", color = '#4287f5')) %>%f
+            line = list(shape = "linear", color = '#4287f5')) %>%
   add_lines(data = work_not %>% filter(work_hrs == 'no'),
             x = ~date_range_start, y = ~norm_tot,
             name = ~paste0(city, ' - non-work hours'),
