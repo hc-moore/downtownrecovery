@@ -1,5 +1,5 @@
 #===============================================================================
-# Explore trend data May - August 2024
+# Explore trend data May - mid-Oct 2024
 #===============================================================================
 
 # Load packages
@@ -18,6 +18,7 @@ may_fp <- paste0(filepath, 'may_2024/')
 june_fp <- paste0(filepath, 'june_2024/')
 july_fp <- paste0(filepath, 'july_2024/')
 august_fp <- paste0(filepath, 'august_2024/')
+sept_fp <- paste0(filepath, 'september_2024/')
 
 # Downtowns: filter to all of May
 dt1 <-
@@ -78,15 +79,34 @@ dt4 <-
   arrange(date) %>%
   select(-c(zone_date, provider_id))
 
+# Downtowns: 9/3/24 - 10/13/24
+dt5 <-
+  list.files(path = paste0(sept_fp, 'downtown/')) %>% 
+  map_df(~read_delim(
+    paste0(sept_fp, 'downtown/', .),
+    delim = '\001',
+    col_names = c('city', 'zone_date', 'provider_id', 'n_stops', 'n_distinct_devices'),
+    col_types = c('cccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
+  arrange(date) %>%
+  select(-c(zone_date, provider_id))
+
 range(dt1$date)
 range(dt2$date)
 range(dt3$date)
 range(dt4$date)
+range(dt5$date)
 
-dt <- rbind(dt1, dt2, dt3, dt4)
+dt <- rbind(dt1, dt2, dt3, dt4, dt5)
 range(dt$date)
 
 head(dt)
+
+write.csv(dt, 
+          '/Users/jpg23/data/downtownrecovery/stop_uplevelled_2023_2024/downtown_raw_may-oct2024.csv',
+          row.names = FALSE)
 
 # MSAs: filter to all of May
 msa1 <-
@@ -147,12 +167,27 @@ msa4 <-
   arrange(date) %>%
   select(-c(zone_date, provider_id))
 
+# MSAs: 9/3/24 - 10/13/24
+msa5 <-
+  list.files(path = paste0(sept_fp, 'msa/')) %>% 
+  map_df(~read_delim(
+    paste0(sept_fp, 'msa/', .),
+    delim = '\001',
+    col_names = c('msa_name', 'zone_date', 'provider_id', 'n_stops_msa', 'n_distinct_devices_msa'),
+    col_types = c('cccii')
+  )) %>%
+  data.frame() %>%
+  mutate(date = as.Date(as.character(zone_date), format = "%Y-%m-%d")) %>%
+  arrange(date) %>%
+  select(-c(zone_date, provider_id))
+
 range(msa1$date)
 range(msa2$date)
 range(msa3$date)
 range(msa4$date)
+range(msa5$date)
 
-msa <- rbind(msa1, msa2, msa3, msa4)
+msa <- rbind(msa1, msa2, msa3, msa4, msa5)
 range(msa$date)
 
 head(msa)
@@ -188,7 +223,7 @@ dt_outliers_unique
 
 saveWidget(
   dt_outliers_unique,
-  paste0('/Users/jpg23/UDP/downtown_recovery/trend_updates/may_june_july_august_2024/unique_devices_outliers_vs_not.html'))
+  paste0('/Users/jpg23/UDP/downtown_recovery/trend_updates/may_sept_2024/unique_devices_outliers_vs_not.html'))
 
 dt_outliers_total <- plot_ly() %>%
   add_lines(data = dt_no_outliers,
@@ -210,7 +245,7 @@ dt_outliers_total
 
 saveWidget(
   dt_outliers_total,
-  paste0('/Users/jpg23/UDP/downtown_recovery/trend_updates/may_june_july_august_2024/total_stops_outliers_vs_not.html'))
+  paste0('/Users/jpg23/UDP/downtown_recovery/trend_updates/may_sept_2024/total_stops_outliers_vs_not.html'))
 
 
 # Join them
@@ -266,7 +301,7 @@ msa_distinct <- plot_ly() %>%
 
 saveWidget(
   msa_distinct,
-  paste0('/Users/jpg23/UDP/downtown_recovery/trend_updates/may_june_july_august_2024/msa_distinct.html'))
+  paste0('/Users/jpg23/UDP/downtown_recovery/trend_updates/may_sept_2024/msa_distinct.html'))
 
 final_df1 <- final_df %>%
   select(-c(n_stops_msa, n_distinct_devices_msa, n_stops_cleaned,
@@ -294,8 +329,8 @@ norm_dist <- plot_ly() %>%
 
 saveWidget(
   norm_dist,
-  paste0('/Users/jpg23/UDP/downtown_recovery/trend_updates/may_june_july_august_2024/normalized_distinct.html'))
+  paste0('/Users/jpg23/UDP/downtown_recovery/trend_updates/may_sept_2024/normalized_distinct.html'))
 
-write.csv(final_df1,
-          paste0('/Users/jpg23/data/downtownrecovery/stop_uplevelled_2023_2024/stopuplevelled_may_aug_2024.csv'),
-          row.names = F)
+# write.csv(final_df1,
+#           paste0('/Users/jpg23/data/downtownrecovery/stop_uplevelled_2023_2024/stopuplevelled_may_sept_2024.csv'),
+#           row.names = F)

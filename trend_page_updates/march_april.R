@@ -65,6 +65,10 @@ range(dt3$date)
 
 dt <- rbind(dt1, dt2, dt3)
 
+write.csv(dt, 
+          '/Users/jpg23/data/downtownrecovery/stop_uplevelled_2023_2024/downtown_raw_march_april_2024.csv',
+          row.names = FALSE)
+
 head(dt)
 
 # MSAs: March 1 - May 2
