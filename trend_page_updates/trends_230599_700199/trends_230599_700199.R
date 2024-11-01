@@ -1,5 +1,5 @@
 #===============================================================================
-# Explore trend data for a couple months, a couple cities, ? - ?, from
+# Explore trend data for a couple months, a couple cities, from
 # providers 230599 vs 700199 vs 230399
 #===============================================================================
 

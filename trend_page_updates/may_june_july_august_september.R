@@ -331,6 +331,6 @@ saveWidget(
   norm_dist,
   paste0('/Users/jpg23/UDP/downtown_recovery/trend_updates/may_sept_2024/normalized_distinct.html'))
 
-# write.csv(final_df1,
-#           paste0('/Users/jpg23/data/downtownrecovery/stop_uplevelled_2023_2024/stopuplevelled_may_sept_2024.csv'),
-#           row.names = F)
+write.csv(final_df1,
+          paste0('/Users/jpg23/data/downtownrecovery/stop_uplevelled_2023_2024/stopuplevelled_may_sept_2024.csv'),
+          row.names = F)
