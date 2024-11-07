@@ -1,0 +1,63 @@
+,city,cluster
+0,Miami,0
+1,Atlanta,0
+2,Quebec,0
+3,Raleigh,0
+4,Toronto,0
+5,New Orleans,0
+6,St Louis,0
+7,Jacksonville,1
+8,Sacramento,1
+9,Colorado Springs,1
+10,Fresno,2
+11,Bakersfield,2
+12,Vancouver,3
+13,Montreal,3
+14,Seattle,3
+15,San Francisco,3
+16,Ottawa,4
+17,Milwaukee,4
+18,Pittsburgh,4
+19,Memphis,4
+20,Louisville,4
+21,Kansas City,4
+22,Cincinnati,4
+23,Houston,4
+24,Charlotte,4
+25,Columbus,4
+26,Indianapolis,4
+27,Cleveland,5
+28,Philadelphia,5
+29,Chicago,5
+30,Oakland,5
+31,Washington DC,6
+32,Boston,7
+33,Los Angeles,7
+34,Edmonton,7
+35,Salt Lake City,8
+36,San Antonio,8
+37,Winnipeg,8
+38,London,8
+39,Las Vegas,8
+40,Honolulu,8
+41,El Paso,8
+42,Calgary,8
+43,Nashville,9
+44,Minneapolis,9
+45,Austin,9
+46,Portland,9
+47,New York,9
+48,San Jose,9
+49,Detroit,9
+50,Omaha,10
+51,Baltimore,10
+52,Tulsa,10
+53,Tucson,10
+54,San Diego,10
+55,Denver,10
+56,Fort Worth,10
+57,Halifax,10
+58,Wichita,10
+59,Phoenix,10
+60,Tampa,10
+61,Albuquerque,10

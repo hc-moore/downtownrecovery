@@ -112,7 +112,7 @@ ui <- bootstrapPage(
                         )
                       )),
                       choices = named_periods,
-                      selected = named_periods[9],
+                      selected = named_periods[10],
                       multiple = FALSE,
                       pickerOptions(mobile = TRUE)
                     )
@@ -174,7 +174,7 @@ ui <- bootstrapPage(
                      )),
                      min = 1,
                      max = 25,
-                     value = 15,
+                     value = 11,
                      step = 2
                    )
                  ),
@@ -246,7 +246,7 @@ ui <- bootstrapPage(
                         )
                       )),
                       choices = named_periods,
-                      selected = named_periods[9],
+                      selected = named_periods[10],
                       multiple = FALSE,
                       pickerOptions(mobile = TRUE)
                     ),
@@ -324,7 +324,7 @@ ui <- bootstrapPage(
                  "map_period",
                  label = span(tags$i(h5("Select recovery period:")), style = "color:#045a8d"),
                  choices = named_periods,
-                 selected = named_periods[9],
+                 selected = named_periods[10],
                  multiple = FALSE,
                  pickerOptions(mobile = TRUE)
                )
@@ -457,7 +457,7 @@ server = function(input, output, session) {
       dplyr::select(city, display_title, Season, seasonal_average)
     
     X <- explanatory_vars %>%
-        dplyr::filter(Season == input$y) %>%
+        # dplyr::filter(Season == input$y) %>%
         dplyr::select(city, region, starts_with(input$x)) %>%
         distinct(city, region, all_of(input$x), .keep_all = TRUE)
     
@@ -716,7 +716,8 @@ server = function(input, output, session) {
        ) +
       geom_point(data = key_study_cases_df,
                  aes(color = region),
-                 size = 5) +
+                 size = 5,
+                 show.legend = FALSE) +
       xlim(min(key_study_cases_df[,input$x[1]]), max(key_study_cases_df[,input$x[1]])) +
       
       geom_text_repel(
@@ -732,20 +733,16 @@ server = function(input, output, session) {
         show.legend = FALSE
       ) +
       theme(plot.title = element_text(size = 16, hjust = .5),
-            axis.title = element_text(size = 12),
+            axis.text = element_text(size = 14),
+            axis.title = element_text(size = 16),
             plot.subtitle = element_text(size = 14, hjust = .5)) +
       labs(x = names(named_factors[named_factors == input$x[1]]),
-           y = names(named_periods[named_periods == input$y[1]]),
-           title = eq,
-           subtitle = r_squared,
+           y = paste0("Downtown Recovery Quotient (", names(named_periods[named_periods == input$y[1]]), ")"),
+           #title = eq,
+           #subtitle = r_squared,
            color = "Region") +
       scale_y_continuous(labels = scales::percent, limits = c(min(key_study_cases_df$seasonal_average), max(key_study_cases_df$seasonal_average))) +
-      scale_color_manual(values = c("Canada" = "#e41a1c",
-                                    "Midwest" = "#377eb8",
-                                    "Northeast" = "#4daf4a",
-                                    "Pacific" = "#984ea3",
-                                    "Southeast" = "#ff7f00",
-                                    "Southwest" = "#e6ab02"))
+      scale_color_manual(values = region_colors)
     g1
     })
   #})
@@ -1090,13 +1087,14 @@ server = function(input, output, session) {
         date_labels = "%Y.%m",
         expand = expansion(mult = .15)
       ) +
+      geom_vline(xintercept = as.numeric(as.Date("2020-10-01"))) +
+      annotate(x=as.Date("2020-10-05"), label="Alpha Surge", geom = "text", y=.2,colour = "black", fontface = "italic", hjust = 0) +
+      geom_vline(xintercept = as.numeric(as.Date("2021-06-01"))) +
+      annotate(x=as.Date("2021-06-05"), label="Delta Surge", geom = "text", y=.2, colour = "black", fontface = "italic", hjust = 0) +
+      geom_vline(xintercept = as.numeric(as.Date("2021-12-01"))) +
+      annotate(x=as.Date("2021-12-05"), label="Omicron Surge", geom = "text", y=.2, colour = "black", fontface = "italic", hjust = 0) +
       scale_y_continuous("", labels = scales::percent) +
-      scale_color_manual(values = c("Canada" = "#e41a1c",
-                                    "Midwest" = "#377eb8",
-                                    "Northeast" = "#4daf4a",
-                                    "Pacific" = "#984ea3",
-                                    "Southeast" = "#ff7f00",
-                                    "Southwest" = "#e6ab02"))
+      scale_color_manual(values = region_colors)
     })
   #})
   
@@ -1138,12 +1136,7 @@ server = function(input, output, session) {
             plot.subtitle = element_text(size = 14, hjust = .5)
             #plot.margin = unit(c(1, 1, 1, 3), "cm")
             ) +
-      scale_fill_manual(values = c("Canada" = "#e41a1c",
-                                    "Midwest" = "#377eb8",
-                                    "Northeast" = "#4daf4a",
-                                    "Pacific" = "#984ea3",
-                                    "Southeast" = "#ff7f00",
-                                    "Southwest" = "#e6ab02"))
+      scale_fill_manual(values = region_colors)
     g1
   }, height = function(){540 + 12 * length(input$rankings_cities)})
   #})

@@ -1,7 +1,7 @@
 
 
 // load in data
-Plotly.d3.csv('https://raw.githubusercontent.com/hmooreo/downtownrecovery/main/docs/ranking_data.csv', function (err, rows) {
+d3.csv('https://raw.githubusercontent.com/hmooreo/downtownrecovery/cuebiq_update/ranking_data_cuebiq_update.csv', function (err, rows) {
 
     function unpack(rows, key) {
         return rows.map(function (row) { return row[key]; });
@@ -46,27 +46,27 @@ Plotly.d3.csv('https://raw.githubusercontent.com/hmooreo/downtownrecovery/main/d
                 styles: {
                     Canada: {
                         line: {
-                            color: '#e41a1c'
+                            color: '#ab1368'
                         }
                     },
                     Midwest: {
                         line: {
-                            color: '#377eb8'
+                            color: '#007fa3'
                         }
                     },
                     Northeast: {
                         line: {
-                            color: '#4daf4a'
+                            color: '#8dbf2e'
                         }
                     },
                     Pacific: {
                         line: {
-                            color: '#984ea3'
+                            color: '#6d247a'
                         }
                     },
                     Southeast: {
                         line: {
-                            color: '#ff7f00'
+                            color: '#dc4633'
                         }
                     },
                     Southwest: {

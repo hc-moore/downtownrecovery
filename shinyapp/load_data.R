@@ -14,10 +14,10 @@ library(glue)
 library(stringr)
 library(ggrepel)
 library(ggpmisc)
-library(shiny.router)
+#library(shiny.router)
 library(ggiraph)
-library(shinyLP)
-library(shinyBS)
+#library(shinyLP)
+#library(shinyBS)
 library(crosstalk)
 library(zoo)
 library(tidyverse)
@@ -34,16 +34,26 @@ library(sp)
 library(spdep)
 library(plotly)
 library(geojsonio)
-
-explanatory_vars <- read.csv("input_data/updated_model_features.csv")
+# setwd("E:\\git/downtownrecovery/shinyapp")
+explanatory_vars <- read.csv("input_data/all_model_features_1015_weather.csv")
 
 # 2022-07-15: updates: anything pertaining to single city map tab has been removed
 # this is a 'policy brief only' version of the app
 
-all_weekly_metrics <- read.csv("input_data/all_weekly_metrics.csv")
+# 2023-01: cuebiq data and color update
+region_colors <- c("Canada" = "#DC4633",
+                   "Midwest" = "#6FC7EA",
+                   "Northeast" = "#8DBF2E",
+                   "Pacific" = "#00A189",
+                   "Southeast" = "#AB1368",
+                   "Southwest" = "#F1C500")
+
+
+
+all_weekly_metrics <- read.csv("input_data/all_weekly_metrics_cuebiq_update.csv")
 all_weekly_metrics$metric <- str_replace(all_weekly_metrics$metric, "metro", "city")
 all_city_coords <- read.csv("input_data/all_city_coords.csv")
-all_seasonal_metrics <- read.csv("input_data/all_seasonal_metrics.csv")
+all_seasonal_metrics <- read.csv("input_data/all_seasonal_metrics_cuebiq_update.csv")
 
 # to automatically apply the shinytheme to all ggplots for consistency's sake
 # thematic_shiny()
@@ -77,7 +87,8 @@ explanatory_vars <- explanatory_vars %>%
 # this was manually set but can be updated with however you want to define metro_size
 # you can drop the population col from regions_df and left_join with some other table with city and population info and use this
 
-# also maybe save a lat and long col to this so that way all the geographic information is in one table
+#' also maybe save a lat and long col to this so all the geographic information is in one table
+#' or to the census vars table
 regions_df <- read.csv("input_data/regions.csv")
 
 regions_df <- regions_df %>%
@@ -95,9 +106,9 @@ largest_n_cities <- regions_df %>%
 # explanatory_vars already has a metro_size col from when it was created on databricks, but it's reassigned here just in case
 # you did want to do a quick change in definition to metro_size without having to recreate or redownload anything
 explanatory_vars <- explanatory_vars %>%
-   mutate(metro_size = case_when(
-     city %in% largest_n_cities$city ~ "large",!(city %in% largest_n_cities$city) ~ "medium"
-   )) %>%
+  mutate(metro_size = case_when(
+    city %in% largest_n_cities$city ~ "large",!(city %in% largest_n_cities$city) ~ "medium"
+  )) %>%
   inner_join(regions_df %>% select(city, region))
 
 all_weekly_metrics$week <-
@@ -142,7 +153,7 @@ named_factors <- c(
   "Median Age of Residents in Downtown" = "median_age_downtown",
   "Percentage of Residents with a Bachelor's Degree or Higher in Downtown" = "bachelor_plus_downtown",
   "Percentage of Vacant Housing Units in Downtown" = "pct_vacant_downtown",
-  "Median Rent of Housing Units in Downtown" = "median_rent_downtown",
+  "Median Rent of Housing Units Downtown" = "median_rent_downtown",
   "Median Household Income of Residents in Downtown" = "median_hhinc_downtown",
   "Percentage of White Residents in Downtown" = "pct_nhwhite_downtown", # always city
   "Percentage of Black Residents in Downtown" = "pct_nhblack_downtown", # always city
@@ -160,30 +171,30 @@ named_factors <- c(
   "Percentage of Residents in City who Commute to Work by Bicycle" = "pct_commute_bicycle_city", # always city
   "Percentage of Residents in City who Commute to Work by Walking" = "pct_commute_walk_city", # always city
   #"Percentage of Residents in City who Commute to Work by Other Modes" = "pct_commute_others_city", # always city
-  "Average City-wide Commute Time" = "average_commute_time_city", #always city
+  "Average City-wide Commute Time (Minutes)" = "average_commute_time_city", #always city
   # LEHD / employment vars, always downtown
-  "Employment Density in Downtown" = "employment_density_downtown",
-  "Employment Entropy in Downtown" = "employment_entropy",
-  "Percentage of Jobs in Agriculture, Forestry, Fishing, and Hunting in Downtown" = "pct_jobs_agriculture_forestry_fishing_hunting",
-  "Percentage of Jobs in Mining, Quarrying, Oil, and Gas in Downtown" = "pct_jobs_mining_quarrying_oil_gas",
-  "Percentage of Jobs in Utilities in Downtown" = "pct_jobs_utilities",
-  "Percentage of Jobs in Construction in Downtown" = "pct_jobs_construction",
-  "Percentage of Jobs in Manufacturing in Downtown" = "pct_jobs_manufacturing",
-  "Percentage of Jobs in Wholesale Trade in Downtown" = "pct_jobs_wholesale_trade",
-  "Percentage of Jobs in Retail Trade in Downtown" = "pct_jobs_retail_trade",
-  "Percentage of Jobs in Transportation and Warehousing in Downtown" = "pct_jobs_transport_warehouse",
-  "Percentage of Jobs in Information in Downtown" = "pct_jobs_information",
-  "Percentage of Jobs in Finance & Insurance in Downtown" = "pct_jobs_finance_insurance",
-  "Percentage of Jobs in Real Estate in Downtown" = "pct_jobs_real_estate",
-  "Percentage of Jobs in Professional, Scientific, and Management in Downtown" = "pct_jobs_professional_science_techical",
-  "Percentage of Jobs in Management in Downtown" = "pct_jobs_management_of_companies_enterprises",
-  "Percentage of Jobs in Administrative Support & Waste Management in Downtown" = "pct_jobs_administrative_support_waste",
-  "Percentage of Jobs in Educational Services in Downtown" = "pct_jobs_educational_services",
-  "Percentage of Jobs in Healthcare & Social Assistance in Downtown" = "pct_jobs_healthcare_social_assistance",
-  "Percentage of Jobs in Arts, Entertainment, and Recreation in Downtown" = "pct_jobs_arts_entertainment_recreation",
-  "Percentage of Jobs in Accommodation & Food Services in Downtown" = "pct_jobs_accomodation_food_services",
-  "Percentage of Jobs in Public Administration in Downtown" = "pct_jobs_public_administration",
-  #"Percentage of Jobs in Other Categories in Downtown" = "pct_jobs_other",
+  "Employment Density" = "employment_density_downtown",
+  "Employment Entropy" = "employment_entropy",
+  "Percentage of Jobs in Agriculture, Forestry, Fishing, and Hunting" = "pct_jobs_agriculture_forestry_fishing_hunting",
+  "Percentage of Jobs in Mining, Quarrying, Oil, and Gas" = "pct_jobs_mining_quarrying_oil_gas",
+  "Percentage of Jobs in Utilities" = "pct_jobs_utilities",
+  "Percentage of Jobs in Construction" = "pct_jobs_construction",
+  "Percentage of Jobs in Manufacturing" = "pct_jobs_manufacturing",
+  "Percentage of Jobs in Wholesale Trade" = "pct_jobs_wholesale_trade",
+  "Percentage of Jobs in Retail Trade" = "pct_jobs_retail_trade",
+  "Percentage of Jobs in Transportation and Warehousing" = "pct_jobs_transport_warehouse",
+  "Percentage of Jobs in Information" = "pct_jobs_information",
+  "Percentage of Jobs in Finance & Insurance" = "pct_jobs_finance_insurance",
+  "Percentage of Jobs in Real Estate" = "pct_jobs_real_estate",
+  "Percentage of Jobs in Professional, Scientific, and Technical" = "pct_jobs_professional_science_techical",
+  "Percentage of Jobs in Management" = "pct_jobs_management_of_companies_enterprises",
+  "Percentage of Jobs in Administrative Support & Waste Management" = "pct_jobs_administrative_support_waste",
+  "Percentage of Jobs in Educational Services" = "pct_jobs_educational_services",
+  "Percentage of Jobs in Healthcare & Social Assistance" = "pct_jobs_healthcare_social_assistance",
+  "Percentage of Jobs in Arts, Entertainment, and Recreation" = "pct_jobs_arts_entertainment_recreation",
+  "Percentage of Jobs in Accommodation & Food Services" = "pct_jobs_accomodation_food_services",
+  "Percentage of Jobs in Public Administration" = "pct_jobs_public_administration",
+  #"Percentage of Jobs in Other Categories" = "pct_jobs_other",
   # covid policies, all at city level
   #"Composite of COVID-19 Closing Policies" = "composite_closing",
   #"Composite of COVID-19 Economic Policies" = "composite_economic",
@@ -194,12 +205,16 @@ named_factors <- c(
   "Number of days with required cancellation of all events" = "days_cancel_all_events",
   "Number of days with stay at home requirements" = "days_stay_home_requirements",
   "Number of days with income support policy" = "days_income_support",
-  "Number of days with mask mandates" = "days_mask_mandates"
+  "Number of days with mask mandates" = "days_mask_mandates",
   # political leaning - city level
   #"Percentage Liberal Leaning" = "pct_liberal_leaning",
   #"Percentage Conservative Leaning" = "pct_conservative_leaning"
   # "Percentage Other Leaning" = "pct_other"
   #weather - all at city level
+  "Average Winter Temperature (F)" = "winter_avg_temp",
+  "Average Spring Temperature (F)" = "spring_avg_temp",
+  "Average Summer Temperature (F)" = "summer_avg_temp",
+  "Average Fall Temperature (F)" = "fall_avg_temp"
 )
 
 # 2022/07/15 update: everything is a 3 month season
@@ -212,7 +227,9 @@ named_periods <- c(
   "Summer: June 2021 - Aug 2021" = "Season_6",
   "Fall: Sept 2021 - Nov 2021" = "Season_7",
   "Winter: Dec 2021 - Feb 2022" = "Season_8",
-  "Spring: Mar 2022 - May 2022" = "Season_9"
+  "Spring: Mar 2022 - May 2022" = "Season_9",
+  "Summer: June 2022 - Aug 2022" = "Season_10",
+  "Fall: Sept 2022 - Nov 2022" = "Season_11"
   
 )
 
@@ -250,9 +267,7 @@ explanatory_cities <- regions_df %>%
   dplyr::slice_head(n = 2)
 
 patterns_cities <- regions_df %>%
-  group_by(region) %>%
-  dplyr::arrange(-population) %>%
-  dplyr::slice_head(n = 1)
+                    filter(city %in% c("Omaha", "Miami", "Los Angeles", "Denver", "Vancouver", "Toronto", "New York", "Chicago", "San Francisco"))
 
 ranking_cities <- regions_df %>%
   group_by(region) %>%
@@ -288,8 +303,8 @@ card <- function(.img, .title, .text, .tab) {
 all_shapefile <- st_read("shp/study_area_all.shp")
 # 
 all_shapefile <-
-   st_transform(all_shapefile, st_crs("+proj=longlat +datum=WGS84"))
- colnames(all_shapefile) <- c("postal_code", "geometry")
+  st_transform(all_shapefile, st_crs("+proj=longlat +datum=WGS84"))
+colnames(all_shapefile) <- c("postal_code", "geometry")
 
 all_city_index <- read.csv("input_data/all_city_index.csv")
 
