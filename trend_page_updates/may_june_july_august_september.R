@@ -192,6 +192,10 @@ range(msa$date)
 
 head(msa)
 
+write.csv(msa, 
+          '/Users/jpg23/data/downtownrecovery/stop_uplevelled_2023_2024/msa_raw_may-oct2024.csv',
+          row.names = FALSE)
+
 # Remove outliers in downtown data
 #=====================================
 
