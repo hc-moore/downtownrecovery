@@ -1,5 +1,5 @@
 #===============================================================================
-# Create dataset of top 300 metros - 1 month - for Jeff to explore
+# Create dataset of top 300 metros
 #===============================================================================
 
 # Load packages
